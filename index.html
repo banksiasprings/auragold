@@ -124,33 +124,60 @@
   .ag-gps-dot { width:16px; height:16px; border-radius:50%; background:#2f7bff;
     border:3px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 8px rgba(47,123,255,.7); }
   #gpsBtn.on { background:#2f7bff; color:#fff; }
+  #gpsStatus.s-grey { background:#52525b; }
+
+  /* ☰ menu specifics (reuses .ag-panel / .ag-card / .ag-sec) */
+  .ag-row { display:flex; align-items:center; gap:10px; padding:8px 0; cursor:pointer; user-select:none; }
+  .ag-row + .ag-row { border-top:1px solid #f1ead4; }
+  .ag-row input { width:18px; height:18px; flex:0 0 auto; accent-color:#2c8b3c; }
+  .ag-row.base input { accent-color:#b08800; }
+  .ag-row > span { flex:1; }
+  .ag-act { display:block; width:100%; text-align:left; background:#fff; border:1px solid #ece3c6; border-radius:10px;
+    padding:12px; margin:0 0 8px; font:600 14px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#23200f; cursor:pointer; }
+  .ag-act .sub { display:block; font-weight:500; font-size:12px; color:#6a6450; margin-top:2px; }
+  .menu-legend .legend-item { font-size:13px; margin:4px 0; }
+  .menu-legend .legend-swatch, .menu-legend .legend-line { vertical-align:middle; }
+
+  /* mobile: slim the header + pill so the map breathes */
+  @media (max-width:560px){
+    .header { top:6px; padding:7px 12px; max-width:96vw; }
+    .header h1 { font-size:14px; }
+    .header .sub { display:none; }
+    #gpsStatus { top:54px; font-size:12px; padding:7px 12px; }
+    .ag-fab { padding:10px 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>🪙 AuraGold — Victoria Gold Prospecting</h1>
-  <div class="sub">12 spots · gold occurrences · goldfields · tenements · fire scars · fossicking land · Toggle layers top-right</div>
+  <div class="sub">12 spots · gold occurrences · goldfields · tenements · fire scars · fossicking land · tap ☰ Menu for layers &amp; legend</div>
 </div>
 <div id="map"></div>
 
-<!-- Offline maps control (AuraGold PWA) -->
-<button id="offlineBtn" type="button" title="Download the region's base map tiles for offline use in the field"
-  style="position:absolute;bottom:18px;right:12px;z-index:1000;border:none;cursor:pointer;
-         background:rgba(20,20,28,0.92);color:#ffd54a;font:600 12px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-         padding:9px 12px;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;gap:6px;">
-  <span style="font-size:14px;">⤓</span><span id="offlineLbl">Save maps offline</span>
-</button>
-
-<!-- Compliance checklist control (AuraGold PWA) -->
-<button id="checklistBtn" class="ag-fab" type="button" style="bottom:56px;" title="Fossicking compliance checklist">
-  <span style="font-size:14px;">📋</span><span>Checklist</span>
-</button>
-
-<!-- GPS locate control + permitted-area status (AuraGold PWA) -->
-<button id="gpsBtn" class="ag-fab" type="button" style="bottom:94px;" title="Show my location &amp; check if it's a permitted fossicking area">
+<!-- Field action buttons (AuraGold PWA) -->
+<button id="gpsBtn" class="ag-fab" type="button" style="bottom:18px;" title="Show my location &amp; check if it's a permitted fossicking area">
   <span style="font-size:14px;">📍</span><span id="gpsLbl">Locate me</span>
 </button>
+<button id="menuBtn" class="ag-fab" type="button" style="bottom:62px;" title="Menu — base map, layers, legend &amp; tools">
+  <span style="font-size:15px;">☰</span><span>Menu</span>
+</button>
 <div id="gpsStatus" role="status" aria-live="polite"></div>
+
+<!-- ☰ Map menu: base map, layers, legend, tools -->
+<aside id="menuPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>☰ Map menu</h2><button class="ag-x" id="menuClose" aria-label="Close">×</button></header>
+  <div class="ag-body">
+    <div class="ag-sec">
+      <h3>Tools</h3>
+      <button id="offlineBtn" class="ag-act" type="button">⤓ <span id="offlineLbl">Save maps offline</span><span class="sub">Cache the trip's base map for no-signal use</span></button>
+      <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
+    </div>
+    <div class="ag-sec"><h3>Base map</h3><div class="ag-card" id="baseList"></div></div>
+    <div class="ag-sec"><h3>Map layers</h3><div class="ag-card" id="layerList"></div></div>
+    <div class="ag-sec"><h3>Legend</h3><div class="ag-card menu-legend" id="menuLegend"></div></div>
+  </div>
+</aside>
 
 <aside id="checklistPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🪙 Fossicking checklist</h2><button class="ag-x" id="checklistClose" aria-label="Close">×</button></header>
@@ -353,12 +380,7 @@ const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 });
 
 baseSat.addTo(map);
-
-L.control.layers({
-  "Satellite (Esri)": baseSat,
-  "Topo": baseTopo,
-  "Street": baseOSM,
-}, null, { position: "topleft", collapsed: true }).addTo(map);
+// Base map + overlay switching and the legend now live in the ☰ menu (end of file).
 
 function makePinIcon(num, color) {
   return L.divIcon({
@@ -622,44 +644,8 @@ routeLine.addTo(map);
 layerMinOcc.addTo(map);
 layerEndowment.addTo(map);
 
-L.control.layers(null, {
-  "<b>Spots (1–12)</b>": spotGroup,
-  "Camping": campGroup,
-  "Sub-spots": subGroup,
-  "Itinerary route line": routeLine,
-  "—": L.layerGroup(),
-  "🟣 <b>Mineral occurrences</b> (gold) <i>WMS</i>": layerMinOcc,
-  "🟡 <b>1+ Moz Au endowment zones</b>": layerEndowment,
-  "🔴 Goldfield boundaries": layerGoldfields,
-  "⛔ Active Exploration Licences (EL)": layerEL,
-  "⛔ Active Mining Licences (ML / MIN)": layerML,
-  "🟠 Bushfire scars 2023–2025": layerFires,
-  "🟢 State Forest (fossicking permitted) <i>WMS</i>": layerStateForest,
-  "🚫 Restricted Crown Land <i>WMS</i>": layerRestricted,
-}, { position: "topright", collapsed: false }).addTo(map);
-
-const legend = L.control({ position: "bottomleft" });
-legend.onAdd = function () {
-  const div = L.DomUtil.create("div", "legend");
-  div.innerHTML =
-    '<h3>Legend</h3>' +
-    '<div class="legend-item"><span class="legend-swatch" style="background:#d8324b"></span> Priority / Top pick</div>' +
-    '<div class="legend-item"><span class="legend-swatch" style="background:#2c8b3c"></span> Confirmed area</div>' +
-    '<div class="legend-item"><span class="legend-swatch" style="background:#d6831e"></span> Speculative angle</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;background:#2563eb;border:2px solid #fff;border-radius:3px"></span> Camping</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#ffd700;border:2px solid #fff;border-radius:50%"></span> Sub-spot</div>' +
-    '<div class="legend-item"><span class="legend-line"></span> Itinerary route</div>' +
-    '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Gold data overlays</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#a855f7;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.3)"></span> Mineral occurrence (gold)</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:#ffd54a;border:1.5px solid #b8860b"></span> 1+ Moz Au zone</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:transparent;border:1.5px solid #b91c1c"></span> Goldfield boundary</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — no prospect</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.18);border:2px solid #991b1b"></span> Active ML — no prospect</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(251,146,60,0.32);border:1px solid #ea580c"></span> Bushfire 2023–25</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>';
-  return div;
-};
-legend.addTo(map);
+// Overlay toggles + legend are built inside the ☰ menu panel (end of file),
+// referencing these layer objects directly. Default-on layers stay added above.
 
 // Auto-fit to all spots
 const group = L.featureGroup(spots.map(s => L.marker([s.lat, s.lng])));
@@ -810,10 +796,11 @@ setTimeout(fitToSpots, 400);
     if (g === undefined) { cls='s-wait'; ic='📍'; title='Located — loading land data…'; sub=''; }
     else if (g && GREEN[g.cls]) { cls='s-green'; ic='✓'; title='Permitted — ' + g.name;
       sub = CLASS_LABEL[g.cls] + ' · still confirm on GeoVic'; }
-    else if (g) { cls='s-red'; ic='⛔'; title='Restricted — ' + g.name;
-      sub = (g.cls==='np'||g.cls==='sp') ? CLASS_LABEL[g.cls] + ' · designated blocks only'
-                                         : CLASS_LABEL[g.cls] + ' · not permitted'; }
-    else { cls='s-amber'; ic='⚠'; title='Off mapped forest / park';
+    else if (g && g.cls==='mil') { cls='s-red'; ic='⛔'; title='Restricted — ' + g.name;
+      sub = 'Commonwealth / military land · no fossicking'; }
+    else if (g) { cls='s-amber'; ic='⚠'; title='Designated blocks only — ' + g.name;
+      sub = CLASS_LABEL[g.cls] + ' · prospect ONLY in the marked Parks Vic block'; }
+    else { cls='s-grey'; ic='•'; title='Off mapped forest / park';
       sub = 'Crown or private land — verify on GeoVic'; }
     if (acc != null) sub += ' · ±' + Math.round(acc) + 'm';
     statusEl.className = 'show ' + cls;
@@ -864,6 +851,75 @@ setTimeout(fitToSpots, 400);
   window.AuraGold.geofenceAt = geofenceAt;
   window.AuraGold.landReady = function () { return !!land; };
   window.AuraGold.simulateGPS = function (lat, lon, acc) { onPos({ coords:{ latitude:lat, longitude:lon, accuracy:acc||25 } }); };
+})();
+</script>
+
+<!-- AuraGold PWA: ☰ map menu (base map, layers, legend) -->
+<script>
+(function () {
+  var panel = document.getElementById('menuPanel');
+  function setOpen(o){ panel.classList.toggle('open', o); panel.setAttribute('aria-hidden', o ? 'false' : 'true'); }
+  document.getElementById('menuBtn').addEventListener('click', function(){ setOpen(true); });
+  document.getElementById('menuClose').addEventListener('click', function(){ setOpen(false); });
+  // Opening the checklist (also listed in this menu) closes the menu so panels don't overlap.
+  var cl = document.getElementById('checklistBtn');
+  if (cl) cl.addEventListener('click', function(){ setOpen(false); });
+
+  // Base map (radio) — references the global base layers from the map script.
+  var bases = [['Satellite (Esri)', baseSat], ['Topographic', baseTopo], ['Street', baseOSM]];
+  var baseList = document.getElementById('baseList');
+  bases.forEach(function(b){
+    var row = document.createElement('label'); row.className = 'ag-row base';
+    row.innerHTML = '<input type="radio" name="agbase"><span>' + b[0] + '</span>';
+    var input = row.querySelector('input');
+    input.checked = map.hasLayer(b[1]);
+    input.addEventListener('change', function(){
+      bases.forEach(function(x){ if (map.hasLayer(x[1])) map.removeLayer(x[1]); });
+      b[1].addTo(map);
+    });
+    baseList.appendChild(row);
+  });
+
+  // Overlay layers (checkbox) — same set/labels as the old top-right control.
+  var layers = [
+    ['Spots (1–12)', spotGroup], ['Camping', campGroup], ['Sub-spots', subGroup],
+    ['Itinerary route line', routeLine],
+    ['🟣 Mineral occurrences (gold) — WMS', layerMinOcc],
+    ['🟡 1+ Moz Au endowment zones', layerEndowment],
+    ['🔴 Goldfield boundaries', layerGoldfields],
+    ['⛔ Active Exploration Licences (EL)', layerEL],
+    ['⛔ Active Mining Licences (ML / MIN)', layerML],
+    ['🟠 Bushfire scars 2023–2025', layerFires],
+    ['🟢 State Forest (fossicking) — WMS', layerStateForest],
+    ['🚫 Restricted Crown Land — WMS', layerRestricted]
+  ];
+  var layerList = document.getElementById('layerList');
+  layers.forEach(function(l){
+    var row = document.createElement('label'); row.className = 'ag-row';
+    row.innerHTML = '<input type="checkbox"><span>' + l[0] + '</span>';
+    var input = row.querySelector('input');
+    input.checked = map.hasLayer(l[1]);
+    input.addEventListener('change', function(){ input.checked ? l[1].addTo(map) : map.removeLayer(l[1]); });
+    layerList.appendChild(row);
+  });
+
+  // Legend (relocated off the map surface).
+  document.getElementById('menuLegend').innerHTML =
+    '<div class="legend-item"><span class="legend-swatch" style="background:#d8324b"></span> Priority / Top pick</div>' +
+    '<div class="legend-item"><span class="legend-swatch" style="background:#2c8b3c"></span> Confirmed area</div>' +
+    '<div class="legend-item"><span class="legend-swatch" style="background:#d6831e"></span> Speculative angle</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;background:#2563eb;border:2px solid #fff;border-radius:3px"></span> Camping</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#ffd700;border:2px solid #fff;border-radius:50%"></span> Sub-spot</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#2f7bff;border:2px solid #fff"></span> You (live GPS)</div>' +
+    '<div class="legend-item"><span class="legend-line"></span> Itinerary route</div>' +
+    '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Gold data overlays</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#a855f7;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.3)"></span> Mineral occurrence (gold)</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:#ffd54a;border:1.5px solid #b8860b"></span> 1+ Moz Au zone</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:transparent;border:1.5px solid #b91c1c"></span> Goldfield boundary</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — no prospect</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.18);border:2px solid #991b1b"></span> Active ML — no prospect</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(251,146,60,0.32);border:1px solid #ea580c"></span> Bushfire 2023–25</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>';
 })();
 </script>
 </body>
