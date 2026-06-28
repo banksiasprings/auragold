@@ -302,3 +302,27 @@ git push works via plain Bash. Verify via the preview MCP (`preview_start` name 
 **Backlog items 4–7 are all resolved** (4 & 6-partial shipped; 5 & 6-Whroo deferred with full rationale; 7 QA done). Nothing left in the queue — stopping here.
 
 ---
+
+## Phase 2 — In-app Trip Builder + Share Target + paste-URL (v19, commit `d852450`)
+
+Directed round (not the overnight loop). Three connected features so Steven can run the whole trip from inside the app — no coming back to edit code.
+
+| Feature | What shipped | Notes |
+|---|---|---|
+| **Trip Builder** | Editable trip doc in IndexedDB; day list with **SortableJS drag-reorder** (+ ▲▼ / Move-up-down fallback); inline day editor (label/date/notes); spots & camps **library pickers**; **custom waypoints** by GPS, manual lat/lng, or pasted link; multi-trip rename/duplicate/switch/reset/delete; **export GPX/KML/JSON**; auto-save debounced 500 ms | Route line follows the active trip's day order live; unedited it matches the old `routeOrder` exactly |
+| **Web Share Target** | `manifest.share_target` (action `./`, GET) + startup handler that parses the shared place, opens a prefilled "Add shared place" card, `history.replaceState` strips params so refresh won't re-fire | **Android only** — iOS unsupported by Apple; documented in Settings + README |
+| **Paste-URL parser** | Google long (`@lat,lng` + `!3d!4d` pin), `?q=lat,lng`, Apple (`?ll=&q=`), `geo:`, plain `lat,lng` (AU-aware swap). Short links (`maps.app.goo.gl`) flagged with open-then-copy workflow | Shared by share handler + the Custom waypoint screen |
+
+**Data model:** bumped the shared `auragold_photos` DB to **v2** — added stores `auragold_trips` + `auragold_user_waypoints` (photo store untouched, photo path refactored to reuse the one shared connection so there's no version conflict). Pre-seeded **"Suggested Plan v1"** (the 16-day itinerary) on first run.
+
+**UI change:** the read-only "🗺 Trip itinerary" stepper was **repurposed** into the editable "🗺 Trip planner" (strict superset). Old `.itin-*` CSS + stepper script removed.
+
+**Fix:** the SW-registration script was overwriting `window.AuraGold`; now it merges.
+
+### State update for future sessions
+- **New test hooks on `window.AuraGold`:** `trips` (`.getActive()`, `.routePts()`, `.uwp`, `.switchTo`, …), `parsePlaceUrl(str)`, `openTrip()`, `tripWaypointLayer`, `openDB()`.
+- ⚠️ `openItinerary` hook is **gone** — use `openTrip()`.
+- Preview: launch.json is name `auragold-static` (static `python3 -m http.server`). SW is cache-first, so to see edits: unregister SWs + delete any `auragold-shell-*` cache + `location.reload()`. **Still bump both `SHELL_VERSION` (sw.js) and `APP_VERSION` (index.html) in lockstep every commit.**
+- SortableJS (`sortablejs@1.15.2`) is precached in the SW shell for offline drag-reorder.
+
+---
