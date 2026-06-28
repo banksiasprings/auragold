@@ -496,7 +496,14 @@ const statusColors = {
   speculative: "#d6831e",
 };
 
-const map = L.map("map", { zoomControl: true }).setView([-36.7, 144.6], 8);
+const map = L.map("map", {
+  zoomControl: true,
+  minZoom: 6,
+  maxZoom: 18,
+  maxBounds: [[-40, 138], [-25, 154]],
+  maxBoundsViscosity: 1.0,
+  worldCopyJump: false,
+}).setView([-36.7, 144.6], 8);
 
 const baseSat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
   attribution: "Imagery © Esri", maxZoom: 18,
