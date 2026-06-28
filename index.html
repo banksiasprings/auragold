@@ -171,6 +171,14 @@
   .wp-drop b { display:block; margin:0 0 6px; font-size:13px; }
   .wp-drop button { display:block; width:100%; text-align:left; margin:4px 0; padding:9px 10px; border:1px solid #ddd; border-radius:8px; background:#fff; font-size:14px; cursor:pointer; }
   .wp-empty { color:#6a6450; font-size:13px; padding:6px 0; }
+  .wp-item .cam { background:none; border:1px solid #d9cfa6; border-radius:6px; color:#8a6d00; padding:5px 7px; font-size:13px; cursor:pointer; }
+  .wp-item .thumb { flex:0 0 auto; width:38px; height:38px; border-radius:6px; object-fit:cover; cursor:pointer; border:1px solid #e1d8b8; }
+  .popup-spot .thumb { display:block; margin:6px 0 2px; max-width:100%; max-height:140px; border-radius:6px; cursor:pointer; }
+  .popup-spot .cam { background:none; border:1px solid #d9cfa6; border-radius:6px; color:#8a6d00; padding:4px 8px; font-size:12px; cursor:pointer; margin-top:4px; }
+  .ph-view { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; }
+  .ph-view.show { display:flex; }
+  .ph-view img { max-width:94vw; max-height:88vh; border-radius:8px; }
+  .ph-view .x { position:absolute; top:14px; right:16px; background:#fff; border:none; border-radius:50%; width:38px; height:38px; font-size:20px; cursor:pointer; }
   #netStatus { position:absolute; top:80px; left:12px; z-index:1100; display:none;
     background:#52525b; color:#fff; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif;
     padding:5px 9px; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.35); }
@@ -935,6 +943,25 @@ setTimeout(fitToSpots, 400);
 <script>
 (function () {
   var KEY = 'auragold_waypoints';
+  // --- Photo store: blobs in IndexedDB keyed by waypoint id (localStorage model unchanged; wp.photo just flags presence) ---
+  var _db = null, _dbReq = null, _dbQ = [];
+  function idb(cb){
+    if (_db){ cb(_db); return; }
+    if (!window.indexedDB){ cb(null); return; }
+    _dbQ.push(cb);            // queue all waiters; never overwrite a pending callback
+    if (_dbReq) return;       // open already in flight
+    _dbReq = indexedDB.open('auragold_photos', 1);
+    _dbReq.onupgradeneeded = function(e){ var db=e.target.result; if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos'); };
+    _dbReq.onsuccess = function(e){ _db = e.target.result; var q=_dbQ; _dbQ=[]; q.forEach(function(f){ f(_db); }); };
+    _dbReq.onerror = function(){ var q=_dbQ; _dbQ=[]; q.forEach(function(f){ f(null); }); };
+  }
+  function photoPut(id, blob, done){ idb(function(db){ if(!db){ done&&done(false); return; } try{ var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').put(blob,id); tx.oncomplete=function(){ done&&done(true); }; tx.onerror=function(){ done&&done(false); }; }catch(e){ done&&done(false); } }); }
+  function photoGet(id, done){ idb(function(db){ if(!db){ done(null); return; } try{ var tx=db.transaction('photos','readonly'); var rq=tx.objectStore('photos').get(id); rq.onsuccess=function(){ done(rq.result||null); }; rq.onerror=function(){ done(null); }; }catch(e){ done(null); } }); }
+  function photoDel(id){ idb(function(db){ if(!db) return; try{ db.transaction('photos','readwrite').objectStore('photos').delete(id); }catch(e){} }); if(purls[id]){ URL.revokeObjectURL(purls[id]); delete purls[id]; } }
+  // Cache object URLs (id -> blob URL) so thumbnails embed inline & synchronously — no post-render DOM surgery.
+  var purls = {};
+  function cachePhoto(id, done){ photoGet(id, function(blob){ if(blob){ if(purls[id]) URL.revokeObjectURL(purls[id]); purls[id]=URL.createObjectURL(blob); } done&&done(!!blob); }); }
+  function preloadPhotos(done){ var ids=pts.filter(function(p){return p.photo;}).map(function(p){return p.id;}); var n=ids.length; if(!n){ done&&done(); return; } ids.forEach(function(id){ cachePhoto(id, function(){ if(--n===0) done&&done(); }); }); }
   var TYPES = {
     find:   { label: 'Find / gold',   emoji: '🟡', color: '#f1c40f' },
     signal: { label: 'Signal / dig',  emoji: '🔶', color: '#e67e22' },
@@ -959,6 +986,8 @@ setTimeout(fitToSpots, 400);
         (p.note?'<div class="desc">'+esc(p.note)+'</div>':'')+
         '<div style="font-size:11px;color:#666;margin-top:3px">'+fmt(p.ts)+(p.acc?' · ±'+Math.round(p.acc)+'m':'')+'</div>'+
         '<div class="coords">'+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+'</div>'+
+        ((p.photo&&purls[p.id])?'<img class="thumb" data-view="'+p.id+'" src="'+purls[p.id]+'" alt="Find photo">':'')+
+        '<button class="cam" data-cam="'+p.id+'" style="margin-top:4px">'+(p.photo?'📷 Replace photo':'📷 Add photo')+'</button> '+
         '<button class="x" data-del="'+p.id+'" style="margin-top:6px">Delete</button></div>';
       L.marker([p.lat,p.lng],{icon:icon(p.type)}).bindPopup(html).addTo(layer);
     });
@@ -969,16 +998,47 @@ setTimeout(fitToSpots, 400);
     pts.push({ id:uid(), lat:lat, lng:lng, type:type||'note', note:note||'', ts:Date.now(), acc:acc||null });
     persist(); render();
   }
-  function del(id){ pts=pts.filter(function(p){return p.id!==id;}); persist(); render(); }
+  function del(id){ photoDel(id); pts=pts.filter(function(p){return p.id!==id;}); persist(); render(); }
 
   map.on('popupopen', function(e){
-    var el=e.popup.getElement(); var b=el && el.querySelector('[data-del]');
+    var el=e.popup.getElement(); if(!el) return;
+    var b=el.querySelector('[data-del]');
     if(b) b.addEventListener('click', function(){ del(b.getAttribute('data-del')); map.closePopup(); });
+    var cam=el.querySelector('[data-cam]');
+    if(cam) cam.addEventListener('click', function(){ capturePhoto(cam.getAttribute('data-cam')); });
+    var img=el.querySelector('img.thumb[data-view]');
+    if(img) img.addEventListener('click', function(){ showPhoto(img.getAttribute('data-view')); });
   });
 
   var toast=document.createElement('div'); toast.className='ag-toast'; document.body.appendChild(toast);
   var toastT=null;
   function say(m){ toast.textContent=m; toast.classList.add('show'); if(toastT)clearTimeout(toastT); toastT=setTimeout(function(){toast.classList.remove('show');},2600); }
+
+  // --- Photo capture + fullscreen viewer ---
+  var fileIn=document.createElement('input'); fileIn.type='file'; fileIn.accept='image/*'; fileIn.setAttribute('capture','environment');
+  fileIn.style.display='none'; document.body.appendChild(fileIn);
+  var pendingId=null;
+  fileIn.addEventListener('change', function(){
+    var f=fileIn.files && fileIn.files[0]; var id=pendingId; fileIn.value=''; pendingId=null;
+    if(!f || !id) return;
+    photoPut(id, f, function(ok){
+      if(!ok){ say('Could not save photo'); return; }
+      var p=pts.filter(function(x){return x.id===id;})[0]; if(p){ p.photo=true; persist(); }
+      cachePhoto(id, function(){ render(); if(panel.classList.contains('open')) listFinds(); say('📷 Photo attached'); });
+    });
+  });
+  function capturePhoto(id){ pendingId=id; fileIn.click(); }
+  var viewer=document.createElement('div'); viewer.className='ph-view';
+  viewer.innerHTML='<button class="x" aria-label="Close">×</button><img alt="Find photo">';
+  document.body.appendChild(viewer);
+  function showPhoto(id){ if(purls[id]){ viewer.querySelector('img').src=purls[id]; viewer.classList.add('show'); return; } photoGet(id, function(blob){ if(!blob){ say('Photo missing'); return; } if(purls[id]) URL.revokeObjectURL(purls[id]); purls[id]=URL.createObjectURL(blob); viewer.querySelector('img').src=purls[id]; viewer.classList.add('show'); }); }
+  function closeViewer(){ viewer.classList.remove('show'); viewer.querySelector('img').src=''; }
+  viewer.querySelector('.x').addEventListener('click', closeViewer);
+  viewer.addEventListener('click', function(e){ if(e.target===viewer) closeViewer(); });
+  // Expose for popup-bound buttons (popups are re-created per open)
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold._capturePhoto = capturePhoto;
+  window.AuraGold._showPhoto = showPhoto;
 
   document.getElementById('hitBtn').addEventListener('click', function(){
     var f=(window.AuraGold||{}).lastFix;
@@ -1009,9 +1069,13 @@ setTimeout(fitToSpots, 400);
     pts.slice().reverse().forEach(function(p){
       var c=T(p.type);
       var row=document.createElement('div'); row.className='wp-item';
-      row.innerHTML='<span class="e">'+c.emoji+'</span><div class="m"><b>'+c.label+'</b><small>'+fmt(p.ts)+' · '+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</small></div><button class="x">Del</button>';
+      row.innerHTML='<span class="e">'+c.emoji+'</span><div class="m"><b>'+c.label+'</b><small>'+fmt(p.ts)+' · '+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</small></div>'+
+        ((p.photo&&purls[p.id])?'<img class="thumb" src="'+purls[p.id]+'" alt="Find photo">':'')+
+        '<button class="cam" title="'+(p.photo?'Replace photo':'Add photo')+'">📷</button><button class="x">Del</button>';
       row.querySelector('.m').addEventListener('click', function(){ openPanel(false); map.setView([p.lat,p.lng], Math.max(map.getZoom(),14)); });
+      row.querySelector('.cam').addEventListener('click', function(){ capturePhoto(p.id); });
       row.querySelector('.x').addEventListener('click', function(){ del(p.id); listFinds(); });
+      var th=row.querySelector('img.thumb'); if(th) th.addEventListener('click', function(){ showPhoto(p.id); });
       el.appendChild(row);
     });
   }
@@ -1029,9 +1093,10 @@ setTimeout(fitToSpots, 400);
   function hasTrail(){ var f=(window.AuraGold||{}).trailGpx; return !!(f && f()); }
   document.getElementById('expGpx').addEventListener('click', function(){ if(!pts.length && !hasTrail()){say('No points or track to export');return;} dl('auragold-finds.gpx','application/gpx+xml',gpx()); });
   document.getElementById('expJson').addEventListener('click', function(){ if(!pts.length){say('No points to export');return;} dl('auragold-finds.json','application/json',JSON.stringify(pts,null,2)); });
-  document.getElementById('clearWp').addEventListener('click', function(){ if((pts.length||hasTrail()) && confirm('Delete all saved points and the walked track?')){ pts=[]; persist(); render(); listFinds(); if(window.AuraGold.clearTrail) window.AuraGold.clearTrail(); say('Points & track cleared'); } });
+  document.getElementById('clearWp').addEventListener('click', function(){ if((pts.length||hasTrail()) && confirm('Delete all saved points and the walked track?')){ pts.forEach(function(p){ if(p.photo) photoDel(p.id); }); pts=[]; persist(); render(); listFinds(); if(window.AuraGold.clearTrail) window.AuraGold.clearTrail(); say('Points & track cleared'); } });
 
   render();
+  preloadPhotos(function(){ render(); if(panel.classList.contains('open')) listFinds(); });
   window.AuraGold = window.AuraGold || {};
   window.AuraGold.waypointLayer = layer;
   window.AuraGold.addWaypoint = add;
