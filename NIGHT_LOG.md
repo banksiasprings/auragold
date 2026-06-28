@@ -31,3 +31,14 @@ Priorities (Steven): (1) relocate 12 spot pins onto geofence-verified legal grou
 - "LiDAR" delivered as Esri global hillshade (reliable). True Vic high-res LiDAR-DEM hillshade (Vicmap Elevation) could be swapped in later for finer old-workings detail.
 
 ---
+
+## Round 3 — Mark & save waypoints — 2026-06-28 (overnight)
+
+### Completed
+- v7 (`3b53625`): On-device, offline waypoint capture (localStorage key `auragold_waypoints`). 🎯 "Got a hit!" FAB = one-tap find at live GPS (fallback map centre). Long-press map → type chooser (find/signal/hole/camp/note), coloured teardrop markers w/ popup (note, time, ±acc, coords, delete). "🎯 My finds (N)" menu button → panel: list (tap→fly-to, delete), Export GPX (Garmin/Google Earth) + JSON + clear-all, confirmation toasts. Saved-finds layer toggleable. Verified ✓ (got-a-hit, long-press 5-type chooser, persistence, panel list, GPX+JSON export filenames, no console errors, screenshot).
+
+### Observations
+- Photos/voice memos (roadmap) would need IndexedDB (localStorage too small for blobs) — deferred, bigger lift.
+- Browser `Date.now()`/`new Date()` used for timestamps/IDs — fine in page JS (the no-Date rule is Workflow-script-only).
+
+---
