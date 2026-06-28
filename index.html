@@ -221,7 +221,7 @@
       <h3>Export &amp; backup</h3>
       <button class="ag-act" id="expGpx" type="button">⤓ Export GPX<span class="sub">Open in any GPS app, Garmin, Google Earth</span></button>
       <button class="ag-act" id="expJson" type="button">⤓ Export JSON<span class="sub">Full backup of every saved point</span></button>
-      <button class="ag-act" id="clearWp" type="button" style="color:#b3261e">🗑 Clear all points<span class="sub" style="color:#c98">Can't be undone</span></button>
+      <button class="ag-act" id="clearWp" type="button" style="color:#b3261e">🗑 Clear points &amp; track<span class="sub" style="color:#c98">Can't be undone</span></button>
     </div>
     <p class="ag-note" style="padding:0 2px">Tip: <b>long-press the map</b> to drop a marker anywhere (find / signal / hole / camp). Points are saved on this phone and work offline.</p>
   </div>
@@ -897,6 +897,7 @@ setTimeout(fitToSpots, 400);
     gpsLbl.textContent = 'Tracking';
     window.AuraGold = window.AuraGold || {};
     window.AuraGold.lastFix = { lat: la, lng: lo, acc: ac, ts: Date.now() };
+    if (window.AuraGold.recordTrail) window.AuraGold.recordTrail(la, lo);
   }
   function onErr(e) {
     statusEl.className = 'show s-amber';
@@ -1022,17 +1023,50 @@ setTimeout(fitToSpots, 400);
   }
   function gpx(){
     var w=pts.map(function(p){ return '<wpt lat="'+p.lat+'" lon="'+p.lng+'"><name>'+esc(T(p.type).label)+'</name><desc>'+esc(p.note)+'</desc><time>'+new Date(p.ts).toISOString()+'</time><type>'+p.type+'</type></wpt>'; }).join('\n');
-    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AuraGold" xmlns="http://www.topografix.com/GPX/1/1">\n'+w+'\n</gpx>';
+    var trk = (window.AuraGold||{}).trailGpx ? window.AuraGold.trailGpx() : '';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AuraGold" xmlns="http://www.topografix.com/GPX/1/1">\n'+w+'\n'+trk+'</gpx>';
   }
-  document.getElementById('expGpx').addEventListener('click', function(){ if(!pts.length){say('No points to export');return;} dl('auragold-finds.gpx','application/gpx+xml',gpx()); });
+  function hasTrail(){ var f=(window.AuraGold||{}).trailGpx; return !!(f && f()); }
+  document.getElementById('expGpx').addEventListener('click', function(){ if(!pts.length && !hasTrail()){say('No points or track to export');return;} dl('auragold-finds.gpx','application/gpx+xml',gpx()); });
   document.getElementById('expJson').addEventListener('click', function(){ if(!pts.length){say('No points to export');return;} dl('auragold-finds.json','application/json',JSON.stringify(pts,null,2)); });
-  document.getElementById('clearWp').addEventListener('click', function(){ if(pts.length && confirm('Delete all '+pts.length+' saved points?')){ pts=[]; persist(); render(); listFinds(); say('All points cleared'); } });
+  document.getElementById('clearWp').addEventListener('click', function(){ if((pts.length||hasTrail()) && confirm('Delete all saved points and the walked track?')){ pts=[]; persist(); render(); listFinds(); if(window.AuraGold.clearTrail) window.AuraGold.clearTrail(); say('Points & track cleared'); } });
 
   render();
   window.AuraGold = window.AuraGold || {};
   window.AuraGold.waypointLayer = layer;
   window.AuraGold.addWaypoint = add;
   window.AuraGold.waypointCount = function(){ return pts.length; };
+})();
+</script>
+
+<!-- AuraGold PWA: breadcrumb walked-track -->
+<script>
+(function () {
+  var KEY = 'auragold_trail';
+  var trail = []; try { trail = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){}
+  var line = L.polyline(trail.map(function(p){ return [p[0], p[1]]; }),
+    { color:'#2f7bff', weight:3, opacity:0.7, dashArray:'1 7', lineCap:'round' }).addTo(map);
+  var lastSave = 0;
+  function record(lat, lng){
+    var n = trail.length;
+    if (n){ var p = trail[n-1]; var d = 111000*Math.hypot(lat-p[0], (lng-p[1])*Math.cos(lat*Math.PI/180)); if (d < 15) return; }
+    trail.push([+lat.toFixed(5), +lng.toFixed(5)]); line.addLatLng([lat, lng]);
+    var now = Date.now(); if (now-lastSave > 10000){ localStorage.setItem(KEY, JSON.stringify(trail.slice(-5000))); lastSave = now; }
+  }
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold.recordTrail = record;
+  window.AuraGold.trailLayer = line;
+  window.AuraGold.clearTrail = function(){ trail = []; line.setLatLngs([]); localStorage.removeItem(KEY); };
+  window.AuraGold.trailGpx = function(){
+    if (!trail.length) return '';
+    return '<trk><name>AuraGold walked track</name><trkseg>' +
+      trail.map(function(p){ return '<trkpt lat="'+p[0]+'" lon="'+p[1]+'"></trkpt>'; }).join('') +
+      '</trkseg></trk>\n';
+  };
+  // Flush the full track when the app is backgrounded/closed (beats the 10s throttle).
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'hidden' && trail.length) localStorage.setItem(KEY, JSON.stringify(trail.slice(-5000)));
+  });
 })();
 </script>
 
@@ -1078,6 +1112,7 @@ setTimeout(fitToSpots, 400);
     ['Spots (1–12)', spotGroup], ['Camping', campGroup], ['Sub-spots', subGroup],
     ['Itinerary route line', routeLine],
     ['🎯 My saved finds', (window.AuraGold||{}).waypointLayer],
+    ['🥾 My walked track', (window.AuraGold||{}).trailLayer],
     ['🧲 Magnetic RTP (structure) — GA', layerMag],
     ['⛰️ Hillshade / terrain — Esri', layerHill],
     ['🟣 Mineral occurrences (gold) — WMS', layerMinOcc],
