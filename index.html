@@ -70,6 +70,8 @@
   .status-confirmed { background: #2c8b3c; color: #fff; }
   .status-speculative { background: #d6831e; color: #fff; }
   .popup-spot .desc { font-size: 12px; color: #333; margin: 6px 0 4px; line-height: 1.4; }
+  .popup-spot .land { font-size: 11px; color: #1f7a32; font-weight: 600; background: #eaf6ec;
+    border-radius: 5px; padding: 3px 6px; margin: 4px 0; }
   .popup-spot .coords { font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px; color: #666; margin: 4px 0 0; }
 
@@ -295,40 +297,40 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const spots = [
-  { n: 1, name: "Mount Cole / Bayindeen fire scar", lat: -37.2670, lng: 143.2920,
+  { n: 1, name: "Mount Cole / Bayindeen fire scar", lat: -37.2670, lng: 143.2845, land: "Mt Cole–Beeripmo State Forest",
     status: "speculative", day: "Day 10 (main event)",
     desc: "22,000 ha Pyrenees/Mt Cole range burned high-intensity Feb 2024. SF reopened May and Nov 2025. Speculative on finds but the post-fire access window is open right now." },
-  { n: 2, name: "Avoca / Pyrenees Ranges SF", lat: -37.0900, lng: 143.5000,
+  { n: 2, name: "Avoca / Pyrenees Ranges SF", lat: -37.0750, lng: 143.5150, land: "Glenmona State Forest (Homebush flats)",
     status: "confirmed", day: "Day 9",
     desc: "Classic Pyrenees alluvial belt. Worked hard but GPX 4000 still pulls deeper signals below the worked layer. Homebush flats and Four Mile Flat south of Avoca productive." },
-  { n: 3, name: "Tarnagulla / Waanyarra / Poseidon", lat: -36.7300, lng: 143.8230,
+  { n: 3, name: "Tarnagulla / Waanyarra / Poseidon", lat: -36.7450, lng: 143.8305, land: "Crown land nr Waanyarra / Dunolly SF",
     status: "confirmed", day: "Day 12",
     desc: "Tight cluster of reef/alluvial overlap. Long detector history but ongoing finds. Waanyarra Recreation Site at -36.696, 143.772 is a free camp with surrounding Dunolly SF prospecting permitted." },
-  { n: 4, name: "Talbot / Amherst / Daisy Hill SF", lat: -37.1850, lng: 143.7050,
+  { n: 4, name: "Talbot / Amherst / Daisy Hill SF", lat: -37.1475, lng: 143.7050, land: "Bung Bong State Forest (Talbot)",
     status: "confirmed", day: "Day 11 (alt)",
     desc: "Quietly productive belt SE of Maryborough. Less trafficked than Wedderburn or Bendigo, substantial State Forest cover. Recent forum mentions of finds." },
-  { n: 5, name: "Heathcote / Costerfield / McIvor Creek", lat: -36.9270, lng: 144.7050,
+  { n: 5, name: "Heathcote / Costerfield / McIvor Creek", lat: -36.9420, lng: 144.7050, land: "One Eye State Forest (Heathcote)",
     status: "confirmed", day: "Day 6",
     desc: "Eastern fringe of the Golden Triangle. Heathcote-Graytown NP has designated prospecting areas, surrounded by State Forest. Different geological strike (Mount Camel axis)." },
-  { n: 6, name: "Whroo / Rushworth SF", lat: -36.8600, lng: 145.0080,
+  { n: 6, name: "Whroo / Rushworth SF", lat: -36.8450, lng: 145.0680, land: "Crown land nr Whroo (off Puckapunyal)",
     status: "confirmed", day: "Day 7",
     desc: "Preserved 1850s ghost-town goldfield. Productive surfacing ground in surrounding hills and grass-tree country. Balaclava Hill open cut at -36.860, 145.012." },
-  { n: 7, name: "Inglewood / Kingower / Wehla SF", lat: -36.5670, lng: 143.8740,
+  { n: 7, name: "Inglewood / Kingower / Wehla SF", lat: -36.5595, lng: 143.8740, land: "Inglewood State Forest",
     status: "priority", day: "Day 13",
     desc: "Hand of Faith country (27 kg nugget, 1980). Hammered but the GPX 4000 depth angle is real. Pair with Wedderburn back-to-back. Butchers Camp Site free at -36.585, 143.755." },
-  { n: 8, name: "Hepburn RP — Sailors Creek + Dry Diggings", lat: -37.3550, lng: 144.1500,
+  { n: 8, name: "Hepburn RP — Sailors Creek + Dry Diggings", lat: -37.3850, lng: 144.1500, land: "Wombat State Forest (Sailors Creek)",
     status: "confirmed", day: "Rainy-day option",
     desc: "Regional Park (not NP) allowing prospecting along creek systems. Drought-exposed banks beyond historic levels. Pan, sluice, detect the banks." },
-  { n: 9, name: "Maldon / Muckleford SF", lat: -37.0010, lng: 144.0700,
+  { n: 9, name: "Maldon / Muckleford SF", lat: -37.0235, lng: 144.0775, land: "Muckleford State Forest",
     status: "confirmed", day: "Detour day",
     desc: "Compact historically rich field around heritage Maldon. Muckleford SF provides huge open detecting area. Nuggety Gully (named for a reason) at -37.005, 144.060." },
-  { n: 10, name: "Wedderburn–Korong–Charlton corridor", lat: -36.4170, lng: 143.6200,
+  { n: 10, name: "Wedderburn–Korong–Charlton corridor", lat: -36.4030, lng: 143.6200, land: "Wedderburn State Forest (Hard Hill)",
     status: "priority", day: "Days 14–15 · HEADLINE",
     desc: "Highest-density big-nugget endowment in Australia. EL6302 and EL8296 do NOT block Miner's Right fossicking on Crown or SF — that's the legal edge most weekenders self-exclude on. Hit the Eastern cluster, Wychitella designated blocks, and Korong Vale strike-extension corridor." },
-  { n: 11, name: "Wombat SF — Bullarook deep lead margin", lat: -37.4500, lng: 144.1000,
+  { n: 11, name: "Wombat SF — Bullarook deep lead margin", lat: -37.4200, lng: 144.0800, land: "Wombat State Forest (Bullarook margin)",
     status: "speculative", day: "Optional",
     desc: "Overlies the historic Berry/Bullarook/Loddon deep lead. Hand miners shafted to bedrock; inter-shaft ground was never properly worked. GPX 4000 depth play." },
-  { n: 12, name: "Chiltern–Mt Pilot NP / Eldorado", lat: -36.2000, lng: 146.5170,
+  { n: 12, name: "Chiltern–Mt Pilot NP / Eldorado", lat: -36.2375, lng: 146.5245, land: "Barambogie State Forest (Chiltern)",
     status: "confirmed", day: "Day 4 — first stop",
     desc: "First proper stop on the drive south. NP designated prospecting areas around -36.260, 146.530. Eldorado/Reids Creek productive. Magenta Mine Campground free." },
 ];
@@ -421,6 +423,7 @@ spots.forEach(s => {
     '<h3>' + s.n + '. ' + s.name + '</h3>' +
     '<div><span class="status status-' + s.status + '">' + s.status + '</span></div>' +
     '<div class="desc">' + s.desc + '</div>' +
+    (s.land ? '<div class="land">✓ Pin on permitted ground: ' + s.land + '</div>' : '') +
     '<div class="coords">' + s.lat.toFixed(4) + ', ' + s.lng.toFixed(4) + '</div>' +
     '</div>';
   L.marker([s.lat, s.lng], { icon: makePinIcon(s.n, statusColors[s.status]) })
