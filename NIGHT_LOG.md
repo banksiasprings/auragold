@@ -219,3 +219,27 @@ The brief mandates verifying a sample GetMap/tile actually returns non-blank ima
 A working Vic-LiDAR hillshade almost certainly exists behind one of: (a) the migrated DEECA GeoServer under a non-obvious workspace (the helpdesk `gis.helpdesk@delwp.vic.gov.au` / `vicmap@transport.vic.gov.au` can name the exact layer), or (b) an ELVIS/ICSM raster tile service whose URL is in the live viewer's TerriaJS catalog JSON (inspect `elevation.fsdf.org.au` network traffic in a real browser to capture the tile URL, then verify a tile loads). Both need a real browser network-trace or a helpdesk reply — out of scope for an offline autonomous round. Captured here so it isn't re-litigated blind.
 
 ---
+
+## Round 11 — Nudge spots 3 & 6 onto State Forest — 2026-06-28 (overnight)
+
+### Success criterion
+Move spots 3 (Tarnagulla/Waanyarra, was Crown nr Dunolly) and 6 (Whroo, was Crown nr Rushworth) onto State-Forest-proper coordinates that resolve **green** via the in-app point-in-polygon geofence; update each spot's lat/lng + land label. Cosmetic. ⚠️ Touches the spots data → only proceed where confident; defer if shaky.
+
+### Completed — SPOT 3 only (`a7ecdd9`, SW v14)
+- Re-ran the **exact in-app geofence** (`pip` ray-cast + `geofenceAt` over `data/permitted_land.json`, reproduced in a node script) to search a grid around spot 3 for a point that sits **solidly inside** Waanyarra-Dunolly SF (not on an edge that a GPS wobble could flip to Crown).
+- **Spot 3: `-36.7450,143.8305` (Crown "Uncategorised Public Land") → `-36.7750,143.8401`** — resolves `sf` **"Waanyarra - Dunolly State Forest"**; the full ~120–240 m surround is also SF (1.0 solid). 3.4 km move, stays within the spot's own Tarnagulla/Waanyarra/Dunolly cluster. Land label updated `"Crown land nr Waanyarra / Dunolly SF" → "Waanyarra - Dunolly State Forest"`. Only the lat/lng + land string changed; desc/status/day untouched.
+
+### DEFERRED — SPOT 6 (Whroo) — deliberate, logged not done
+- Searched outward from Whroo (`-36.8450,145.0680`) for the nearest State Forest of **any** name: **Rushworth SF ≈ 10.3 km, Redcastle-Greytown SF ≈ 10.0 km.** There is **no State Forest within ~10 km** of the Whroo coordinate. Moving spot 6 onto SF would drag it right off the Whroo ghost-town goldfield it's named for and described around (Balaclava Hill, the 1850s field) — that's a relocation, not a cosmetic nudge.
+- Whroo's current Crown land (`"Adj Major Ck Frontage"`) already resolves **green/legal**. So nothing is gained and the spot's meaning is lost. Per the brief's explicit "if shaky, DEFER", spot 6 is **left as Crown** — correct and legal.
+
+### Verified ✓ (node geofence replica + preview MCP, fresh SW bust)
+- New spot-3 coord `geofenceAt(-36.7750,143.8401) = {cls:'sf', name:'Waanyarra - Dunolly State Forest'}`; old coord was `{cls:'crown',...}` (confirming the move was needed).
+- In the live app after reload: **all 12 spots still resolve green** (11 `sf` + spot 6 `crown`); spot-3 popup shows new coords + green "✓ Pin on permitted ground: Waanyarra - Dunolly State Forest" (screenshot — green pin now sits on the forest). **No console errors.**
+- **Itinerary route line auto-updated**: `routeLatLngs[6]` (spot 3's slot in `routeOrder`) now reads `[-36.7750,143.8401]` — it's derived from the spots array, so no stale reference. Round-9 itinerary stepper, all panels, markers unaffected.
+
+### Observations (not acted on)
+- The Llanelly SF sits ~2.9 km from spot 3 (slightly closer than Waanyarra-Dunolly) but the brief named **Dunolly SF** specifically, and Waanyarra-Dunolly is the SF the spot's own description references (the camp + "surrounding Dunolly SF") — so Dunolly was the right target.
+- subSpots layer still uses original coords (supplementary, unchanged — same note as Round 1).
+
+---
