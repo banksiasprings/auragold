@@ -202,6 +202,17 @@
     font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; margin-bottom:6px; }
   .set-row output { font:600 13px ui-monospace,Menlo,monospace; color:#b08800; }
   .set-row input[type=range] { width:100%; accent-color:#b08800; height:22px; }
+  /* Trip itinerary step rows (reuses .ag-card) */
+  .itin-row { display:flex; align-items:flex-start; gap:10px; padding:10px 2px; cursor:pointer;
+    border-top:1px solid #f1ead4; }
+  .itin-row:first-child { border-top:none; }
+  .itin-row:active { background:#fbf7ea; }
+  .itin-num { flex:0 0 auto; width:26px; height:26px; border-radius:50%; color:#fff;
+    font:700 13px ui-monospace,Menlo,monospace; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .itin-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .itin-day { display:block; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif; color:#b08800; letter-spacing:.2px; }
+  .itin-name { display:block; font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; line-height:1.3; margin-top:1px; }
+  .itin-go { flex:0 0 auto; color:#b08800; font-size:15px; align-self:center; }
   @media (max-width:560px){ .hfull { display:none; } }
 </style>
 </head>
@@ -232,6 +243,7 @@
       <button id="offlineBtn" class="ag-act" type="button">⤓ <span id="offlineLbl">Save maps offline</span><span class="sub">Cache the trip's base map for no-signal use</span></button>
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
+      <button id="itineraryBtn" class="ag-act" type="button">🗺 Trip itinerary<span class="sub">Step through the spots in driving order, day by day</span></button>
       <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Overlay opacity · default base map · km / mi</span></button>
     </div>
     <div class="ag-sec"><h3>Base map</h3><div class="ag-card" id="baseList"></div></div>
@@ -282,6 +294,17 @@
       </div>
       <p class="ag-note" style="padding:0 2px">Used in the navigate banner and nearest-spot readout.</p>
     </div>
+  </div>
+</aside>
+
+<aside id="itineraryPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>🗺 Trip itinerary</h2><button class="ag-x" id="itineraryClose" aria-label="Close">×</button></header>
+  <div class="ag-body">
+    <div class="ag-sec">
+      <p class="ag-note" style="padding:0 2px;margin-top:0">Main spots in driving order. Tap one to fly the map there and open its details.</p>
+      <div class="ag-card" id="itinList"></div>
+    </div>
+    <p class="ag-note" style="padding:0 2px">Days run Day 4 → Day 15. Side-trips (rainy-day, detour, optional) sit outside the main run and aren't in this list — they're still on the map as numbered pins.</p>
   </div>
 </aside>
 
@@ -520,6 +543,7 @@ const spotGroup = L.layerGroup();
 const campGroup = L.layerGroup();
 const subGroup = L.layerGroup();
 
+const spotMarkersById = {};
 spots.forEach(s => {
   const popupHtml =
     '<div class="popup-spot">' +
@@ -531,10 +555,11 @@ spots.forEach(s => {
     '<div class="coords">' + s.lat.toFixed(4) + ', ' + s.lng.toFixed(4) + '</div>' +
     '<button class="nav-btn" data-nav="' + s.lat + ',' + s.lng + '" data-navlabel="' + ('#' + s.n + ' ' + s.name).replace(/"/g, '&quot;') + '">🧭 Navigate here</button>' +
     '</div>';
-  L.marker([s.lat, s.lng], { icon: makePinIcon(s.n, statusColors[s.status]) })
+  const m = L.marker([s.lat, s.lng], { icon: makePinIcon(s.n, statusColors[s.status]) })
     .bindPopup(popupHtml)
     .bindTooltip(s.n + ". " + s.name, { direction: "top", offset: [0, -35] })
     .addTo(spotGroup);
+  spotMarkersById[s.n] = m;
 });
 
 camps.forEach(c => {
@@ -1423,6 +1448,43 @@ setTimeout(fitToSpots, 400);
   var net = document.getElementById('netStatus');
   function updNet(){ if (net) net.classList.toggle('show', !navigator.onLine); }
   window.addEventListener('online', updNet); window.addEventListener('offline', updNet); updNet();
+})();
+</script>
+
+<!-- AuraGold PWA: 🗺 Trip itinerary — step through the main spots in driving order -->
+<script>
+(function(){
+  var iPanel = document.getElementById('itineraryPanel');
+  var menuPanel = document.getElementById('menuPanel');
+  function iOpen(o){ iPanel.classList.toggle('open', o); iPanel.setAttribute('aria-hidden', o?'false':'true'); }
+  function closeMenu(){ if(menuPanel){ menuPanel.classList.remove('open'); menuPanel.setAttribute('aria-hidden','true'); } }
+
+  // Build the ordered step list from routeOrder + spots (both globals from the map script).
+  var byId = {}; spots.forEach(function(s){ byId[s.n] = s; });
+  var list = document.getElementById('itinList');
+  routeOrder.forEach(function(n){
+    var s = byId[n]; if(!s) return;
+    var row = document.createElement('div'); row.className = 'itin-row';
+    row.innerHTML =
+      '<span class="itin-num" style="background:' + (statusColors[s.status]||'#b08800') + '">' + s.n + '</span>' +
+      '<span class="itin-body"><span class="itin-day">' + s.day + '</span>' +
+      '<span class="itin-name">' + s.name + '</span></span>' +
+      '<span class="itin-go">›</span>';
+    row.addEventListener('click', function(){
+      iOpen(false);
+      map.setView([s.lat, s.lng], Math.max(map.getZoom(), 12), { animate: false });
+      var m = spotMarkersById[s.n];
+      if(m){ setTimeout(function(){ m.openPopup(); }, 60); }
+    });
+    list.appendChild(row);
+  });
+
+  var btn = document.getElementById('itineraryBtn');
+  if(btn) btn.addEventListener('click', function(){ closeMenu(); iOpen(true); });
+  document.getElementById('itineraryClose').addEventListener('click', function(){ iOpen(false); });
+
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold.openItinerary = function(){ closeMenu(); iOpen(true); };
 })();
 </script>
 </body>
