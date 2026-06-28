@@ -883,10 +883,21 @@ setTimeout(fitToSpots, 400);
     baseList.appendChild(row);
   });
 
+  // Geophysics / terrain overlays for spot selection (cached on view by the SW).
+  var layerMag = L.tileLayer.wms('https://services.ga.gov.au/gis/geophysical-grids/wms', {
+    layers: 'geophys:magmap_v7_2019_RTP', format: 'image/png', transparent: true,
+    opacity: 0.6, maxZoom: 19, maxNativeZoom: 13,
+    attribution: 'Magnetics TMI-RTP © Geoscience Australia' });
+  var layerHill = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+    { opacity: 0.6, maxZoom: 19, maxNativeZoom: 15, attribution: 'Hillshade © Esri' });
+
   // Overlay layers (checkbox) — same set/labels as the old top-right control.
   var layers = [
     ['Spots (1–12)', spotGroup], ['Camping', campGroup], ['Sub-spots', subGroup],
     ['Itinerary route line', routeLine],
+    ['🧲 Magnetic RTP (structure) — GA', layerMag],
+    ['⛰️ Hillshade / terrain — Esri', layerHill],
     ['🟣 Mineral occurrences (gold) — WMS', layerMinOcc],
     ['🟡 1+ Moz Au endowment zones', layerEndowment],
     ['🔴 Goldfield boundaries', layerGoldfields],
@@ -922,7 +933,10 @@ setTimeout(fitToSpots, 400);
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — no prospect</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.18);border:2px solid #991b1b"></span> Active ML — no prospect</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(251,146,60,0.32);border:1px solid #ea580c"></span> Bushfire 2023–25</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>';
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>' +
+    '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Geophysics / terrain (toggle on)</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(90deg,#222,#bbb,#fff);border:1px solid #888"></span> 🧲 Magnetic RTP — reads basement structure / faults</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(135deg,#6b6b6b,#e8e8e8);border:1px solid #888"></span> ⛰️ Hillshade — gullies, ridges, old workings</div>';
 })();
 </script>
 </body>
