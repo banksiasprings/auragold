@@ -75,6 +75,21 @@ Priorities (Steven): (1) relocate 12 spot pins onto geofence-verified legal grou
 
 ---
 
+## ✅ CHECKPOINT 2 — Rounds 6–8 complete
+
+**Live & verified:** https://banksiasprings.github.io/auragold/ — **SW now v12**, commits `d42eeca`→`5f13637` (next commit uses **v13**).
+**Shipped this session:** (6) photo per waypoint (IndexedDB blob + thumbnail in popup & finds list + fullscreen viewer); (7) navigate-to-target (line + live distance/bearing banner from GPS to any spot/find); (8) Settings panel (overlay opacity sliders, default base map, km/mi units, persisted).
+
+**Env reminder for the continuing agent (unchanged):** git push via plain Bash (`cd /Users/openclaw/Documents/auragold && git add -A && git commit -m "..." && git push origin main`; end commit msgs with `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`). Verify via preview MCP: `preview_start` name `auragold` (app at `http://localhost:8087/auragold/`); to bust the cache-first SW in `preview_eval`: unregister SWs + delete any cache whose name contains "shell" + `location.reload(true)`, wait ~4s. Test hooks on `window.AuraGold`: `simulateGPS(lat,lng,acc)`, `navigateTo(lat,lng,label)`, `fmtDist(km)`, `addWaypoint`, `geofenceAt`, `lastFix`. **Bump `SHELL_VERSION` in sw.js EVERY commit.** Surgical edits only; DEFER anything touching geofence math / permitted_land data / the waypoint save format, or needing >50 interconnected lines. Reset any test data (localStorage `auragold_waypoints`/`auragold_settings`, IndexedDB `auragold_photos`) before finishing so Steven gets a clean slate.
+
+**Remaining backlog (priority order):**
+4. **Today/itinerary view** — use the existing `routeOrder` array + each spot's `day` field to show "today's / next spot" and let the user step through the itinerary. (Check: `grep -n "routeOrder\|\.day\b" index.html`.)
+5. **True Vic LiDAR hillshade** — research a working Vicmap Elevation / DELWP hillshade WMS (try `opendata.maps.vic.gov.au` geoserver or `services.land.vic.gov.au`); if reliable, add/swap alongside the Esri global hillshade. **Verify tiles actually return imagery** before wiring. (Needs WebFetch/WebSearch — load via ToolSearch.)
+6. **Nudge spots 3 & 6** from Crown land onto State Forest proper (Dunolly SF / Rushworth SF) — re-run the geofence (`data/permitted_land.json` + the point-in-polygon) to pick a green State-Forest coord near each; update spot lat/lng + land label. Cosmetic. ⚠️ This one DOES touch the geofence/data — only do it if confident; the brief explicitly allows it as a careful one-off, but defer if shaky.
+7. **QA pass** — cache the app, verify via the caches API that shell + tiles + permitted_land are cached; confirm all features work; test mobile 320px and tablet widths. Log a QA summary. Then write the final "## MORNING SUMMARY" (everything shipped overnight with commit hashes + live URL) and stop.
+
+---
+
 ## Round 6 — Photo per waypoint — 2026-06-28 (overnight)
 
 ### Success criterion
@@ -129,5 +144,31 @@ From a spot popup (and waypoint popup), a "Navigate" action draws a line + shows
 ### Observations (not acted on)
 - The line is a straight rhumb-ish great-circle chord, not road-routed (intentional — offline field nav with no routing engine; matches the dispatcher/heading style).
 - A live compass-heading arrow on the GPS dot (device orientation) could be a nice future polish — deferred.
+
+---
+
+## Round 8 — Settings panel — 2026-06-28 (overnight)
+
+### Success criterion
+New ☰-menu "⚙ Settings" item → panel with opacity sliders for 🧲 Magnetic RTP & ⛰️ Hillshade, default-base-map choice, km/mi units. Persist to localStorage.
+
+### Completed
+- **v12 (`5f13637`)**: ⚙ Settings (localStorage key `auragold_settings`, defaults `{opMag:60,opHill:60,base:'sat',units:'km'}`).
+  - **Opacity sliders** (10–100%, step 5) for mag & hillshade — live `setOpacity()` on the layer + persisted + value readout.
+  - **Default base map** radio (Satellite / Topographic / Street) — applied on next load (the map script's default Satellite is overridden by the persisted choice), persisted. The ☰-menu base radios and the settings default-base radios stay **bidirectionally in sync**.
+  - **Distance units** km/mi radio. Drives a new shared `window.AuraGold.fmtDist(km)` used by the **navigate banner** (Round 7) and the **nearest-spot status readout** (both fall back to a km formatter when settings haven't loaded). Switching units re-fires `navUpdate` so the banner reformats instantly.
+  - Matches the gold theme (gold accent-color sliders/outputs, green radios). Opening Settings closes the ☰ menu (no panel overlap).
+
+### Verified ✓ (preview MCP, fresh SW bust)
+- Panel opens; defaults correct (60%/60%/sat/km); `fmtDist(5.58)→"5.58 km"`, `fmtDist(0.43)→"430 m"`. Screenshot confirms layout.
+- Mag opacity slider → 30%: live layer opacity `0.3`, output "30%", persisted `opMag:30`.
+- Units → miles: nav banner live-reformatted **"5.58 km NW" → "3.47 mi NW"** (5.58×0.621371=3.47 ✓), persisted `units:'mi'`.
+- Default base → Topographic: topo becomes the only active base, ☰-menu radio synced to "Topographic", persisted `base:'topo'`.
+- **Reload test**: app re-opened on **OpenTopoMap** (not Satellite), mag slider restored to 30, units restored to miles — all persisted settings applied on load (screenshot confirms topo base + © OpenTopoMap attribution).
+- **No console errors.** Spots/camps/route/overlays still render. Settings wiped — clean default slate left for Steven.
+
+### Observations (not acted on)
+- Opacity only applies to the two geophysics/terrain overlays (the ones with a meaningful 0–1 opacity); the WMS data overlays keep their tuned opacities. Intentional.
+- A "reset to defaults" button could be added; trivial, deferred (clearing the key in devtools or reinstall resets it).
 
 ---
