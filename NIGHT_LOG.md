@@ -172,3 +172,31 @@ New ☰-menu "⚙ Settings" item → panel with opacity sliders for 🧲 Magneti
 - A "reset to defaults" button could be added; trivial, deferred (clearing the key in devtools or reinstall resets it).
 
 ---
+
+## Round 9 — Today / Trip itinerary view — 2026-06-28 (overnight)
+
+### Success criterion
+A new ☰-menu "🗺 Trip itinerary" item opens an `ag-panel` listing the 9 main spots in `routeOrder` driving sequence, each showing its `day` label + name; tapping a row closes the panel, jumps the map to that spot and opens its popup. Surfaces the day grouping already in the data. Additive — no existing behaviour changed.
+
+### Completed
+- **v13 (`507e47f`)**: 🗺 Trip itinerary stepper.
+  - New ☰-menu **"🗺 Trip itinerary"** button (Tools section, between My finds and Settings) → new `<aside id="itineraryPanel">` (same `.ag-panel` + header + `.ag-body` template as Settings/Finds).
+  - Panel renders the 9 `routeOrder` spots `[12,5,6,2,1,4,3,7,10]` **in driving order** (Day 4 → Days 14–15). Each row = a **status-coloured number badge** (green/orange/red from `statusColors`), the gold **day label** on its own line, and the **spot name** below, with a `›` chevron. New `.itin-row/.itin-num/.itin-body/.itin-day/.itin-name/.itin-go` CSS, gold theme.
+  - **Tap a row** → closes the panel, `map.setView([lat,lng], max(zoom,12), {animate:false})`, then `marker.openPopup()` (60 ms later). Surfaces the full spot popup (day, desc, permitted-ground label, Navigate button).
+  - Minimal enabler: captured the 12 spot markers into a new global `spotMarkersById{n→marker}` during the existing `spots.forEach` (the only change to existing code — one `const m =` + one assignment). Self-contained new `<script>` IIFE for the rest. Exposes `window.AuraGold.openItinerary()`.
+  - A footnote in the panel notes side-trips (rainy-day / detour / optional — spots 8, 9, 11) sit outside the main run and aren't in this ordered list, but remain on the map as numbered pins. Did NOT touch geofence math, permitted_land data, or the waypoint format.
+
+### Implementation note (the one thing I changed mid-round)
+- First cut used `map.flyTo(..., {duration:0.8})`. The **flyTo/animated-setView zoom animation does not complete in the headless preview** (rAF-throttled) — center crept toward the target but zoom stayed put, so verification couldn't confirm the jump. Switched to `setView(..., {animate:false})`: instant, deterministic, verifies cleanly here AND is snappier UX in the field (tap → you're there, no 0.8 s zoom-out-zoom-in). Popup-open delay trimmed 850 ms → 60 ms to match.
+
+### Verified ✓ (preview MCP, fresh SW bust each edit, mobile 375px)
+- 9 itinerary rows built from `routeOrder`, correct driving order Day 4 → Days 14–15; badge colours match each spot's status; `spotMarkersById` has all 12 markers.
+- Real-user path: ☰ menu button opens menu → "🗺 Trip itinerary" button **closes the menu and opens the itinerary panel** (no overlap).
+- Tap row #7 (Inglewood): panel closed, **map centre moved to -36.559,143.874 (= target), zoom 12**, popup opened ("7. Inglewood / Kingower / Wehla SF" — screenshot shows DAY 13, desc, ✓ Inglewood State Forest, Navigate button). Tap row #12 (Chiltern) jumped correctly too.
+- Day/name spacing fixed (`.itin-body` flex-column) — screenshot shows gold day label above bold name on every row.
+- **No regressions**: menu / finds / settings panels all still open+close, menu-close-on-other-panel still works, spots render, `map.hasLayer(spotGroup)` true, 12 markers intact. **No console errors.** No test data created (read-only feature) — slate already clean.
+
+### Observations (not acted on)
+- Side-trip spots (8 Hepburn rainy-day, 9 Maldon detour, 11 Wombat optional) are intentionally excluded from the ordered list since they have no fixed day slot in `routeOrder`; they're noted in the panel footnote and still tappable as map pins. If Steven wants them, they could append as an "Optional side-trips" sub-section — logged, not built.
+
+---
