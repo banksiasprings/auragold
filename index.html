@@ -793,10 +793,19 @@ setTimeout(fitToSpots, 400);
 <!-- AuraGold PWA: service worker + offline map prefetch -->
 <script>
 (function () {
-  // ---- Service worker registration ----
+  // ---- Service worker registration + auto-update ----
   if ('serviceWorker' in navigator) {
+    // If an old SW already controls this page, reload once when a new one takes
+    // over so updates apply without a manual relaunch. (No reload on first install.)
+    var hadController = !!navigator.serviceWorker.controller, refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!refreshing && hadController) { refreshing = true; window.location.reload(); }
+    });
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function (e) {
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        if (reg.update) reg.update();                 // check for a new version on each open
+        setInterval(function () { if (reg.update) reg.update(); }, 60 * 60 * 1000);
+      }).catch(function (e) {
         console.warn('[AuraGold] SW registration failed:', e);
       });
     });
