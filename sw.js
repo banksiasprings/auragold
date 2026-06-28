@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v21';
+const SHELL_VERSION = 'v22';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_VERSION;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -27,9 +27,16 @@ const SHELL_ASSETS = [
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
   './icons/favicon.ico',
+  // Gold-nugget mineral-occurrence marker (client-side vector layer, v22).
+  './icons/nugget-marker.png',
+  './icons/nugget-marker@2x.png',
   // Leaflet from CDN — cross-origin but CORS-enabled, so cacheable.
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  // Leaflet.markercluster — clusters the gold-nugget mineral layer; precached for offline.
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css',
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css',
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js',
   // SortableJS — drag-reorder for the trip planner; precached so reordering works offline.
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

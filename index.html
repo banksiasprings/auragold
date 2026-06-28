@@ -18,6 +18,9 @@
 <meta name="apple-mobile-web-app-title" content="AuraGold">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!-- Leaflet.markercluster — clusters the 11k client-rendered gold-nugget mineral occurrences. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
   html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
@@ -155,6 +158,13 @@
   .ag-wp { width:26px; height:26px; border-radius:50% 50% 50% 0; transform:rotate(-45deg);
     border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; font-size:12px; }
   .ag-wp > span { transform:rotate(45deg); }
+  /* Gold-nugget mineral-occurrence cluster badge — gold disc with dark count, so
+     dense goldfields read as gold clusters rather than the default blue/green. */
+  .ag-nugget-cluster { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #ffe98a, #f0b900 55%, #b8860b);
+    border:2px solid #fff8e1; box-shadow:0 1px 4px rgba(80,55,0,.55); }
+  .ag-nugget-cluster span { font:700 12px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:#4a3500; text-shadow:0 1px 0 rgba(255,255,255,.4); }
   /* Version badge — bottom-left, floats just above the "Got a hit!" button so it
      never overlaps that pill, the FABs, or the Leaflet attribution strip below it. */
   .version-badge { position:absolute; bottom:64px; left:14px; z-index:1000; pointer-events:none;
@@ -223,6 +233,10 @@
     background:#fff; }
   .trip-day:first-child { border-top:none; }
   .trip-day.dragging { opacity:.5; }
+  /* Today highlight in the itinerary stepper (v22) — only when trip dates are set. */
+  .trip-day.today { background:linear-gradient(90deg,#fff7d6,#fff); box-shadow:inset 3px 0 0 #f0b900; }
+  .td-today { display:inline-block; margin-left:6px; vertical-align:middle; background:#f0b900; color:#4a3500;
+    font:700 9px/1.4 -apple-system,BlinkMacSystemFont,sans-serif; letter-spacing:.5px; padding:1px 5px; border-radius:6px; }
   .trip-day .td-main { flex:1; min-width:0; cursor:pointer; }
   .trip-day .td-l1 { font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; line-height:1.3; }
   .trip-day .td-l1 b { color:#8a6d00; }
@@ -389,7 +403,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v20</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v22</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -504,7 +518,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v21';
+var APP_VERSION = 'v22';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -537,6 +551,8 @@ var APP_VERSION = 'v21';
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- SortableJS — touch-friendly drag reorder for the trip planner. Precached by the SW for offline use. -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<!-- Leaflet.markercluster — client-side clustering for the gold-nugget mineral layer. Precached by the SW. -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
 const spots = [
   { n: 1, name: "Mount Cole / Bayindeen fire scar", lat: -37.2670, lng: 143.2845, land: "Mt Cole–Beeripmo State Forest",
@@ -815,54 +831,98 @@ const layerFires = L.geoJSON(dataFires, {
   }
 });
 
-// --- 6. Mineral occurrences (gold) — WMS tile layer (12,373 points server-rendered) ---
-const wmsBase = "https://opendata.maps.vic.gov.au/geoserver/open-data-platform/wms";
-const layerMinOcc = L.tileLayer.wms(wmsBase, {
-  layers: "open-data-platform:minsite",
-  format: "image/png",
-  transparent: true,
-  CQL_FILTER: "pri_comm LIKE 'Gold%'",
-  attribution: "Mineral Occurrences © Resources Vic",
-  noWrap: true
+// --- 6. Mineral occurrences (gold) — CLIENT-SIDE gold-nugget markers (v22) ---
+// Was a server-rendered WMS tile layer of black teardrops (read like a bushfire
+// map). Now we pull the gold occurrences as WFS GeoJSON over the goldfields region,
+// render each as a little gold-nugget icon, and cluster them so ~11.6k points stay
+// smooth on a phone. WFS responses are cache-first via the SW, so once viewed online
+// the layer works offline like the rest of the app.
+const wmsBase = "https://opendata.maps.vic.gov.au/geoserver/open-data-platform/wms"; // still used by the State Forest + Restricted WMS layers below
+const nuggetIcon = L.icon({
+  iconUrl: 'icons/nugget-marker.png',
+  iconRetinaUrl: 'icons/nugget-marker@2x.png',
+  iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -9]
+});
+const layerMinOcc = L.markerClusterGroup({
+  chunkedLoading: true,
+  chunkInterval: 100,
+  maxClusterRadius: 50,
+  disableClusteringAtZoom: 13,
+  spiderfyOnMaxZoom: false,
+  iconCreateFunction: function (cluster) {
+    var c = cluster.getChildCount();
+    var size = c < 100 ? 32 : (c < 1000 ? 38 : 44);
+    var label = c >= 1000 ? (Math.round(c / 100) / 10) + 'k' : c;
+    return L.divIcon({
+      html: '<div class="ag-nugget-cluster"><span>' + label + '</span></div>',
+      className: '', iconSize: [size, size]
+    });
+  }
 });
 
-// Click-handler for mineral-occurrence GetFeatureInfo popup
-map.on('click', function(e) {
-  if (!map.hasLayer(layerMinOcc)) return;
-  const size = map.getSize();
-  const point = map.latLngToContainerPoint(e.latlng);
-  const bounds = map.getBounds();
-  const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
-  const url = wmsBase +
-    "?service=WMS&version=1.1.1&request=GetFeatureInfo" +
-    "&layers=open-data-platform:minsite&query_layers=open-data-platform:minsite" +
-    "&CQL_FILTER=" + encodeURIComponent("pri_comm LIKE 'Gold%'") +
-    "&info_format=application/json&feature_count=5" +
-    "&width=" + size.x + "&height=" + size.y +
-    "&srs=EPSG:4326" +
-    "&bbox=" + sw.lng + "," + sw.lat + "," + ne.lng + "," + ne.lat +
-    "&x=" + Math.round(point.x) + "&y=" + Math.round(point.y);
-  fetch(url).then(r => r.json()).then(d => {
-    if (!d.features || d.features.length === 0) return;
-    const f = d.features[0].properties;
-    const html =
-      '<div class="popup-spot">' +
-      '<div class="day" style="color:#7c3aed">Mineral occurrence</div>' +
-      '<h3>' + (f.mine_name || 'Unnamed site') + '</h3>' +
+// Lazy paginated bulk-fetch of the gold occurrences (WFS GeoJSON). One-shot, cached
+// by the SW, region-bounded to the goldfields so the payload stays relevant + smaller.
+(function loadMineralOccurrences() {
+  var wfs = "https://opendata.maps.vic.gov.au/geoserver/open-data-platform/wfs";
+  var cql = "pri_comm LIKE 'Gold%' AND BBOX(geom,143.0,-37.7,146.8,-35.8,'EPSG:4326')";
+  var props = "mine_name,field_name,dep_ty_gen,dep_style,mine_type,size_cat,depth,pri_comm,sec_comm,geom";
+  var PAGE = 5000, loaded = 0, started = false;
+  function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  // VicMine values often carry trailing "; " separators — strip them for clean display.
+  function tidy(s) { return (s == null ? '' : String(s)).replace(/[;\s]+$/, '').trim(); }
+  function popupHtml(p) {
+    var dep = tidy(p.dep_ty_gen), style = tidy(p.dep_style), pri = tidy(p.pri_comm), sec = tidy(p.sec_comm);
+    return '<div class="popup-spot">' +
+      '<div class="day" style="color:#a86b00">⛏ Mineral occurrence</div>' +
+      '<h3>' + esc(tidy(p.mine_name) || 'Unnamed site') + '</h3>' +
       '<div class="desc">' +
-      '<b>Field:</b> ' + (f.field_name || '—') + '<br>' +
-      '<b>Deposit type:</b> ' + (f.dep_ty_gen || '—') + (f.dep_style ? ' (' + f.dep_style + ')' : '') + '<br>' +
-      '<b>Mine type:</b> ' + (f.mine_type || '—') + '<br>' +
-      '<b>Size:</b> ' + (f.size_cat || 'unknown') +
-      ((f.depth && f.depth > 0) ? ' · depth ' + f.depth + 'm' : '') + '<br>' +
-      '<b>Commodity:</b> ' + (f.pri_comm || '—') +
-      (f.sec_comm && f.sec_comm.trim() ? ' / ' + f.sec_comm : '') +
+      '<b>Field:</b> ' + esc(tidy(p.field_name) || '—') + '<br>' +
+      '<b>Deposit type:</b> ' + esc(dep || '—') + (style ? ' (' + esc(style) + ')' : '') + '<br>' +
+      '<b>Mine type:</b> ' + esc(tidy(p.mine_type) || '—') + '<br>' +
+      '<b>Size:</b> ' + esc(tidy(p.size_cat) || 'unknown') +
+      ((p.depth && p.depth > 0) ? ' · depth ' + p.depth + 'm' : '') + '<br>' +
+      '<b>Commodity:</b> ' + esc(pri || '—') +
+      (sec ? ' / ' + esc(sec) : '') +
       '</div>' +
       '<div class="coords">Source: Resources Vic — VicMine</div>' +
       '</div>';
-    L.popup({ maxWidth: 320 }).setLatLng(e.latlng).setContent(html).openOn(map);
-  }).catch(() => {});
-});
+  }
+  function lazyPopup(layer) { return popupHtml(layer._p || {}); }
+  function fetchPage(start) {
+    var url = wfs + "?service=WFS&version=2.0.0&request=GetFeature" +
+      "&typeNames=open-data-platform:minsite&outputFormat=application/json&srsName=EPSG:4326" +
+      "&propertyName=" + encodeURIComponent(props) +
+      "&count=" + PAGE + "&startIndex=" + start +
+      "&CQL_FILTER=" + encodeURIComponent(cql);
+    return fetch(url).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
+      var feats = (d && d.features) || [], markers = [];
+      for (var i = 0; i < feats.length; i++) {
+        var f = feats[i];
+        if (!f.geometry || !f.geometry.coordinates) continue;
+        var m = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { icon: nuggetIcon });
+        m._p = f.properties || {};
+        // Lazy popup: build the HTML only when tapped (avoids 11k pre-built strings in memory).
+        m.bindPopup(lazyPopup, { maxWidth: 320 });
+        markers.push(m);
+      }
+      layerMinOcc.addLayers(markers);
+      loaded += feats.length;
+      var more = (d && typeof d.numberMatched === 'number') ? (start + feats.length) < d.numberMatched : feats.length === PAGE;
+      if (more && feats.length > 0) return fetchPage(start + PAGE);
+    });
+  }
+  function go() {
+    if (started) return; started = true;
+    fetchPage(0).then(function () {
+      console.info('[AuraGold] mineral occurrences loaded:', loaded);
+    }).catch(function (e) {
+      console.warn('[AuraGold] mineral occurrence load failed (offline-cached copy still works):', e);
+    });
+  }
+  // Kick off after first idle so boot stays snappy; runs exactly once.
+  if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 });
+  else setTimeout(go, 1200);
+})();
 
 // --- 7. State Forest (fossicking permitted with Miner's Right) — WMS green ---
 const layerStateForest = L.tileLayer.wms(wmsBase, {
@@ -901,6 +961,9 @@ routeLine.addTo(map);
 // Default-on overlays
 layerMinOcc.addTo(map);
 layerEndowment.addTo(map);
+// Sub-spots ON by default (v22): the named ground (Hand of Faith zone, Wychitella
+// designated blocks, Korong Vale strike, Balaclava Hill, etc.) is the highest field value.
+subGroup.addTo(map);
 
 // Overlay toggles + legend are built inside the ☰ menu panel (end of file),
 // referencing these layer objects directly. Default-on layers stay added above.
@@ -1569,7 +1632,7 @@ setTimeout(fitToSpots, 400);
 <script>
 (function () {
   var target = null;            // {lat,lng,label}
-  var line = null;
+  var line = null, lineCase = null;   // cyan nav line + white casing under it
   var banner = document.getElementById('navBanner');
   var main = banner.querySelector('.nb-main');
   function toRad(d){ return d*Math.PI/180; }
@@ -1593,12 +1656,17 @@ setTimeout(fitToSpots, 400);
     var f=(window.AuraGold||{}).lastFix;
     if (f && (Date.now()-f.ts)<300000){
       var pts=[[f.lat,f.lng],[target.lat,target.lng]];
-      if (!line){ line=L.polyline(pts,{color:'#2c8b3c',weight:4,opacity:0.85,dashArray:'9 7',lineCap:'round'}).addTo(map); }
-      else { line.setLatLngs(pts); }
+      // White casing under a bright-cyan line so it stays visible over any base map
+      // AND over the orange dashed itinerary route (v22 nav-line visibility fix).
+      if (!line){
+        lineCase=L.polyline(pts,{color:'#ffffff',weight:7,opacity:0.9,lineCap:'round'}).addTo(map);
+        line=L.polyline(pts,{color:'#00b4ff',weight:3,opacity:1,lineCap:'round'}).addTo(map);
+      } else { lineCase.setLatLngs(pts); line.setLatLngs(pts); }
       var d=distKm(f.lat,f.lng,target.lat,target.lng), b=bearingDeg(f.lat,f.lng,target.lat,target.lng);
       main.innerHTML='<b>🧭 '+fmtDist(d)+' '+compass(b)+'</b><small>to '+esc(target.label)+' · '+Math.round(b)+'°</small>';
     } else {
       if (line){ map.removeLayer(line); line=null; }
+      if (lineCase){ map.removeLayer(lineCase); lineCase=null; }
       main.innerHTML='<b>🧭 Navigating</b><small>to '+esc(target.label)+' · tap 📍 Locate for live distance</small>';
     }
   }
@@ -1616,6 +1684,7 @@ setTimeout(fitToSpots, 400);
   function stopNav(){
     target=null; banner.classList.remove('show');
     if (line){ map.removeLayer(line); line=null; }
+    if (lineCase){ map.removeLayer(lineCase); lineCase=null; }
   }
   banner.querySelector('.nb-x').addEventListener('click', stopNav);
 
@@ -1683,7 +1752,7 @@ setTimeout(fitToSpots, 400);
     ['🥾 My walked track', (window.AuraGold||{}).trailLayer],
     ['🧲 Magnetic RTP (structure) — GA', layerMag],
     ['⛰️ Hillshade / terrain — Esri', layerHill],
-    ['🟣 Mineral occurrences (gold) — WMS', layerMinOcc],
+    ['🪙 Mineral occurrences (gold nuggets)', layerMinOcc],
     ['🟡 1+ Moz Au endowment zones', layerEndowment],
     ['🔴 Goldfield boundaries', layerGoldfields],
     ['⛔ Active Exploration Licences (EL)', layerEL],
@@ -1713,7 +1782,7 @@ setTimeout(fitToSpots, 400);
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#2f7bff;border:2px solid #fff"></span> You (live GPS)</div>' +
     '<div class="legend-item"><span class="legend-line"></span> Itinerary route</div>' +
     '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Gold data overlays</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#a855f7;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.3)"></span> Mineral occurrence (gold)</div>' +
+    '<div class="legend-item"><img src="icons/nugget-marker.png" width="15" height="15" style="vertical-align:middle;margin-right:1px" alt=""> Mineral occurrence (gold)</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:#ffd54a;border:1.5px solid #b8860b"></span> 1+ Moz Au zone</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:transparent;border:1.5px solid #b91c1c"></span> Goldfield boundary</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — no prospect</div>' +
@@ -1955,12 +2024,16 @@ setTimeout(fitToSpots, 400);
     tripName.textContent = a ? a.name : 'Trip';
     tripDays.innerHTML='';
     if(!a){ tripDays.innerHTML='<div class="am-empty" style="padding:14px 2px">Loading your trip…</div>'; return; }
+    // "Today" marker — only meaningful when the user has assigned a date to a day.
+    // If no day's date matches today (or no dates are set), nothing is highlighted.
+    var _t=new Date(), todayStr=_t.getFullYear()+'-'+String(_t.getMonth()+1).padStart(2,'0')+'-'+String(_t.getDate()).padStart(2,'0');
     a.days.forEach(function(d, idx){
-      var row=document.createElement('div'); row.className='trip-day'; row.setAttribute('data-idx', idx);
+      var isToday = d.date && d.date === todayStr;
+      var row=document.createElement('div'); row.className='trip-day'+(isToday?' today':''); row.setAttribute('data-idx', idx);
       var ctrl = hasSortable
         ? '<div class="td-handle" title="Drag to reorder">⠿</div>'
         : '<div class="td-arrows"><button data-up '+(idx===0?'disabled':'')+'>▲</button><button data-down '+(idx===a.days.length-1?'disabled':'')+'>▼</button></div>';
-      row.innerHTML='<div class="td-main"><div class="td-l1"><b>Day '+(idx+1)+'</b> · '+esc(d.label||'Untitled')+'</div><div class="td-sum">'+summaryHtml(d)+'</div></div>'+ctrl;
+      row.innerHTML='<div class="td-main"><div class="td-l1"><b>Day '+(idx+1)+'</b> · '+esc(d.label||'Untitled')+(isToday?'<span class="td-today">TODAY</span>':'')+'</div><div class="td-sum">'+summaryHtml(d)+'</div></div>'+ctrl;
       row.querySelector('.td-main').addEventListener('click', function(){ openDayEditor(d); });
       if(!hasSortable){
         var up=row.querySelector('[data-up]'), dn=row.querySelector('[data-down]');
@@ -1969,10 +2042,20 @@ setTimeout(fitToSpots, 400);
       }
       tripDays.appendChild(row);
     });
+    // If the user hasn't dated any day, hint how to light up the TODAY marker.
+    var anyDated = a.days.some(function(d){ return !!d.date; });
+    if(!anyDated){
+      var hint=document.createElement('div');
+      hint.style.cssText='padding:9px 6px 3px;font:500 11px -apple-system,sans-serif;color:#a59b78;text-align:center';
+      hint.textContent='Tip: set a date on a day (tap it) to mark TODAY here';
+      tripDays.appendChild(hint);
+    }
   }
   function moveDay(from,to){ var a=AG.trips.getActive(); if(!a||to<0||to>=a.days.length) return; var m=a.days.splice(from,1)[0]; a.days.splice(to,0,m); AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); }
   function applyDomOrder(){ var a=AG.trips.getActive(); if(!a) return;
-    var ids=Array.prototype.map.call(tripDays.children, function(c){ return +c.getAttribute('data-idx'); });
+    // Only day rows carry data-idx; ignore any non-day children (e.g. the no-dates hint).
+    var ids=Array.prototype.map.call(tripDays.children, function(c){ return c.getAttribute('data-idx'); })
+      .filter(function(v){ return v!==null; }).map(Number);
     var nd=ids.map(function(i){ return a.days[i]; }).filter(Boolean);
     if(nd.length!==a.days.length) return;             // safety: don't drop days
     a.days=nd; AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); }
