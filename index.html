@@ -498,21 +498,21 @@ const statusColors = {
 
 const map = L.map("map", {
   zoomControl: true,
-  minZoom: 6,
+  minZoom: 2,
   maxZoom: 18,
-  maxBounds: [[-40, 138], [-25, 154]],
+  maxBounds: [[-85, -180], [85, 180]],
   maxBoundsViscosity: 1.0,
   worldCopyJump: false,
 }).setView([-36.7, 144.6], 8);
 
 const baseSat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-  attribution: "Imagery © Esri", maxZoom: 18,
+  attribution: "Imagery © Esri", maxZoom: 18, noWrap: true,
 });
 const baseTopo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenTopoMap", maxZoom: 17,
+  attribution: "© OpenTopoMap", maxZoom: 17, noWrap: true,
 });
 const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap", maxZoom: 19,
+  attribution: "© OpenStreetMap", maxZoom: 19, noWrap: true,
 });
 
 baseSat.addTo(map);
@@ -707,7 +707,8 @@ const layerMinOcc = L.tileLayer.wms(wmsBase, {
   format: "image/png",
   transparent: true,
   CQL_FILTER: "pri_comm LIKE 'Gold%'",
-  attribution: "Mineral Occurrences © Resources Vic"
+  attribution: "Mineral Occurrences © Resources Vic",
+  noWrap: true
 });
 
 // Click-handler for mineral-occurrence GetFeatureInfo popup
@@ -755,7 +756,8 @@ const layerStateForest = L.tileLayer.wms(wmsBase, {
   transparent: true,
   CQL_FILTER: "rec_cat='STATE FOREST'",
   opacity: 0.45,
-  attribution: "Public Land © Resources Vic"
+  attribution: "Public Land © Resources Vic",
+  noWrap: true
 });
 
 // --- 8. Restricted Crown Land (no prospecting) — WMS red ---
@@ -765,7 +767,8 @@ const layerRestricted = L.tileLayer.wms(wmsBase, {
   transparent: true,
   CQL_FILTER: "act_desc='Unavailable Crown Land'",
   opacity: 0.4,
-  attribution: "Restricted Crown Land © Resources Vic"
+  attribution: "Restricted Crown Land © Resources Vic",
+  noWrap: true
 });
 
 const routeLatLngs = routeOrder.map(n => {
@@ -1333,11 +1336,11 @@ setTimeout(fitToSpots, 400);
   // Geophysics / terrain overlays for spot selection (cached on view by the SW).
   var layerMag = L.tileLayer.wms('https://services.ga.gov.au/gis/geophysical-grids/wms', {
     layers: 'geophys:magmap_v7_2019_RTP', format: 'image/png', transparent: true,
-    opacity: 0.6, maxZoom: 19, maxNativeZoom: 13,
+    opacity: 0.6, maxZoom: 19, maxNativeZoom: 13, noWrap: true,
     attribution: 'Magnetics TMI-RTP © Geoscience Australia' });
   var layerHill = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
-    { opacity: 0.6, maxZoom: 19, maxNativeZoom: 15, attribution: 'Hillshade © Esri' });
+    { opacity: 0.6, maxZoom: 19, maxNativeZoom: 15, noWrap: true, attribution: 'Hillshade © Esri' });
 
   // Overlay layers (checkbox) — same set/labels as the old top-right control.
   var layers = [
