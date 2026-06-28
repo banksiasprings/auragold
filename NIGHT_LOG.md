@@ -42,3 +42,35 @@ Priorities (Steven): (1) relocate 12 spot pins onto geofence-verified legal grou
 - Browser `Date.now()`/`new Date()` used for timestamps/IDs — fine in page JS (the no-Date rule is Workflow-script-only).
 
 ---
+
+## Round 4 — Field-grade polish — 2026-06-28 (overnight)
+
+### Completed
+- v8 (`c8bf457`): Screen **Wake Lock** while GPS tracking (re-acquired on visibility change, guarded). **Nearest-spot** readout in the status pill ("◎ #10 4.0km NW", great-circle bearing). **Online/offline badge** ("📴 Offline — using saved maps"). Mobile **header trimmed** to "🪙 AuraGold" (`.hfull` span hidden <560px). Verified ✓ (nearest in pill, header one line, no errors; wake-lock API present, offline toggle reads navigator.onLine).
+
+## Round 5 — Breadcrumb walked-track — 2026-06-28 (overnight)
+
+### Completed
+- v9 (`9827cc1`): Records walked path while tracking — downsampled (>15 m) blue dashed polyline, persisted to localStorage (cap 5000, throttled + flush on background), toggleable "🥾 My walked track" layer, included as a GPX `<trk>`; "Clear points & track" resets both. Verified ✓ (6-pt polyline, GPX trkpt, menu toggle, no errors).
+
+---
+
+## ✅ CHECKPOINT — Rounds 1–5 complete (all 3 Steven priorities + 2 polish rounds)
+
+**Live & verified:** https://banksiasprings.github.io/auragold/ — SW v9, commits fe671d5→9827cc1.
+**Shipped:** (1) 12 spots relocated onto geofence-verified legal ground; (2) magnetic-RTP + hillshade overlays; (3) mark/save waypoints (got-a-hit, long-press, finds panel, GPX/JSON export); (4) wake-lock + nearest-spot + offline badge + mobile header; (5) breadcrumb track.
+
+**Env for next agent:** git push works via plain Bash (no osascript). Verify via preview MCP (`preview_start` name `auragold`, serves `~/Documents` so app is at `/auragold/`; clear SW + `location.reload(true)` to bust cache-first) and/or headless Chrome screenshot (`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --screenshot=... --window-size=... <url>` — it hangs on exit but writes the PNG first). Bump `SHELL_VERSION` in sw.js EVERY round. Keep it surgical; defer risky/uncertain changes; log here; commit+push per round.
+
+**Next-round backlog (priority order, all additive/low-risk unless noted):**
+1. Photo per waypoint — `<input type=file accept=image/* capture>` → IndexedDB blob + thumbnail in the finds popup/list (MODERATE: IndexedDB + storage; keep behind the existing waypoint model). 
+2. "Navigate to spot" — from the finds/spot popup, draw a line + live distance/bearing from GPS to a chosen target.
+3. Settings panel — opacity sliders for 🧲 mag / ⛰️ hillshade, default base map, units. Low risk.
+4. Today/itinerary view — surface routeOrder + the day field ("today's spot, next stop").
+5. True Vic LiDAR hillshade — research a Vicmap Elevation hillshade WMS to swap for the Esri global one (finer old-workings detail).
+6. Nudge spots 3 & 6 from Crown land onto State Forest proper (Dunolly SF / Rushworth SF) for nicer labels (cosmetic).
+7. QA pass: go offline (DevTools) after caching, confirm map + overlays + waypoints all work; test 320px & tablet viewports.
+
+**Still OPEN (needs Steven, not an agent):** repo lives at `banksiasprings/auragold`; moving to org `banksiaspringsfarm-rgb` needs an org-owner action (see Day-1 notes / memory `github-org-repo-permissions`).
+
+---
