@@ -72,6 +72,41 @@
   .popup-spot .desc { font-size: 12px; color: #333; margin: 6px 0 4px; line-height: 1.4; }
   .popup-spot .coords { font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px; color: #666; margin: 4px 0 0; }
+
+  /* AuraGold compliance checklist panel */
+  .ag-fab { position:absolute; right:12px; z-index:1000; border:none; cursor:pointer;
+    background:rgba(20,20,28,0.92); color:#ffd54a; box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    font:600 12px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:9px 12px; border-radius:9px; display:flex; align-items:center; gap:6px; }
+  .ag-panel { position:absolute; top:0; right:0; bottom:0; width:min(93vw,400px); z-index:1200;
+    background:#fbf7ec; box-shadow:-4px 0 18px rgba(0,0,0,0.35); transform:translateX(103%);
+    transition:transform .25s ease; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#23200f;
+    padding-bottom:env(safe-area-inset-bottom); }
+  .ag-panel.open { transform:translateX(0); }
+  .ag-panel > header { position:sticky; top:0; background:#b08800; color:#fff; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.25); }
+  .ag-panel > header h2 { margin:0; font-size:16px; letter-spacing:.2px; }
+  .ag-x { background:none; border:none; color:#fff; font-size:24px; cursor:pointer; line-height:1; padding:0 2px; }
+  .ag-body { padding:14px 16px 28px; }
+  .ag-sec { margin:0 0 18px; }
+  .ag-sec h3 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#8a6d00; }
+  .ag-card { background:#fff; border:1px solid #ece3c6; border-radius:10px; padding:6px 12px; }
+  .ag-check { display:flex; align-items:flex-start; gap:10px; padding:8px 0; cursor:pointer; user-select:none; }
+  .ag-check + .ag-check { border-top:1px solid #f1ead4; }
+  .ag-check input { width:20px; height:20px; margin:1px 0 0; accent-color:#2c8b3c; flex:0 0 auto; }
+  .ag-check > span { flex:1; }
+  .ag-check.done > span { color:#8a9488; text-decoration:line-through; }
+  .ag-btn { display:inline-block; background:#2c8b3c; color:#fff; text-decoration:none; font-weight:600;
+    padding:9px 13px; border-radius:8px; font-size:13px; margin:8px 0 2px; }
+  .ag-link { color:#9a6b00; font-weight:600; text-decoration:none; }
+  .ag-links a { display:block; padding:7px 0; border-top:1px solid #f1ead4; color:#9a6b00; text-decoration:none; font-weight:600; }
+  .ag-links a:first-child { border-top:none; }
+  .ag-yes { color:#1f7a32; font-weight:700; } .ag-no { color:#b3261e; font-weight:700; }
+  .ag-list { margin:4px 0 0; padding-left:20px; } .ag-list li { margin:4px 0; }
+  .ag-note { font-size:12px; color:#6a6450; margin:10px 0 0; }
+  .ag-sechead { display:flex; align-items:center; justify-content:space-between; }
+  .ag-reset { background:none; border:1px solid #cdbf94; color:#8a6d00; border-radius:7px; padding:4px 9px; font-size:11px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -88,6 +123,124 @@
          padding:9px 12px;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;gap:6px;">
   <span style="font-size:14px;">⤓</span><span id="offlineLbl">Save maps offline</span>
 </button>
+
+<!-- Compliance checklist control (AuraGold PWA) -->
+<button id="checklistBtn" class="ag-fab" type="button" style="bottom:56px;" title="Fossicking compliance checklist">
+  <span style="font-size:14px;">📋</span><span>Checklist</span>
+</button>
+
+<aside id="checklistPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>🪙 Fossicking checklist</h2><button class="ag-x" id="checklistClose" aria-label="Close">×</button></header>
+  <div class="ag-body">
+
+    <div class="ag-sec">
+      <h3>Miner's Right</h3>
+      <div class="ag-card">
+        <p style="margin:8px 0 2px">You must hold and <b>carry</b> a current Victorian Miner's Right whenever you prospect. It costs <b>$28.60</b> and lasts <b>10 years</b>. Kids under 18 are covered if they're with an adult who holds one.</p>
+        <a class="ag-btn" href="https://www.service.vic.gov.au/services/earth-resources" target="_blank" rel="noopener">Buy / renew a Miner's Right →</a>
+        <label class="ag-check"><input type="checkbox" data-key="mr_have" data-scope="trip"><span>Miner's Right bought &amp; on me (digital or printed)</span></label>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <h3>Where you can fossick (with a Miner's Right)</h3>
+      <div class="ag-card">
+        <p class="ag-yes" style="margin:8px 0 2px">✓ Allowed</p>
+        <ul class="ag-list">
+          <li><b>State forests</b> — the main one</li>
+          <li><b>Unreserved Crown land</b></li>
+          <li><b>Regional Parks</b> (e.g. Hepburn, Creswick)</li>
+          <li><b>Designated prospecting areas</b> inside some national / state / historic / heritage parks — only in the marked area (grab the Parks Vic PDF)</li>
+          <li><b>Private land</b> with the owner's <b>written</b> permission</li>
+          <li>Inside an <b>Exploration Licence (EL)</b> on otherwise-open Crown / State Forest — an EL does <i>not</i> lock you out</li>
+        </ul>
+        <p class="ag-no" style="margin:14px 0 2px">✗ Off-limits</p>
+        <ul class="ag-list">
+          <li>National / State Parks <b>outside</b> the designated areas</li>
+          <li>Nature Conservation Reserves &amp; Reference Areas (except designated blocks)</li>
+          <li><b>Mining / Prospecting / Retention Licences (MIN, ML, PL, RL)</b> — need the holder's consent</li>
+          <li>Rivers &amp; creeks on the <b>exempt list</b></li>
+          <li>Water-supply catchments, Aboriginal heritage &amp; historic mining-relic sites</li>
+        </ul>
+        <p class="ag-note">So it's not <i>only</i> State Forest — but State Forest + Crown land is the simplest "yes". When in doubt, it's a no until GeoVic says otherwise.</p>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <div class="ag-sechead"><h3>Before you walk in (each spot)</h3><button class="ag-reset" data-reset="daily">Reset daily</button></div>
+      <div class="ag-card">
+        <label class="ag-check"><input type="checkbox" data-key="d_geovic" data-scope="daily"><span>Checked <b>GeoVic</b> this morning</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="d_land" data-scope="daily"><span>Confirmed it's <b>permitted land</b> (State Forest / Crown / designated area)</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="d_min" data-scope="daily"><span>Not inside a <b>MIN / ML / PL</b></span></label>
+        <label class="ag-check"><input type="checkbox" data-key="d_creek" data-scope="daily"><span>Any creek here is <b>not</b> on the exempt list</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="d_perm" data-scope="daily"><span>Landholder permission (if private land)</span></label>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <div class="ag-sechead"><h3>While you're out</h3><button class="ag-reset" data-reset="rules">Reset</button></div>
+      <div class="ag-card">
+        <label class="ag-check"><input type="checkbox" data-key="r_holes" data-scope="rules"><span><b>Backfill every hole</b>, replace the leaf litter</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="r_rubbish" data-scope="rules"><span>Take <b>all rubbish</b> home</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="r_heritage" data-scope="rules"><span>Leave relics &amp; Aboriginal objects untouched</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="r_tracks" data-scope="rules"><span>Drive only on <b>open tracks</b>; gates closed</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="r_tools" data-scope="rules"><span>Hand tools only — no machinery or explosives</span></label>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <div class="ag-sechead"><h3>Safety (no-signal country)</h3><button class="ag-reset" data-reset="safety">Reset</button></div>
+      <div class="ag-card">
+        <label class="ag-check"><input type="checkbox" data-key="s_track" data-scope="safety"><span>Told someone my route + return time</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="s_plb" data-scope="safety"><span>PLB packed (Mt Cole / Wombat interior = no coverage)</span></label>
+        <label class="ag-check"><input type="checkbox" data-key="s_snake" data-scope="safety"><span>Snake gaiters + first-aid / snake bandage</span></label>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <h3>Quick links</h3>
+      <div class="ag-card ag-links">
+        <a href="https://www.service.vic.gov.au/services/earth-resources" target="_blank" rel="noopener">🪪 Buy a Miner's Right</a>
+        <a href="https://rapideye.resources.vic.gov.au/geovic" target="_blank" rel="noopener">🗺️ GeoVic — tenements &amp; Crown land</a>
+        <a href="https://resources.vic.gov.au/licensing-approvals/fossicking" target="_blank" rel="noopener">⚖️ Fossicking rules + exempt rivers</a>
+        <a href="https://www.parks.vic.gov.au/safety/activities/prospecting" target="_blank" rel="noopener">🏞️ Parks Vic — prospecting areas / PDFs</a>
+        <a href="https://pmav.org.au/" target="_blank" rel="noopener">🤝 PMAV — insurance &amp; permission help</a>
+      </div>
+      <p class="ag-note">⚠️ This is a field aid, not legal advice. Tenements, fire-recovery closures and park boundaries change — always confirm on GeoVic the morning you go in.</p>
+    </div>
+
+  </div>
+</aside>
+
+<script>
+(function () {
+  var panel = document.getElementById('checklistPanel');
+  var openBtn = document.getElementById('checklistBtn');
+  var closeBtn = document.getElementById('checklistClose');
+  function setOpen(o) { panel.classList.toggle('open', o); panel.setAttribute('aria-hidden', o ? 'false' : 'true'); }
+  openBtn.addEventListener('click', function () { setOpen(true); });
+  closeBtn.addEventListener('click', function () { setOpen(false); });
+
+  var boxes = panel.querySelectorAll('input[type=checkbox][data-key]');
+  boxes.forEach(function (cb) {
+    var k = 'ag_chk_' + cb.dataset.key;
+    if (localStorage.getItem(k) === '1') { cb.checked = true; cb.closest('.ag-check').classList.add('done'); }
+    cb.addEventListener('change', function () {
+      localStorage.setItem(k, cb.checked ? '1' : '0');
+      cb.closest('.ag-check').classList.toggle('done', cb.checked);
+    });
+  });
+  panel.querySelectorAll('[data-reset]').forEach(function (rb) {
+    rb.addEventListener('click', function () {
+      var scope = rb.dataset.reset;
+      panel.querySelectorAll('input[data-scope="' + scope + '"]').forEach(function (cb) {
+        cb.checked = false; localStorage.setItem('ag_chk_' + cb.dataset.key, '0');
+        cb.closest('.ag-check').classList.remove('done');
+      });
+    });
+  });
+})();
+</script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>

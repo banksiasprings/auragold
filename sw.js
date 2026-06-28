@@ -8,11 +8,13 @@
  *     This means anything you view online — or pre-fetch via "Save maps
  *     offline" in the app — is available in the field with no signal.
  *
- * Bump CACHE_VERSION to force every client to re-fetch the shell.
+ * Bump SHELL_VERSION on every deploy so returning clients re-fetch the app
+ * shell. TILE_CACHE is deliberately NOT versioned with it — the user's saved
+ * offline maps survive app updates (only bump it if the tile strategy changes).
  */
-const CACHE_VERSION = 'v1';
-const SHELL_CACHE = 'auragold-shell-' + CACHE_VERSION;
-const TILE_CACHE = 'auragold-tiles-' + CACHE_VERSION;
+const SHELL_VERSION = 'v2';
+const SHELL_CACHE = 'auragold-shell-' + SHELL_VERSION;
+const TILE_CACHE = 'auragold-tiles-v1';
 
 // Relative paths so it works under the /auragold/ GitHub Pages subpath.
 const SHELL_ASSETS = [
@@ -53,7 +55,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(
-      keys.filter((k) => k !== SHELL_CACHE && k !== TILE_CACHE)
+      // Purge only stale SHELL caches; keep TILE_CACHE (the saved offline maps).
+      keys.filter((k) => k.startsWith('auragold-shell-') && k !== SHELL_CACHE)
           .map((k) => caches.delete(k))
     );
     await self.clients.claim();
