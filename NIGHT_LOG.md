@@ -74,3 +74,33 @@ Priorities (Steven): (1) relocate 12 spot pins onto geofence-verified legal grou
 **Still OPEN (needs Steven, not an agent):** repo lives at `banksiasprings/auragold`; moving to org `banksiaspringsfarm-rgb` needs an org-owner action (see Day-1 notes / memory `github-org-repo-permissions`).
 
 ---
+
+## Round 6 — Photo per waypoint — 2026-06-28 (overnight)
+
+### Success criterion
+Attach a camera/gallery photo to any saved waypoint; thumbnail shows in both the marker popup and the finds-list row; tap to view fullscreen; localStorage waypoint model unchanged; deleting a waypoint removes its photo.
+
+### Completed
+- **v10 (`d42eeca`)**: Photo per waypoint, fully on-device & offline.
+  - `<input type=file accept="image/*" capture="environment">` (one hidden input, reused). 📷 button in every finds-list row AND in the waypoint popup ("📷 Add photo" / "📷 Replace photo").
+  - Blobs stored in **IndexedDB** (`db auragold_photos`, store `photos`) keyed by waypoint id. localStorage model untouched — just a `wp.photo` boolean flags presence (so existing waypoints & GPX/JSON export are unaffected).
+  - Thumbnails (38px in list, ≤140px in popup) + **fullscreen viewer** on tap (dark overlay, × to close).
+  - Delete a waypoint or clear-all → its blob is removed from IndexedDB (verified **no orphans**).
+
+### Key implementation note (the bug I hit & fixed)
+- First attempt appended the thumbnail to a `[data-ph]` slot **asynchronously after `popupopen`**. It worked for the finds-list but **silently failed in the map popup**: Leaflet **re-parents the popup content node ~300 ms after `popupopen`** (animation/positioning reflow), so the slot reference the handler captured becomes detached (`isConnected → false`) and the async append landed on an orphan. Verified directly: `connectedAtOpen:true → connectedLater:false`, `sameNodeInDom:false`.
+- Fix: **pre-cache object URLs** (`purls{id→blobURL}`, populated by `preloadPhotos()` on load and on each attach) and **embed `<img src=blobURL>` inline in the render() HTML** — fully synchronous, zero post-open DOM surgery. Robust for both surfaces.
+- Also hardened `idb()` to **queue** waiters instead of overwriting `_dbReq.onsuccess` (the old code dropped all-but-the-last concurrent caller).
+
+### Verified ✓ (preview MCP, fresh SW bust each time)
+- Real production path (constructed File → dispatched `change` on the hidden input): blob stored, `wp.photo:true`, thumbnail rendered in list (`thumbsInList:1`).
+- Popup thumbnail renders (`thumbInPopup:1`, `complete:true`, `naturalWidth:80`, `src:blob:`) — screenshot confirms gold "Au" test image inline with Replace/Delete buttons.
+- Fullscreen viewer opens on thumbnail tap (dark overlay screenshot) and closes cleanly (img src cleared).
+- Delete via list Del → waypoint gone, thumbnail gone, **IDB blob cleaned** (`result:"cleaned"`).
+- **No console errors** at any point. Map/spots/overlays/markers all still render. Test data wiped — clean slate left for Steven.
+
+### Observations (not acted on)
+- Photos are NOT yet included in GPX/JSON export (GPX has no native image field; JSON could embed base64 but would bloat localStorage exports). Left out deliberately — log only.
+- The fullscreen viewer has no swipe/zoom; fine for a quick "what did I photograph here" check.
+
+---
