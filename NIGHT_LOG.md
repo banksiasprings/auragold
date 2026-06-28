@@ -20,3 +20,14 @@ Priorities (Steven): (1) relocate 12 spot pins onto geofence-verified legal grou
 - subSpots layer still uses original coords (fine — they're supplementary, not the headline pins).
 
 ---
+
+## Round 2 — Geophysics / terrain overlays — 2026-06-28 (overnight)
+
+### Completed
+- v6 (`f963984`): Added two ☰-menu toggle overlays. 🧲 Magnetic RTP = GA `geophys:magmap_v7_2019_RTP` WMS (services.ga.gov.au/gis/geophysical-grids/wms) — TMI variable-reduction-to-pole, reads basement structure/fault & reef trends. ⛰️ Hillshade = Esri World_Hillshade XYZ. Both default off, 0.6 opacity, maxNativeZoom caps, legend entries, attribution. Verified ✓ (both render over Wedderburn, no console errors; SW caches on view for offline).
+
+### Observations
+- Mag RTP is greyscale (classic structural image). GA also has an HSI colour TMI (`geophys:tmi_hsi_v2_white`) if a colour version is preferred later.
+- "LiDAR" delivered as Esri global hillshade (reliable). True Vic high-res LiDAR-DEM hillshade (Vicmap Elevation) could be swapped in later for finer old-workings detail.
+
+---
