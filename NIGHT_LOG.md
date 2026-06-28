@@ -200,3 +200,22 @@ A new ☰-menu "🗺 Trip itinerary" item opens an `ag-panel` listing the 9 main
 - Side-trip spots (8 Hepburn rainy-day, 9 Maldon detour, 11 Wombat optional) are intentionally excluded from the ordered list since they have no fixed day slot in `routeOrder`; they're noted in the panel footnote and still tappable as map pins. If Steven wants them, they could append as an "Optional side-trips" sub-section — logged, not built.
 
 ---
+
+## Round 10 — True Vic LiDAR hillshade — DEFERRED — 2026-06-28 (overnight)
+
+### Outcome: DEFERRED (no code change, no SW bump, no commit)
+Per the brief: "If you cannot confirm a reliable tile endpoint, DEFER this item with a note of what you tried — do not wire a dead layer." I could **not** confirm a public, directly-tileable Victorian LiDAR hillshade endpoint, so I left the existing Esri global hillshade in place (untouched) and did not wire anything dead. Zero regression risk.
+
+### What I researched (all dead-ends for a wire-in-ready hillshade tile URL)
+1. **`opendata.maps.vic.gov.au/geoserver` WMS** (the modern Vicmap open-data GeoServer) — fetched GetCapabilities. It lists hundreds of layers (admin boundaries, addresses, minerals, hydro, fire, buildings, tenure) but **no elevation / hillshade / relief / DEM / DTM / terrain / LiDAR layer at all**. Not served here.
+2. **`services.land.vic.gov.au/.../dv_geoserver/wms`** (the legacy DELWP WMS often cited for this) — **connection refused / unreachable** from the fetcher (ECONNREFUSED on https, the http variant the docs give wouldn't resolve). Could not enumerate or sample it. Even if reachable it's the deprecated pre-migration endpoint.
+3. **Vicmap Basemaps WMTS `base.maps.vic.gov.au/service`** — fetched GetCapabilities. Real, live, image/png, has a Web-Mercator `EPSG:3857:256` (GoogleMapsCompatible) tile matrix — **but the only layers are `CARTO_*` (cartographic) and `AERIAL_*` (aerial). No hillshade/relief/terrain layer.** So the official Vic basemap WMTS can't supply it either.
+4. **ELVIS (`elevation.fsdf.org.au`) / Geoscience Australia** — ELVIS hosts the Digital-Twin-Victoria LiDAR DEM and *renders* hillshade in its own TerriaJS viewer, but exposes it for **discovery + download**, not as a stable public hillshade tile/WMS URL I could find. The GA elevation WMS service paths I tried (`gaservices.ga.gov.au/site_9/.../DEM_SRTM_1Second...`, `services.ga.gov.au/`) returned 404 / 403 to the fetcher, and the candidate national hillshade is SRTM-30m (DEM-S) — i.e. **not** the fine LiDAR detail this item is about, so even if wired it wouldn't deliver the "finer old-workings detail" goal.
+
+### Why not just guess a layer name and wire it
+The brief mandates verifying a sample GetMap/tile actually returns non-blank imagery **before** wiring, and WebFetch can't retrieve binary tile responses to confirm that. Wiring an unverified WMS layer risks a silent blank/error layer in the field — exactly the "dead layer" the brief says to avoid. The existing Esri `World_Hillshade` (Round 2) already gives reliable global relief; nothing is lost by deferring.
+
+### Recommendation for Steven / a future session (HITL)
+A working Vic-LiDAR hillshade almost certainly exists behind one of: (a) the migrated DEECA GeoServer under a non-obvious workspace (the helpdesk `gis.helpdesk@delwp.vic.gov.au` / `vicmap@transport.vic.gov.au` can name the exact layer), or (b) an ELVIS/ICSM raster tile service whose URL is in the live viewer's TerriaJS catalog JSON (inspect `elevation.fsdf.org.au` network traffic in a real browser to capture the tile URL, then verify a tile loads). Both need a real browser network-trace or a helpdesk reply — out of scope for an offline autonomous round. Captured here so it isn't re-litigated blind.
+
+---
