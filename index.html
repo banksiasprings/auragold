@@ -107,6 +107,23 @@
   .ag-note { font-size:12px; color:#6a6450; margin:10px 0 0; }
   .ag-sechead { display:flex; align-items:center; justify-content:space-between; }
   .ag-reset { background:none; border:1px solid #cdbf94; color:#8a6d00; border-radius:7px; padding:4px 9px; font-size:11px; cursor:pointer; }
+
+  /* GPS permitted-area status pill */
+  #gpsStatus { position:absolute; top:74px; left:50%; transform:translateX(-50%); z-index:1100;
+    display:none; max-width:92vw; padding:8px 14px; border-radius:22px; color:#fff;
+    font:600 13px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    box-shadow:0 2px 10px rgba(0,0,0,0.35); text-align:center; align-items:center; gap:8px; }
+  #gpsStatus.show { display:inline-flex; }
+  #gpsStatus .ic { font-size:16px; }
+  #gpsStatus small { display:block; font-weight:500; opacity:.92; font-size:11px; margin-top:1px; }
+  #gpsStatus.s-green { background:#2c8b3c; }
+  #gpsStatus.s-red   { background:#c0392b; }
+  #gpsStatus.s-amber { background:#9a6b00; }
+  #gpsStatus.s-wait  { background:rgba(20,20,28,0.92); color:#ffd54a; }
+  /* live location marker */
+  .ag-gps-dot { width:16px; height:16px; border-radius:50%; background:#2f7bff;
+    border:3px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 8px rgba(47,123,255,.7); }
+  #gpsBtn.on { background:#2f7bff; color:#fff; }
 </style>
 </head>
 <body>
@@ -128,6 +145,12 @@
 <button id="checklistBtn" class="ag-fab" type="button" style="bottom:56px;" title="Fossicking compliance checklist">
   <span style="font-size:14px;">📋</span><span>Checklist</span>
 </button>
+
+<!-- GPS locate control + permitted-area status (AuraGold PWA) -->
+<button id="gpsBtn" class="ag-fab" type="button" style="bottom:94px;" title="Show my location &amp; check if it's a permitted fossicking area">
+  <span style="font-size:14px;">📍</span><span id="gpsLbl">Locate me</span>
+</button>
+<div id="gpsStatus" role="status" aria-live="polite"></div>
 
 <aside id="checklistPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🪙 Fossicking checklist</h2><button class="ag-x" id="checklistClose" aria-label="Close">×</button></header>
@@ -729,6 +752,118 @@ setTimeout(fitToSpots, 400);
 
   // Expose for tooling / offline verification.
   window.AuraGold = { prefetch: prefetch, buildList: buildList };
+})();
+</script>
+
+<!-- AuraGold PWA: live GPS + permitted-area geofence -->
+<script>
+(function () {
+  var statusEl = document.getElementById('gpsStatus');
+  var gpsBtn = document.getElementById('gpsBtn');
+  var gpsLbl = document.getElementById('gpsLbl');
+
+  var GREEN = { sf:1, crown:1, rp:1 };
+  var CLASS_LABEL = { sf:'State Forest', crown:'Crown land', rp:'Regional Park',
+                      np:'National Park', sp:'State Park', ncr:'Nature Conservation Reserve',
+                      mil:'Commonwealth / military land' };
+  var land = null, landError = false;
+
+  // Offline permitted-land polygons (precached by the service worker).
+  fetch('data/permitted_land.json').then(function (r) { return r.json(); })
+    .then(function (d) { land = d.f; })
+    .catch(function () { landError = true; });
+
+  // Ray-casting point-in-polygon on a flat [lon,lat,lon,lat,...] ring.
+  function pip(lon, lat, f) {
+    var inside = false, n = f.length, j = n - 2;
+    for (var i = 0; i < n; i += 2) {
+      var xi = f[i], yi = f[i+1], xj = f[j], yj = f[j+1];
+      if (((yi > lat) !== (yj > lat)) &&
+          (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi)) inside = !inside;
+      j = i;
+    }
+    return inside;
+  }
+
+  // {cls,name} for a coordinate — a restricted match wins over a permitted one.
+  function geofenceAt(lat, lon) {
+    if (!land) return undefined;
+    var permitted = null;
+    for (var k = 0; k < land.length; k++) {
+      var ft = land[k], b = ft.bb;
+      if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
+      for (var p = 0; p < ft.p.length; p++) {
+        var poly = ft.p[p];
+        if (!pip(lon, lat, poly[0])) continue;
+        var inHole = false;
+        for (var h = 1; h < poly.length; h++) { if (pip(lon, lat, poly[h])) { inHole = true; break; } }
+        if (inHole) continue;
+        if (!GREEN[ft.c]) return { cls: ft.c, name: ft.n };
+        permitted = { cls: ft.c, name: ft.n };
+      }
+    }
+    return permitted;
+  }
+
+  function renderStatus(lat, lon, acc) {
+    var g = geofenceAt(lat, lon), cls, ic, title, sub;
+    if (g === undefined) { cls='s-wait'; ic='📍'; title='Located — loading land data…'; sub=''; }
+    else if (g && GREEN[g.cls]) { cls='s-green'; ic='✓'; title='Permitted — ' + g.name;
+      sub = CLASS_LABEL[g.cls] + ' · still confirm on GeoVic'; }
+    else if (g) { cls='s-red'; ic='⛔'; title='Restricted — ' + g.name;
+      sub = (g.cls==='np'||g.cls==='sp') ? CLASS_LABEL[g.cls] + ' · designated blocks only'
+                                         : CLASS_LABEL[g.cls] + ' · not permitted'; }
+    else { cls='s-amber'; ic='⚠'; title='Off mapped forest / park';
+      sub = 'Crown or private land — verify on GeoVic'; }
+    if (acc != null) sub += ' · ±' + Math.round(acc) + 'm';
+    statusEl.className = 'show ' + cls;
+    statusEl.innerHTML = '<span class="ic">' + ic + '</span><span>' + title +
+      (sub ? '<small>' + sub + '</small>' : '') + '</span>';
+  }
+
+  var dot = null, ring = null;
+  function placeDot(lat, lon, acc) {
+    var ll = [lat, lon];
+    if (!dot) {
+      ring = L.circle(ll, { radius: acc || 0, color:'#2f7bff', weight:1, fillColor:'#2f7bff', fillOpacity:0.12 }).addTo(map);
+      dot = L.marker(ll, { icon: L.divIcon({ className:'', html:'<div class="ag-gps-dot"></div>', iconSize:[16,16], iconAnchor:[8,8] }), zIndexOffset:1000 }).addTo(map);
+    } else { dot.setLatLng(ll); ring.setLatLng(ll); ring.setRadius(acc || 0); }
+  }
+
+  var watchId = null, firstFix = true;
+  function onPos(pos) {
+    var la = pos.coords.latitude, lo = pos.coords.longitude, ac = pos.coords.accuracy;
+    placeDot(la, lo, ac); renderStatus(la, lo, ac);
+    if (firstFix) { map.setView([la, lo], Math.max(map.getZoom(), 13)); firstFix = false; }
+    gpsLbl.textContent = 'Tracking';
+  }
+  function onErr(e) {
+    statusEl.className = 'show s-amber';
+    statusEl.innerHTML = '<span class="ic">⚠</span><span>Can’t get location<small>' +
+      (e && e.code === 1 ? 'Allow location access for AuraGold' : 'No GPS fix yet — try open sky') + '</small></span>';
+    gpsLbl.textContent = 'Locate me'; gpsBtn.classList.remove('on');
+  }
+  function start() {
+    if (!('geolocation' in navigator)) { onErr({}); return; }
+    statusEl.className = 'show s-wait';
+    statusEl.innerHTML = '<span class="ic">📍</span><span>Locating…</span>';
+    gpsBtn.classList.add('on'); firstFix = true;
+    watchId = navigator.geolocation.watchPosition(onPos, onErr,
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+  }
+  function stop() {
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    if (dot) { map.removeLayer(dot); map.removeLayer(ring); dot = ring = null; }
+    statusEl.className = ''; gpsBtn.classList.remove('on'); gpsLbl.textContent = 'Locate me';
+  }
+  gpsBtn.addEventListener('click', function () { watchId == null ? start() : stop(); });
+
+  // Verification hooks (headless preview has no real GPS).
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold.geofenceAt = geofenceAt;
+  window.AuraGold.landReady = function () { return !!land; };
+  window.AuraGold.simulateGPS = function (lat, lon, acc) { onPos({ coords:{ latitude:lat, longitude:lon, accuracy:acc||25 } }); };
 })();
 </script>
 </body>
