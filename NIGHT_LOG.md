@@ -104,3 +104,30 @@ Attach a camera/gallery photo to any saved waypoint; thumbnail shows in both the
 - The fullscreen viewer has no swipe/zoom; fine for a quick "what did I photograph here" check.
 
 ---
+
+## Round 7 — Navigate to target — 2026-06-28 (overnight)
+
+### Success criterion
+From a spot popup (and waypoint popup), a "Navigate" action draws a line + shows live distance & bearing from the GPS dot to that target, updating on each fix.
+
+### Completed
+- **v11 (`b18618d`)**: "🧭 Navigate here" on every **spot** popup and **waypoint** popup.
+  - Tapping it draws a **green dashed polyline** from the live GPS dot to the target and shows a **green banner** (top-center, below the status pill): `🧭 <dist> <compass> / to <label> · <bearing>°`.
+  - **Live**: updates on every GPS fix via a one-line `navUpdate` hook added to `onPos` (mirrors the existing `recordTrail` hook). Haversine distance (km/m auto), true great-circle bearing + 8-point compass.
+  - On start, fits both points in view (or flies to target if no recent fix). Banner's **×** stops nav (removes line + banner).
+  - If there's no recent fix (>5 min), the banner prompts "tap 📍 Locate for live distance" and hides the line until a fix arrives.
+  - Self-contained new `<script>` IIFE. **Did NOT touch** the geofence math, permitted_land data, or the waypoint save format. Click handling is event-delegated via `map.on('popupopen')` reading `[data-nav]`/`[data-navlabel]`.
+
+### Verified ✓ (preview MCP, fresh SW bust)
+- `simulateGPS(-36.45,143.55)` + `navigateTo(-36.42,143.50,'#10 Wedderburn')` → banner "🧭 5.58 km NW to #10 Wedderburn · 307°", green line with 2 points (GPS→target).
+- Moved GPS closer (`simulateGPS(-36.43,143.51)`) → banner live-updated to "1.43 km NW · 321°", line **start** moved to new GPS pos, **end** stayed at target. Live update confirmed.
+- Real popup path: opened a spot popup, **clicked** the "🧭 Navigate here" button → nav started (35.6 km SE · 114°), popup closed. Event delegation works.
+- Stop **×** → banner hidden, line removed.
+- Banner positioned at top:142px, status pill bottom 125px → **no overlap** (was 80px, fixed). Screenshot (mobile 375px) shows both stacked cleanly + the green dashed line GPS→target.
+- **No console errors.** Map/spots/overlays/markers/photos all still render.
+
+### Observations (not acted on)
+- The line is a straight rhumb-ish great-circle chord, not road-routed (intentional — offline field nav with no routing engine; matches the dispatcher/heading style).
+- A live compass-heading arrow on the GPS dot (device orientation) could be a nice future polish — deferred.
+
+---
