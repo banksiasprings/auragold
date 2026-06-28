@@ -12,7 +12,8 @@
  * shell. TILE_CACHE is deliberately NOT versioned with it — the user's saved
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
-const SHELL_VERSION = 'v17';
+// Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
+const SHELL_VERSION = 'v18';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_VERSION;
 const TILE_CACHE = 'auragold-tiles-v1';
 

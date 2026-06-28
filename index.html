@@ -153,6 +153,12 @@
   .ag-wp { width:26px; height:26px; border-radius:50% 50% 50% 0; transform:rotate(-45deg);
     border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; font-size:12px; }
   .ag-wp > span { transform:rotate(45deg); }
+  /* Version badge — bottom-left, floats just above the "Got a hit!" button so it
+     never overlaps that pill, the FABs, or the Leaflet attribution strip below it. */
+  .version-badge { position:absolute; bottom:64px; left:14px; z-index:1000; pointer-events:none;
+    font:500 10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:rgba(255,255,255,.85); background:rgba(20,20,28,.55);
+    padding:1px 6px; border-radius:5px; letter-spacing:.3px; }
   #hitBtn { position:absolute; bottom:18px; left:12px; z-index:1000; border:none; cursor:pointer;
     background:#c0392b; color:#fff; font:700 14px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     padding:13px 16px; border-radius:24px; box-shadow:0 3px 10px rgba(0,0,0,.45); display:flex; align-items:center; gap:7px; }
@@ -254,6 +260,7 @@
 
 <!-- Got-a-hit one-tap field log + saved-finds panel (AuraGold PWA) -->
 <button id="hitBtn" type="button" title="Log a find at your GPS location"><span style="font-size:16px">🎯</span> Got a hit!</button>
+<div class="version-badge" id="versionBadge" aria-hidden="true"></div>
 <aside id="findsPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🎯 My finds</h2><button class="ag-x" id="findsClose" aria-label="Close">×</button></header>
   <div class="ag-body">
@@ -293,6 +300,14 @@
         <label class="ag-row"><input type="radio" name="agunits" value="mi"><span>Miles / feet</span></label>
       </div>
       <p class="ag-note" style="padding:0 2px">Used in the navigate banner and nearest-spot readout.</p>
+    </div>
+    <div class="ag-sec">
+      <h3>App version</h3>
+      <div class="ag-card">
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v18</span></b>.</p>
+        <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
+        <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
+      </div>
     </div>
   </div>
 </aside>
@@ -392,6 +407,9 @@
 </aside>
 
 <script>
+// App version shown in the on-screen badge (bottom-left of the map).
+// BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
+var APP_VERSION = 'v18';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1461,6 +1479,34 @@ setTimeout(fitToSpots, 400);
   baseList.querySelectorAll('input[name="agbase"]').forEach(function(r,i){
     r.addEventListener('change', function(){ if(r.checked){ settings.base = BASE_KEYS[i][0]; saveSettings();
       var sr = setBaseList.querySelectorAll('input[name="agdefbase"]'); if(sr[i]) sr[i].checked = true; } });
+  });
+
+  // ---- Version badge + "Force fresh download" ----
+  var ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '';
+  var vBadge = document.getElementById('versionBadge'); if (vBadge) vBadge.textContent = ver;
+  var vSet = document.getElementById('setVersion'); if (vSet) vSet.textContent = ver;
+  var fuBtn = document.getElementById('forceUpdateBtn');
+  if (fuBtn) fuBtn.addEventListener('click', function(){
+    if (fuBtn.dataset.busy) return;
+    fuBtn.dataset.busy = '1'; fuBtn.disabled = true; fuBtn.textContent = '⏳ Updating…';
+    (async function(){
+      try {
+        if ('serviceWorker' in navigator) {
+          var regs = await navigator.serviceWorker.getRegistrations();
+          // Pull any new service worker, then unregister so the next load starts clean.
+          await Promise.all(regs.map(function(r){ return r.update().catch(function(){}); }));
+          await Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); }));
+        }
+        if (window.caches) {
+          // Nuke the app-shell caches but KEEP saved offline map tiles.
+          var keys = await caches.keys();
+          await Promise.all(keys.filter(function(k){ return k.indexOf('auragold-tiles') === -1; })
+                                .map(function(k){ return caches.delete(k); }));
+        }
+        fuBtn.textContent = '✓ Reloading latest…';
+      } catch(e){ fuBtn.textContent = '↻ Reloading…'; }
+      setTimeout(function(){ location.reload(); }, 500);
+    })();
   });
 
   // Online/offline indicator
