@@ -171,13 +171,19 @@
   .wp-drop b { display:block; margin:0 0 6px; font-size:13px; }
   .wp-drop button { display:block; width:100%; text-align:left; margin:4px 0; padding:9px 10px; border:1px solid #ddd; border-radius:8px; background:#fff; font-size:14px; cursor:pointer; }
   .wp-empty { color:#6a6450; font-size:13px; padding:6px 0; }
+  #netStatus { position:absolute; top:80px; left:12px; z-index:1100; display:none;
+    background:#52525b; color:#fff; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif;
+    padding:5px 9px; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.35); }
+  #netStatus.show { display:block; }
+  @media (max-width:560px){ .hfull { display:none; } }
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>🪙 AuraGold — Victoria Gold Prospecting</h1>
+  <h1>🪙 AuraGold<span class="hfull"> — Victoria Gold Prospecting</span></h1>
   <div class="sub">12 spots · gold occurrences · goldfields · tenements · fire scars · fossicking land · tap ☰ Menu for layers &amp; legend</div>
 </div>
+<div id="netStatus">📴 Offline — using saved maps</div>
 <div id="map"></div>
 
 <!-- Field action buttons (AuraGold PWA) -->
@@ -846,6 +852,7 @@ setTimeout(fitToSpots, 400);
     else { cls='s-grey'; ic='•'; title='Off mapped forest / park';
       sub = 'Crown or private land — verify on GeoVic'; }
     if (acc != null) sub += ' · ±' + Math.round(acc) + 'm';
+    if (g !== undefined) { var near = nearestSpot(lat, lon); if (near) sub += ' · ' + near; }
     statusEl.className = 'show ' + cls;
     statusEl.innerHTML = '<span class="ic">' + ic + '</span><span>' + title +
       (sub ? '<small>' + sub + '</small>' : '') + '</span>';
@@ -861,6 +868,28 @@ setTimeout(fitToSpots, 400);
   }
 
   var watchId = null, firstFix = true;
+
+  // Keep the screen awake while tracking (so it doesn't sleep mid-detect).
+  var wakeLock = null;
+  async function lockScreen(){ try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
+  function unlock(){ try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch(e){} }
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && watchId != null) lockScreen(); });
+
+  // Nearest candidate spot (uses the global spots array) for quick field nav.
+  function bearing(lat1,lon1,lat2,lon2){
+    var dl=(lon2-lon1)*Math.PI/180, y=Math.sin(dl)*Math.cos(lat2*Math.PI/180);
+    var x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dl);
+    var b=(Math.atan2(y,x)*180/Math.PI+360)%360;
+    return ['N','NE','E','SE','S','SW','W','NW'][Math.round(b/45)%8];
+  }
+  function distKm(a,b,c,e){ return 111.0*Math.hypot(a-c,(b-e)*Math.cos(a*Math.PI/180)); }
+  function nearestSpot(lat,lon){
+    if (typeof spots === 'undefined') return null;
+    var best=null;
+    spots.forEach(function(s){ var d=distKm(lat,lon,s.lat,s.lng); if(!best||d<best.d) best={d:d,s:s}; });
+    return best ? ('◎ #'+best.s.n+' '+(best.d<1?Math.round(best.d*1000)+'m':best.d.toFixed(1)+'km')+' '+bearing(lat,lon,best.s.lat,best.s.lng)) : null;
+  }
+
   function onPos(pos) {
     var la = pos.coords.latitude, lo = pos.coords.longitude, ac = pos.coords.accuracy;
     placeDot(la, lo, ac); renderStatus(la, lo, ac);
@@ -882,12 +911,14 @@ setTimeout(fitToSpots, 400);
     gpsBtn.classList.add('on'); firstFix = true;
     watchId = navigator.geolocation.watchPosition(onPos, onErr,
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+    lockScreen();
   }
   function stop() {
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
     if (dot) { map.removeLayer(dot); map.removeLayer(ring); dot = ring = null; }
     statusEl.className = ''; gpsBtn.classList.remove('on'); gpsLbl.textContent = 'Locate me';
+    unlock();
   }
   gpsBtn.addEventListener('click', function () { watchId == null ? start() : stop(); });
 
@@ -1089,6 +1120,11 @@ setTimeout(fitToSpots, 400);
     '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Geophysics / terrain (toggle on)</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(90deg,#222,#bbb,#fff);border:1px solid #888"></span> 🧲 Magnetic RTP — reads basement structure / faults</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(135deg,#6b6b6b,#e8e8e8);border:1px solid #888"></span> ⛰️ Hillshade — gullies, ridges, old workings</div>';
+
+  // Online/offline indicator
+  var net = document.getElementById('netStatus');
+  function updNet(){ if (net) net.classList.toggle('show', !navigator.onLine); }
+  window.addEventListener('online', updNet); window.addEventListener('offline', updNet); updNet();
 })();
 </script>
 </body>
