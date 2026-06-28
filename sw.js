@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v18';
+const SHELL_VERSION = 'v19';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_VERSION;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -30,6 +30,8 @@ const SHELL_ASSETS = [
   // Leaflet from CDN — cross-origin but CORS-enabled, so cacheable.
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  // SortableJS — drag-reorder for the trip planner; precached so reordering works offline.
+  'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',

@@ -208,18 +208,88 @@
     font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; margin-bottom:6px; }
   .set-row output { font:600 13px ui-monospace,Menlo,monospace; color:#b08800; }
   .set-row input[type=range] { width:100%; accent-color:#b08800; height:22px; }
-  /* Trip itinerary step rows (reuses .ag-card) */
-  .itin-row { display:flex; align-items:flex-start; gap:10px; padding:10px 2px; cursor:pointer;
-    border-top:1px solid #f1ead4; }
-  .itin-row:first-child { border-top:none; }
-  .itin-row:active { background:#fbf7ea; }
-  .itin-num { flex:0 0 auto; width:26px; height:26px; border-radius:50%; color:#fff;
-    font:700 13px ui-monospace,Menlo,monospace; display:flex; align-items:center; justify-content:center; margin-top:1px; }
-  .itin-body { flex:1; min-width:0; display:flex; flex-direction:column; }
-  .itin-day { display:block; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif; color:#b08800; letter-spacing:.2px; }
-  .itin-name { display:block; font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; line-height:1.3; margin-top:1px; }
-  .itin-go { flex:0 0 auto; color:#b08800; font-size:15px; align-self:center; }
   @media (max-width:560px){ .hfull { display:none; } }
+
+  /* ---- Trip planner ---- */
+  .trip-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .trip-name { flex:1; min-width:0; font:700 16px -apple-system,BlinkMacSystemFont,sans-serif; color:#23200f;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .trip-menu-btn { flex:0 0 auto; background:#fff; border:1px solid #ece3c6; border-radius:8px;
+    width:36px; height:32px; font-size:18px; line-height:1; color:#8a6d00; cursor:pointer; }
+  .nav-next { background:#2c8b3c; }
+  .trip-day { display:flex; align-items:stretch; gap:10px; padding:11px 6px 11px 4px; border-top:1px solid #f1ead4;
+    background:#fff; }
+  .trip-day:first-child { border-top:none; }
+  .trip-day.dragging { opacity:.5; }
+  .trip-day .td-main { flex:1; min-width:0; cursor:pointer; }
+  .trip-day .td-l1 { font:600 13px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; line-height:1.3; }
+  .trip-day .td-l1 b { color:#8a6d00; }
+  .trip-day .td-sum { font:500 12px -apple-system,BlinkMacSystemFont,sans-serif; color:#6a6450;
+    margin-top:2px; line-height:1.35; }
+  .trip-day .td-sum .chip { display:inline-block; background:#f3edda; border-radius:5px; padding:1px 6px;
+    margin:2px 4px 0 0; font-size:11px; color:#6a5a1f; white-space:nowrap; }
+  .trip-day .td-sum .chip.camp { background:#e7edfb; color:#3854a5; }
+  .trip-day .td-sum .empty { color:#a59b78; font-style:italic; }
+  .trip-day .td-handle { flex:0 0 auto; width:34px; display:flex; align-items:center; justify-content:center;
+    color:#c9bd92; font-size:20px; cursor:grab; touch-action:none; user-select:none; align-self:stretch; }
+  .trip-day .td-handle:active { cursor:grabbing; }
+  .trip-day .td-arrows { flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:3px; }
+  .trip-day .td-arrows button { background:#fff; border:1px solid #e1d8b8; border-radius:6px; width:30px; height:22px;
+    font-size:11px; line-height:1; color:#8a6d00; cursor:pointer; padding:0; }
+  .trip-day .td-arrows button:disabled { opacity:.35; }
+
+  /* ---- Modal (centred overlay) for day editor, library pickers, custom waypoint, share ---- */
+  .ag-modal { position:fixed; inset:0; z-index:2200; background:rgba(20,18,10,.55); display:none;
+    align-items:flex-end; justify-content:center; padding:0; }
+  .ag-modal.show { display:flex; }
+  @media (min-width:620px){ .ag-modal { align-items:center; padding:20px; } }
+  .am-card { background:#fbf7ec; width:100%; max-width:460px; max-height:88vh; display:flex; flex-direction:column;
+    border-radius:16px 16px 0 0; box-shadow:0 -6px 30px rgba(0,0,0,.4); overflow:hidden;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#23200f; }
+  @media (min-width:620px){ .am-card { border-radius:16px; } }
+  .am-card > header { position:sticky; top:0; background:#b08800; color:#fff; padding:13px 14px;
+    display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+  .am-card > header h3 { margin:0; font-size:15px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .am-card > header .am-back, .am-card > header .am-x { background:rgba(255,255,255,.18); border:none; color:#fff;
+    width:30px; height:30px; border-radius:8px; font-size:17px; line-height:1; cursor:pointer; flex:0 0 auto; }
+  .am-body { padding:14px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .am-body label.fld { display:block; font:600 12px -apple-system,sans-serif; color:#8a6d00;
+    text-transform:uppercase; letter-spacing:.4px; margin:12px 0 5px; }
+  .am-body label.fld:first-child { margin-top:0; }
+  .am-body input[type=text], .am-body input[type=date], .am-body input[type=number], .am-body textarea, .am-body select {
+    width:100%; box-sizing:border-box; border:1px solid #d9cfa6; border-radius:9px; padding:10px 11px;
+    font:14px -apple-system,BlinkMacSystemFont,sans-serif; color:#23200f; background:#fff; }
+  .am-body textarea { min-height:62px; resize:vertical; }
+  .am-row2 { display:flex; gap:9px; } .am-row2 > div { flex:1; }
+  .am-btn { display:block; width:100%; box-sizing:border-box; text-align:center; border:none; border-radius:10px;
+    padding:12px; margin-top:14px; font:700 14px -apple-system,sans-serif; cursor:pointer; }
+  .am-btn.primary { background:#2c8b3c; color:#fff; }
+  .am-btn.gold { background:#b08800; color:#fff; }
+  .am-btn.ghost { background:#fff; color:#23200f; border:1px solid #d9cfa6; }
+  .am-btn.danger { background:#fff; color:#b3261e; border:1px solid #e3c9c9; }
+  .am-btn.sm { padding:9px; margin-top:8px; font-size:13px; }
+  .am-btnrow { display:flex; gap:9px; } .am-btnrow .am-btn { flex:1; }
+  .am-mini { background:#fff; border:1px solid #d9cfa6; border-radius:9px; color:#8a6d00; padding:9px 11px;
+    font:600 13px -apple-system,sans-serif; cursor:pointer; }
+  .am-pickrow { display:flex; align-items:flex-start; gap:11px; padding:11px 2px; border-top:1px solid #f1ead4; cursor:pointer; }
+  .am-pickrow:first-child { border-top:none; }
+  .am-pickrow input { width:21px; height:21px; margin:1px 0 0; flex:0 0 auto; accent-color:#2c8b3c; }
+  .am-pickrow .pk-b { flex:1; min-width:0; }
+  .am-pickrow .pk-t { font:600 13px -apple-system,sans-serif; color:#2a2620; }
+  .am-pickrow .pk-s { font-size:12px; color:#6a6450; margin-top:1px; }
+  .am-assigned { display:flex; align-items:center; gap:9px; padding:9px 2px; border-top:1px solid #f1ead4; }
+  .am-assigned:first-child { border-top:none; }
+  .am-assigned .as-e { font-size:17px; flex:0 0 auto; }
+  .am-assigned .as-m { flex:1; min-width:0; cursor:pointer; }
+  .am-assigned .as-m b { font:600 13px -apple-system,sans-serif; }
+  .am-assigned .as-m small { display:block; color:#6a6450; font-size:11px; }
+  .am-assigned .as-x { background:none; border:1px solid #e3c9c9; border-radius:7px; color:#b3261e;
+    width:30px; height:30px; font-size:15px; cursor:pointer; flex:0 0 auto; }
+  .am-empty { color:#8a8262; font-style:italic; padding:10px 2px; font-size:13px; }
+  .am-detected { background:#eef6ee; border:1px solid #cfe6cf; border-radius:9px; padding:9px 11px; margin-top:10px;
+    font-size:13px; color:#1f5a2a; }
+  .am-detected.warn { background:#fcf3e3; border-color:#ecd9ab; color:#8a5a00; }
+  .am-detected b { display:block; margin-bottom:2px; }
 </style>
 </head>
 <body>
@@ -249,7 +319,7 @@
       <button id="offlineBtn" class="ag-act" type="button">⤓ <span id="offlineLbl">Save maps offline</span><span class="sub">Cache the trip's base map for no-signal use</span></button>
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
-      <button id="itineraryBtn" class="ag-act" type="button">🗺 Trip itinerary<span class="sub">Step through the spots in driving order, day by day</span></button>
+      <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
       <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Overlay opacity · default base map · km / mi</span></button>
     </div>
     <div class="ag-sec"><h3>Base map</h3><div class="ag-card" id="baseList"></div></div>
@@ -302,9 +372,22 @@
       <p class="ag-note" style="padding:0 2px">Used in the navigate banner and nearest-spot readout.</p>
     </div>
     <div class="ag-sec">
+      <h3>Saving places to your trip</h3>
+      <div class="ag-card">
+        <p style="margin:8px 0 2px">Three ways to drop a place into your <b>🗺 Trip planner</b>:</p>
+        <ul class="ag-list">
+          <li><b>Custom waypoint</b> — open any day → <b>📍 Custom</b>, then type lat/lng, tap <b>Use my GPS</b>, or paste a map link.</li>
+          <li><b>Paste a link</b> — Google or Apple Maps links, a <code>geo:</code> link, or just “lat, lng”. The app reads the coordinates for you.</li>
+          <li><b>Share from Maps (Android)</b> — in Google Maps tap <b>Share</b> and pick <b>AuraGold</b>. It opens with the place ready to add.</li>
+        </ul>
+        <p class="ag-note" style="margin:10px 0 2px"><b>iPhone / iPad:</b> Apple doesn't let installed web apps appear in the iOS share sheet (as of 2026), so “Share → AuraGold” won't show. Use <b>Paste a link</b> instead — copy the address from Maps and paste it into the Custom waypoint screen.</p>
+        <p class="ag-note" style="margin:8px 0 2px"><b>Short links</b> (<code>maps.app.goo.gl/…</code>) can't be read offline. Open the short link in your browser first, then copy the full URL from the address bar and paste that.</p>
+      </div>
+    </div>
+    <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v18</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v19</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -312,16 +395,26 @@
   </div>
 </aside>
 
-<aside id="itineraryPanel" class="ag-panel" aria-hidden="true">
-  <header><h2>🗺 Trip itinerary</h2><button class="ag-x" id="itineraryClose" aria-label="Close">×</button></header>
+<aside id="tripPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>🗺 Trip planner</h2><button class="ag-x" id="tripClose" aria-label="Close">×</button></header>
   <div class="ag-body">
     <div class="ag-sec">
-      <p class="ag-note" style="padding:0 2px;margin-top:0">Main spots in driving order. Tap one to fly the map there and open its details.</p>
-      <div class="ag-card" id="itinList"></div>
+      <div class="trip-head">
+        <div class="trip-name" id="tripName">Trip</div>
+        <button class="trip-menu-btn" id="tripMenuBtn" type="button" title="Trip actions" aria-label="Trip actions">⋯</button>
+      </div>
+      <button class="ag-btn nav-next" id="tripNavNext" type="button" style="display:block;width:100%;box-sizing:border-box;text-align:center;margin:0">🧭 Navigate to next stop</button>
     </div>
-    <p class="ag-note" style="padding:0 2px">Days run Day 4 → Day 15. Side-trips (rainy-day, detour, optional) sit outside the main run and aren't in this list — they're still on the map as numbered pins.</p>
+    <div class="ag-sec">
+      <div class="ag-card" id="tripDays" style="padding:0 8px"></div>
+      <button class="ag-act" id="tripAddDay" type="button" style="text-align:center;margin-top:8px">＋ Add day</button>
+    </div>
+    <p class="ag-note" id="tripHint" style="padding:0 2px">Drag the ⠿ handle to reorder days · tap a day to edit it · the dashed orange route line follows your day order. Everything saves automatically on this phone.</p>
   </div>
 </aside>
+
+<!-- Reusable centred modal — day editor, library pickers, custom waypoint, share confirm -->
+<div class="ag-modal" id="agModal" aria-hidden="true"><div class="am-card" role="dialog" aria-modal="true"></div></div>
 
 <aside id="checklistPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🪙 Fossicking checklist</h2><button class="ag-x" id="checklistClose" aria-label="Close">×</button></header>
@@ -409,7 +502,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v18';
+var APP_VERSION = 'v19';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -440,6 +533,8 @@ var APP_VERSION = 'v18';
 </script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- SortableJS — touch-friendly drag reorder for the trip planner. Precached by the SW for offline use. -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const spots = [
   { n: 1, name: "Mount Cole / Bayindeen fire scar", lat: -37.2670, lng: 143.2845, land: "Mt Cole–Beeripmo State Forest",
@@ -906,8 +1001,229 @@ setTimeout(fitToSpots, 400);
 
   if (btn) btn.addEventListener('click', prefetch);
 
-  // Expose for tooling / offline verification.
-  window.AuraGold = { prefetch: prefetch, buildList: buildList };
+  // Expose for tooling / offline verification. MERGE into the shared namespace —
+  // never overwrite it, or features that registered earlier/later get clobbered.
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold.prefetch = prefetch;
+  window.AuraGold.buildList = buildList;
+})();
+</script>
+
+<!-- AuraGold PWA: Trip data layer — IndexedDB v2 (trips + user waypoints), seed, route line, parser -->
+<script>
+(function () {
+  window.AuraGold = window.AuraGold || {};
+  var AG = window.AuraGold;
+
+  // ---------- IndexedDB (shared DB, bumped to v2: photos + trips + user waypoints) ----------
+  var DB_NAME = 'auragold_photos', DB_VER = 2;
+  var S_TRIPS = 'auragold_trips', S_UWP = 'auragold_user_waypoints', S_PHOTOS = 'photos';
+  var _dbP = null;
+  function openDB(){
+    if (_dbP) return _dbP;
+    _dbP = new Promise(function (resolve, reject) {
+      if (!window.indexedDB) { reject(new Error('no-indexeddb')); return; }
+      var req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(S_PHOTOS)) db.createObjectStore(S_PHOTOS);
+        if (!db.objectStoreNames.contains(S_TRIPS)) db.createObjectStore(S_TRIPS, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(S_UWP)) db.createObjectStore(S_UWP, { keyPath: 'id' });
+      };
+      req.onsuccess = function (e) { resolve(e.target.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+    return _dbP;
+  }
+  AG.openDB = openDB; // photo store reuses this exact connection (no version conflict)
+
+  function storeAll(name){ return openDB().then(function(db){ return new Promise(function(res,rej){
+    var out=[], tx=db.transaction(name,'readonly'), cur=tx.objectStore(name).openCursor();
+    cur.onsuccess=function(e){ var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else res(out); };
+    cur.onerror=function(){ rej(cur.error); };
+  }); }); }
+  function storePut(name,val){ return openDB().then(function(db){ return new Promise(function(res,rej){
+    var tx=db.transaction(name,'readwrite'); tx.objectStore(name).put(val);
+    tx.oncomplete=function(){ res(val); }; tx.onerror=function(){ rej(tx.error); };
+  }); }); }
+  function storeDel(name,key){ return openDB().then(function(db){ return new Promise(function(res,rej){
+    var tx=db.transaction(name,'readwrite'); tx.objectStore(name).delete(key);
+    tx.oncomplete=function(){ res(); }; tx.onerror=function(){ rej(tx.error); };
+  }); }); }
+
+  function uid(p){ return (p||'id') + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  // ---------- Suggested Plan v1 — built from the in-code library (spots/camps/routeOrder) ----------
+  // camp id = index into the global camps[] array; spot id = spot.n; user id = uuid.
+  function suggestedDays(){
+    var d = [], i = 0;
+    function day(label, assigned, notes){ d.push({ index: i++, label: label, date: null, assigned: assigned || [], notes: notes || '' }); }
+    function S(n){ return { kind: 'spot', id: n }; }
+    function C(idx){ return { kind: 'camp', id: idx }; }
+    day('Depart — QLD → NSW', [], 'Long haul south. Fuel, food, podcasts. No detecting today.');
+    day('NSW long haul', [], 'Second travel day. Aim to overnight near the VIC border.');
+    day('Into Victoria', [], 'Cross the border and push toward the Chiltern goldfield.');
+    day('Chiltern / Eldorado — first stop', [S(12), C(5)], 'First proper detect. NP designated areas around Reids Creek; Magenta Mine free camp.');
+    day('Chiltern detect · transit toward Heathcote', [], 'Work Eldorado / Reids Creek in the morning, then drive SW.');
+    day('Heathcote / McIvor Creek', [S(5)], 'Eastern fringe of the Golden Triangle — different strike (Mt Camel axis).');
+    day('Whroo / Rushworth SF', [S(6)], 'Ghost-town goldfield; Balaclava Hill open cut nearby.');
+    day('Rest / resupply · Maldon detour option', [], 'Optional side-trip: Spot 9 Maldon / Muckleford SF if you want a detour day.');
+    day('Avoca / Pyrenees Ranges', [S(2)], 'Classic alluvial belt — Homebush flats, Four Mile Flat.');
+    day('Mount Cole fire scar — MAIN EVENT', [S(1)], 'Post-fire access window open. Speculative but the angle is the whole reason for the trip timing.');
+    day('Talbot / Daisy Hill SF', [S(4), C(4)], 'Quietly productive belt SE of Maryborough; Karri Track camp at Paddys Ranges.');
+    day('Tarnagulla / Waanyarra', [S(3), C(0)], 'Reef/alluvial overlap; Waanyarra free camp in surrounding Dunolly SF.');
+    day('Inglewood / Kingower / Wehla', [S(7), C(1)], 'Hand of Faith country; Butchers Camp free site.');
+    day('Wedderburn — HEADLINE day 1', [S(10), C(3)], 'Highest big-nugget endowment in Australia. Eastern cluster + Hard Hill ground.');
+    day('Wedderburn — HEADLINE day 2', [S(10), C(2)], 'Wychitella designated blocks + Korong Vale strike-extension; Skinners Flat camp.');
+    day('Homeward · Hepburn or Wombat rainy-day option', [], 'On the way home: Spot 8 Hepburn (Sailors Creek) or Spot 11 Wombat deep-lead margin if weather/time allow.');
+    return d;
+  }
+  function makeSuggested(){
+    var now = Date.now();
+    return { id: 'suggested-v1', name: 'Suggested Plan v1', isDefault: true, created: now, updated: now, days: suggestedDays() };
+  }
+
+  // ---------- Active trip state ----------
+  var active = null;                 // the loaded trip document (mutated in place)
+  var uwpCache = {};                 // id -> user waypoint
+  var listeners = [];
+  function onChange(cb){ listeners.push(cb); }
+  function emitChange(){ listeners.forEach(function(f){ try{ f(active); }catch(e){} }); }
+
+  var saveT = null;
+  function saveActive(){ active && (active.updated = Date.now()); if (saveT) clearTimeout(saveT);
+    saveT = setTimeout(function(){ saveT = null; if (active) storePut(S_TRIPS, active).catch(function(){}); }, 500); }
+  function flush(){ if (saveT){ clearTimeout(saveT); saveT = null; } if (active){ active.updated = Date.now(); return storePut(S_TRIPS, active); } return Promise.resolve(); }
+
+  // ---------- Resolve an assigned ref to a concrete place ----------
+  var TYPE_EMOJI = { find:'🟡', signal:'🔶', camp:'⛺', hole:'⚫', custom:'📍' };
+  function resolveItem(a){
+    if (!a) return null;
+    if (a.kind === 'spot'){ var s = spots.find(function(x){ return x.n === a.id; });
+      return s ? { name: s.n + '. ' + s.name, lat: s.lat, lng: s.lng, kind:'spot', type:'spot', emoji:'⛏', sub: s.day } : null; }
+    if (a.kind === 'camp'){ var c = camps[a.id];
+      return c ? { name: c.name, lat: c.lat, lng: c.lng, kind:'camp', type:'camp', emoji:'⛺', sub: c.note } : null; }
+    if (a.kind === 'user'){ var u = uwpCache[a.id];
+      return u ? { name: u.name, lat: u.lat, lng: u.lng, kind:'user', type:u.type||'custom', emoji:(TYPE_EMOJI[u.type]||'📍'), sub: u.notes } : null; }
+    return null;
+  }
+
+  // ---------- Route line follows the active trip's day order ----------
+  function routePts(){
+    if (!active) return [];
+    var pts = [], last = null;
+    active.days.forEach(function(d){
+      (d.assigned||[]).forEach(function(a){
+        if (a.kind === 'camp') return;                  // sleep sites don't bend the driving line
+        var it = resolveItem(a); if (!it) return;
+        if (a.kind === 'user' && it.type === 'camp') return;
+        var p = [it.lat, it.lng];
+        if (last && last[0] === p[0] && last[1] === p[1]) return; // dedupe consecutive
+        pts.push(p); last = p;
+      });
+    });
+    return pts;
+  }
+  function redrawRoute(){ if (typeof routeLine !== 'undefined' && routeLine) { try { routeLine.setLatLngs(routePts()); } catch(e){} } }
+
+  // ---------- User-waypoint markers on the map ----------
+  var uwpLayer = L.layerGroup().addTo(map);
+  AG.tripWaypointLayer = uwpLayer;
+  function uwpIcon(t){ var e = TYPE_EMOJI[t] || '📍';
+    return L.divIcon({ className:'', html:'<div class="ag-wp" style="background:#8a6d00"><span>'+e+'</span></div>', iconSize:[26,26], iconAnchor:[13,24] }); }
+  function escH(s){ return (s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function renderUWP(){
+    uwpLayer.clearLayers();
+    Object.keys(uwpCache).forEach(function(id){
+      var u = uwpCache[id]; if (!u) return;
+      var html = '<div class="popup-spot" style="min-width:170px"><b>'+(TYPE_EMOJI[u.type]||'📍')+' '+escH(u.name||'Waypoint')+'</b>'+
+        (u.notes ? '<div class="desc">'+escH(u.notes)+'</div>' : '')+
+        '<div class="coords">'+u.lat.toFixed(5)+', '+u.lng.toFixed(5)+'</div>'+
+        '<button class="nav-btn" data-nav="'+u.lat+','+u.lng+'" data-navlabel="'+escH(u.name||'waypoint')+'">🧭 Navigate here</button>'+
+        '<button class="x" data-uwpdel="'+u.id+'" style="margin-top:6px">Delete</button></div>';
+      L.marker([u.lat, u.lng], { icon: uwpIcon(u.type) }).bindPopup(html).addTo(uwpLayer);
+    });
+  }
+  map.on('popupopen', function(e){
+    var el = e.popup.getElement(); if (!el) return;
+    var b = el.querySelector('[data-uwpdel]');
+    if (b) b.addEventListener('click', function(){ uwpRemove(b.getAttribute('data-uwpdel')); map.closePopup(); });
+  });
+
+  // ---------- User-waypoint CRUD ----------
+  function uwpAll(){ return Object.keys(uwpCache).map(function(k){ return uwpCache[k]; }); }
+  function uwpAdd(w){
+    var wp = { id: uid('uwp'), name: w.name || 'Waypoint', lat: +w.lat, lng: +w.lng,
+      type: w.type || 'custom', source: w.source || 'manual', notes: w.notes || '',
+      photoIds: w.photoIds || [], mapsUrl: w.mapsUrl || '', created: Date.now() };
+    uwpCache[wp.id] = wp;
+    renderUWP();
+    return storePut(S_UWP, wp).then(function(){ return wp; });
+  }
+  function uwpRemove(id){
+    delete uwpCache[id];
+    // also strip from every day of every trip in memory (active) — and persist active
+    if (active){ active.days.forEach(function(d){ d.assigned = (d.assigned||[]).filter(function(a){ return !(a.kind==='user' && a.id===id); }); }); saveActive(); }
+    renderUWP(); redrawRoute(); emitChange();
+    return storeDel(S_UWP, id).catch(function(){});
+  }
+
+  // ---------- Trip-level operations ----------
+  function listTrips(){ return storeAll(S_TRIPS).then(function(arr){
+    return arr.map(function(t){ return { id:t.id, name:t.name, isDefault:!!t.isDefault, updated:t.updated, days:(t.days||[]).length }; })
+              .sort(function(a,b){ return (b.updated||0)-(a.updated||0); });
+  }); }
+  function switchTo(id){ return openDB().then(function(db){ return new Promise(function(res,rej){
+    var tx=db.transaction(S_TRIPS,'readonly'), rq=tx.objectStore(S_TRIPS).get(id);
+    rq.onsuccess=function(){ if(rq.result){ active=rq.result; localStorage.setItem('auragold_active_trip', id); redrawRoute(); emitChange(); res(active); } else rej(new Error('not-found')); };
+    rq.onerror=function(){ rej(rq.error); };
+  }); }); }
+  function persistTrip(t){ return storePut(S_TRIPS, t); }
+  function deleteTrip(id){ return storeDel(S_TRIPS, id); }
+  function duplicateActive(name){
+    if (!active) return Promise.resolve(null);
+    var copy = JSON.parse(JSON.stringify(active));
+    copy.id = uid('trip'); copy.name = name || (active.name + ' (copy)'); copy.isDefault = false;
+    copy.created = Date.now(); copy.updated = Date.now();
+    return persistTrip(copy).then(function(){ return copy; });
+  }
+  function resetActiveToSuggested(){ if (!active) return; active.days = suggestedDays(); active.name = active.name || 'Suggested Plan v1'; saveActive(); redrawRoute(); emitChange(); }
+
+  function reindex(){ if (active) active.days.forEach(function(d,i){ d.index = i; }); }
+
+  // ---------- Boot: open DB, load user waypoints, load/seed active trip ----------
+  AG.ready = openDB().then(function(){
+    return Promise.all([ storeAll(S_UWP), storeAll(S_TRIPS) ]);
+  }).then(function(both){
+    var wps = both[0], trips = both[1];
+    wps.forEach(function(w){ uwpCache[w.id] = w; });
+    renderUWP();
+    if (!trips.length){
+      active = makeSuggested();
+      return storePut(S_TRIPS, active).then(function(){ localStorage.setItem('auragold_active_trip', active.id); });
+    }
+    var wantId = localStorage.getItem('auragold_active_trip');
+    active = (wantId && trips.filter(function(t){ return t.id===wantId; })[0]) ||
+             trips.filter(function(t){ return t.isDefault; })[0] || trips[0];
+    localStorage.setItem('auragold_active_trip', active.id);
+  }).then(function(){
+    redrawRoute(); emitChange();
+    return active;
+  }).catch(function(e){ console.warn('[AuraGold] trip store init failed:', e); return null; });
+
+  // ---------- Public API ----------
+  AG.trips = {
+    ready: AG.ready,
+    getActive: function(){ return active; },
+    onChange: onChange, emitChange: emitChange,
+    saveActive: saveActive, flush: flush, reindex: reindex,
+    resolveItem: resolveItem, routePts: routePts, redrawRoute: redrawRoute,
+    listTrips: listTrips, switchTo: switchTo, persistTrip: persistTrip, deleteTrip: deleteTrip,
+    duplicateActive: duplicateActive, resetToSuggested: resetActiveToSuggested,
+    makeSuggested: makeSuggested, suggestedDays: suggestedDays, newId: uid,
+    typeEmoji: TYPE_EMOJI,
+    uwp: { all: uwpAll, add: uwpAdd, remove: uwpRemove, get: function(id){ return uwpCache[id]; }, render: renderUWP }
+  };
 })();
 </script>
 
@@ -1059,16 +1375,12 @@ setTimeout(fitToSpots, 400);
 (function () {
   var KEY = 'auragold_waypoints';
   // --- Photo store: blobs in IndexedDB keyed by waypoint id (localStorage model unchanged; wp.photo just flags presence) ---
-  var _db = null, _dbReq = null, _dbQ = [];
+  // Reuses the shared DB connection (auragold_photos v2) opened by the trip data layer,
+  // so the 'photos' store and the trip stores share one connection — no version conflict.
   function idb(cb){
-    if (_db){ cb(_db); return; }
-    if (!window.indexedDB){ cb(null); return; }
-    _dbQ.push(cb);            // queue all waiters; never overwrite a pending callback
-    if (_dbReq) return;       // open already in flight
-    _dbReq = indexedDB.open('auragold_photos', 1);
-    _dbReq.onupgradeneeded = function(e){ var db=e.target.result; if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos'); };
-    _dbReq.onsuccess = function(e){ _db = e.target.result; var q=_dbQ; _dbQ=[]; q.forEach(function(f){ f(_db); }); };
-    _dbReq.onerror = function(){ var q=_dbQ; _dbQ=[]; q.forEach(function(f){ f(null); }); };
+    var open = window.AuraGold && window.AuraGold.openDB;
+    if (!open){ cb(null); return; }
+    open().then(function(db){ cb(db); }, function(){ cb(null); });
   }
   function photoPut(id, blob, done){ idb(function(db){ if(!db){ done&&done(false); return; } try{ var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').put(blob,id); tx.oncomplete=function(){ done&&done(true); }; tx.onerror=function(){ done&&done(false); }; }catch(e){ done&&done(false); } }); }
   function photoGet(id, done){ idb(function(db){ if(!db){ done(null); return; } try{ var tx=db.transaction('photos','readonly'); var rq=tx.objectStore('photos').get(id); rq.onsuccess=function(){ done(rq.result||null); }; rq.onerror=function(){ done(null); }; }catch(e){ done(null); } }); }
@@ -1364,6 +1676,7 @@ setTimeout(fitToSpots, 400);
   var layers = [
     ['Spots (1–12)', spotGroup], ['Camping', campGroup], ['Sub-spots', subGroup],
     ['Itinerary route line', routeLine],
+    ['📍 My trip waypoints', (window.AuraGold||{}).tripWaypointLayer],
     ['🎯 My saved finds', (window.AuraGold||{}).waypointLayer],
     ['🥾 My walked track', (window.AuraGold||{}).trailLayer],
     ['🧲 Magnetic RTP (structure) — GA', layerMag],
@@ -1516,40 +1829,397 @@ setTimeout(fitToSpots, 400);
 })();
 </script>
 
-<!-- AuraGold PWA: 🗺 Trip itinerary — step through the main spots in driving order -->
+<!-- AuraGold PWA: 🗺 Trip planner — editable day-by-day trip, library pickers, custom/shared waypoints -->
 <script>
 (function(){
-  var iPanel = document.getElementById('itineraryPanel');
+  var AG = window.AuraGold = window.AuraGold || {};
+  var resolve = function(a){ return AG.trips.resolveItem(a); };
+  var panel = document.getElementById('tripPanel');
   var menuPanel = document.getElementById('menuPanel');
-  function iOpen(o){ iPanel.classList.toggle('open', o); iPanel.setAttribute('aria-hidden', o?'false':'true'); }
+  var tripDays = document.getElementById('tripDays');
+  var tripName = document.getElementById('tripName');
+  var overlay = document.getElementById('agModal');
+  var mcard = overlay.querySelector('.am-card');
+  var hasSortable = typeof window.Sortable === 'function';
+
+  function esc(s){ return (s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function say(m){ var t=document.querySelector('.ag-toast'); if(!t){ t=document.createElement('div'); t.className='ag-toast'; document.body.appendChild(t); } t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove('show'); }, 2400); }
+  function fmtWhen(ts){ try{ return new Date(ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}); }catch(e){ return ''; } }
+  function slug(s){ return (s||'trip').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'trip'; }
+  function dl(name,mime,text){ var b=new Blob([text],{type:mime}); var u=URL.createObjectURL(b); var aEl=document.createElement('a'); aEl.href=u; aEl.download=name; document.body.appendChild(aEl); aEl.click(); setTimeout(function(){ document.body.removeChild(aEl); URL.revokeObjectURL(u); }, 500); }
   function closeMenu(){ if(menuPanel){ menuPanel.classList.remove('open'); menuPanel.setAttribute('aria-hidden','true'); } }
 
-  // Build the ordered step list from routeOrder + spots (both globals from the map script).
-  var byId = {}; spots.forEach(function(s){ byId[s.n] = s; });
-  var list = document.getElementById('itinList');
-  routeOrder.forEach(function(n){
-    var s = byId[n]; if(!s) return;
-    var row = document.createElement('div'); row.className = 'itin-row';
-    row.innerHTML =
-      '<span class="itin-num" style="background:' + (statusColors[s.status]||'#b08800') + '">' + s.n + '</span>' +
-      '<span class="itin-body"><span class="itin-day">' + s.day + '</span>' +
-      '<span class="itin-name">' + s.name + '</span></span>' +
-      '<span class="itin-go">›</span>';
-    row.addEventListener('click', function(){
-      iOpen(false);
-      map.setView([s.lat, s.lng], Math.max(map.getZoom(), 12), { animate: false });
-      var m = spotMarkersById[s.n];
-      if(m){ setTimeout(function(){ m.openPopup(); }, 60); }
+  // ---------- Modal stack ----------
+  var stack = [];
+  function renderTop(){ if(!stack.length){ overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); mcard.innerHTML=''; return; } mcard.innerHTML=''; stack[stack.length-1](mcard); mcard.scrollTop=0; var bd=mcard.querySelector('.am-body'); if(bd) bd.scrollTop=0; }
+  function pushModal(fn){ stack.push(fn); overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); renderTop(); }
+  function popModal(){ stack.pop(); renderTop(); }
+  function closeModal(){ stack=[]; renderTop(); }
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) popModal(); });
+
+  // ---------- Map place URL parser (shared by paste-URL + share target) ----------
+  function num(x){ var n=parseFloat(x); return isFinite(n)?n:null; }
+  function inAU(lat,lng){ return lat>=-44 && lat<=-10 && lng>=112 && lng<=154; }
+  function parsePlaceUrl(input){
+    var s = (input||'').trim();
+    if(!s) return null;
+    var res = { provider:'', name:'', lat:null, lng:null, warning:'', raw:s };
+    function finalize(r){ if(r.lat!=null && r.lng!=null && !inAU(r.lat,r.lng)) r.warning = r.warning || 'Heads up — that point is outside Australia. Double-check the order (lat, lng).'; return r; }
+
+    // geo: URI  — geo:LAT,LNG[?q=...]  and  geo:0,0?q=LAT,LNG(label)
+    var g = s.match(/^geo:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)(?:[^?]*\?(.*))?/i);
+    if(g){
+      res.provider='geo: link'; res.lat=num(g[1]); res.lng=num(g[2]);
+      var qs = g[3]||''; var qm = qs.match(/q=([^&]+)/);
+      if(qm){ var q=decodeURIComponent(qm[1].replace(/\+/g,' '));
+        if((res.lat===0&&res.lng===0)){ var qc=q.match(/(-?\d+\.?\d+)\s*,\s*(-?\d+\.?\d+)/); if(qc){ res.lat=num(qc[1]); res.lng=num(qc[2]); } }
+        var lbl=q.match(/\(([^)]+)\)/); res.name = lbl ? lbl[1] : q.replace(/-?\d+\.?\d+\s*,\s*-?\d+\.?\d+/,'').replace(/[()]/g,'').trim();
+      }
+      return finalize(res);
+    }
+
+    var urlMatch = s.match(/https?:\/\/[^\s]+/);
+    var url = urlMatch ? urlMatch[0] : s;
+    var u; try { u = new URL(url); } catch(e){ u = null; }
+
+    // Google short links — CORS blocks expansion from the PWA
+    if(/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(url)){
+      res.provider='Google (short link)';
+      res.warning='Short links can’t be opened offline. Tap the link in your browser to open it, then copy the full URL from the address bar and paste that here.';
+      return res;
+    }
+
+    // Apple Maps
+    if(/maps\.apple\.com/i.test(url) && u){
+      res.provider='Apple Maps';
+      var all = u.searchParams.get('ll') || u.searchParams.get('sll') || u.searchParams.get('coordinate');
+      if(all){ var ap=all.split(','); res.lat=num(ap[0]); res.lng=num(ap[1]); }
+      res.name = u.searchParams.get('name') || u.searchParams.get('q') || u.searchParams.get('address') || '';
+      if(res.lat==null && res.name){ var aqc=res.name.match(/^(-?\d+\.?\d+),\s*(-?\d+\.?\d+)$/); if(aqc){ res.lat=num(aqc[1]); res.lng=num(aqc[2]); res.name=''; } }
+      if(res.name && /^-?\d+\.?\d+,\s*-?\d+\.?\d+$/.test(res.name)) res.name='';
+      if(res.lat==null) res.warning='No coordinates in that Apple Maps link. Open it and share again, or type lat/lng manually.';
+      return finalize(res);
+    }
+
+    // Google Maps (long links / query)
+    if(u && (/google\.[^\/]+\/maps/i.test(url) || /maps\.google\./i.test(url) || /[?&]q=/.test(url))){
+      res.provider='Google Maps';
+      var pm = url.match(/\/maps\/place\/([^\/@]+)/);
+      if(pm){ res.name = decodeURIComponent(pm[1].replace(/\+/g,' ')).replace(/\/+$/,'').trim(); }
+      var d = url.match(/!3d(-?\d+\.?\d+)!4d(-?\d+\.?\d+)/);   // most accurate (the actual pin)
+      if(d){ res.lat=num(d[1]); res.lng=num(d[2]); return finalize(res); }
+      var at = url.match(/@(-?\d+\.?\d+),(-?\d+\.?\d+)/);       // map centre
+      if(at){ res.lat=num(at[1]); res.lng=num(at[2]); }
+      var q = u.searchParams.get('q') || u.searchParams.get('query');
+      if(q){ var qc=q.match(/^\s*(-?\d+\.?\d+)\s*,\s*(-?\d+\.?\d+)\s*$/);
+        if(qc){ if(res.lat==null){ res.lat=num(qc[1]); res.lng=num(qc[2]); } }
+        else if(!res.name){ res.name=q; } }
+      if(res.lat==null) res.warning='No coordinates in that Google Maps link. If it’s a place search, open it, drop a pin, and share again — or type the lat/lng below.';
+      return finalize(res);
+    }
+
+    // Plain "lat, lng" — only when the pair actually looks like AU coordinates (either order)
+    var pc = s.match(/^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+    if(pc){
+      var la=num(pc[1]), lo=num(pc[2]);
+      if(la!=null && lo!=null){
+        if(inAU(la,lo)){ res.provider='Coordinates'; res.lat=la; res.lng=lo; return res; }
+        if(inAU(lo,la)){ res.provider='Coordinates'; res.lat=lo; res.lng=la; return res; }  // pasted lng,lat — swap
+      }
+    }
+
+    // Any other URL carrying ll= / q= / query=
+    if(u){
+      var any = u.searchParams.get('ll') || u.searchParams.get('q') || u.searchParams.get('query');
+      if(any){ var m=any.match(/(-?\d+\.?\d+)\s*,\s*(-?\d+\.?\d+)/); if(m){ res.provider='URL'; res.lat=num(m[1]); res.lng=num(m[2]); return finalize(res); } }
+    }
+
+    res.warning='Couldn’t find coordinates in that. Paste a Google or Apple Maps link, a geo: link, or just type “lat, lng”.';
+    return res;
+  }
+  AG.parsePlaceUrl = parsePlaceUrl;
+
+  // ---------- Day list ----------
+  function summaryHtml(d){
+    var items = d.assigned||[];
+    if(!items.length) return '<span class="empty">No stops — travel / rest day</span>';
+    return items.map(function(a){ var it=resolve(a); if(!it) return '<span class="chip">❓ missing</span>';
+      var cls=(it.kind==='camp'||it.type==='camp')?' camp':'';
+      var nm=it.name.length>26 ? it.name.slice(0,25)+'…' : it.name;
+      return '<span class="chip'+cls+'">'+it.emoji+' '+esc(nm)+'</span>'; }).join('');
+  }
+  function renderDays(){
+    var a = AG.trips.getActive();
+    tripName.textContent = a ? a.name : 'Trip';
+    tripDays.innerHTML='';
+    if(!a){ tripDays.innerHTML='<div class="am-empty" style="padding:14px 2px">Loading your trip…</div>'; return; }
+    a.days.forEach(function(d, idx){
+      var row=document.createElement('div'); row.className='trip-day'; row.setAttribute('data-idx', idx);
+      var ctrl = hasSortable
+        ? '<div class="td-handle" title="Drag to reorder">⠿</div>'
+        : '<div class="td-arrows"><button data-up '+(idx===0?'disabled':'')+'>▲</button><button data-down '+(idx===a.days.length-1?'disabled':'')+'>▼</button></div>';
+      row.innerHTML='<div class="td-main"><div class="td-l1"><b>Day '+(idx+1)+'</b> · '+esc(d.label||'Untitled')+'</div><div class="td-sum">'+summaryHtml(d)+'</div></div>'+ctrl;
+      row.querySelector('.td-main').addEventListener('click', function(){ openDayEditor(d); });
+      if(!hasSortable){
+        var up=row.querySelector('[data-up]'), dn=row.querySelector('[data-down]');
+        if(up) up.addEventListener('click', function(e){ e.stopPropagation(); moveDay(idx, idx-1); });
+        if(dn) dn.addEventListener('click', function(e){ e.stopPropagation(); moveDay(idx, idx+1); });
+      }
+      tripDays.appendChild(row);
     });
-    list.appendChild(row);
-  });
+  }
+  function moveDay(from,to){ var a=AG.trips.getActive(); if(!a||to<0||to>=a.days.length) return; var m=a.days.splice(from,1)[0]; a.days.splice(to,0,m); AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); }
+  function applyDomOrder(){ var a=AG.trips.getActive(); if(!a) return;
+    var ids=Array.prototype.map.call(tripDays.children, function(c){ return +c.getAttribute('data-idx'); });
+    var nd=ids.map(function(i){ return a.days[i]; }).filter(Boolean);
+    if(nd.length!==a.days.length) return;             // safety: don't drop days
+    a.days=nd; AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); }
+  if(hasSortable){ new Sortable(tripDays, { handle:'.td-handle', animation:150, delay:200, delayOnTouchOnly:true, touchStartThreshold:5, ghostClass:'dragging', onEnd: applyDomOrder }); }
 
-  var btn = document.getElementById('itineraryBtn');
-  if(btn) btn.addEventListener('click', function(){ closeMenu(); iOpen(true); });
-  document.getElementById('itineraryClose').addEventListener('click', function(){ iOpen(false); });
+  // ---------- Day editor ----------
+  function flyTo(it, aref){ closePanel(); map.setView([it.lat,it.lng], Math.max(map.getZoom(),12), {animate:false});
+    if(aref && aref.kind==='spot'){ var m=spotMarkersById[aref.id]; if(m) setTimeout(function(){ m.openPopup(); }, 90); } }
+  function renderAssigned(container, day){
+    container.innerHTML='';
+    if(!(day.assigned||[]).length){ container.innerHTML='<div class="am-empty">No stops yet — add spots, camps or a custom waypoint below.</div>'; return; }
+    day.assigned.forEach(function(aref, i){
+      var it=resolve(aref);
+      var nm=it?it.name:'(missing item)';
+      var sub=it ? (it.sub?esc(it.sub):(it.lat.toFixed(4)+', '+it.lng.toFixed(4))) : '';
+      var row=document.createElement('div'); row.className='am-assigned';
+      row.innerHTML='<span class="as-e">'+(it?it.emoji:'❓')+'</span><div class="as-m"><b>'+esc(nm)+'</b><small>'+sub+'</small></div><button class="as-x" title="Remove">×</button>';
+      if(it) row.querySelector('.as-m').addEventListener('click', function(){ closeModal(); flyTo(it, aref); });
+      row.querySelector('.as-x').addEventListener('click', function(){ day.assigned.splice(i,1); AG.trips.saveActive(); AG.trips.redrawRoute(); renderAssigned(container, day); renderDays(); });
+      container.appendChild(row);
+    });
+  }
+  function openDayEditor(day){
+    pushModal(function(card){
+      var a=AG.trips.getActive(); var idx=a.days.indexOf(day);
+      card.innerHTML=
+        '<header><button class="am-x" data-close>×</button><h3>Day '+(idx+1)+'</h3></header>'+
+        '<div class="am-body">'+
+          '<label class="fld">Day label</label><input type="text" id="de-label" value="'+esc(day.label||'')+'" placeholder="e.g. Wedderburn — headline">'+
+          '<label class="fld">Date (optional)</label><input type="date" id="de-date" value="'+(day.date||'')+'">'+
+          '<label class="fld">Stops &amp; camps</label><div id="de-asg"></div>'+
+          '<div class="am-btnrow" style="margin-top:10px">'+
+            '<button class="am-mini" id="de-spots">⛏ Spots</button>'+
+            '<button class="am-mini" id="de-camps">⛺ Camps</button>'+
+            '<button class="am-mini" id="de-custom">📍 Custom</button>'+
+          '</div>'+
+          '<label class="fld">Notes</label><textarea id="de-notes" placeholder="Access, plans, reminders…">'+esc(day.notes||'')+'</textarea>'+
+          '<div class="am-btnrow" style="margin-top:14px">'+
+            '<button class="am-btn ghost sm" id="de-up" style="margin-top:0" '+(idx===0?'disabled':'')+'>▲ Move up</button>'+
+            '<button class="am-btn ghost sm" id="de-down" style="margin-top:0" '+(idx===a.days.length-1?'disabled':'')+'>▼ Move down</button>'+
+          '</div>'+
+          '<button class="am-btn danger sm" id="de-del">🗑 Delete this day</button>'+
+        '</div>';
+      renderAssigned(card.querySelector('#de-asg'), day);
+      card.querySelector('#de-label').addEventListener('input', function(e){ day.label=e.target.value; AG.trips.saveActive(); renderDays(); });
+      card.querySelector('#de-date').addEventListener('change', function(e){ day.date=e.target.value||null; AG.trips.saveActive(); });
+      card.querySelector('#de-notes').addEventListener('input', function(e){ day.notes=e.target.value; AG.trips.saveActive(); });
+      card.querySelector('#de-spots').addEventListener('click', function(){ openSpotPicker(day); });
+      card.querySelector('#de-camps').addEventListener('click', function(){ openCampPicker(day); });
+      card.querySelector('#de-custom').addEventListener('click', function(){ openCustomWp(day, null); });
+      card.querySelector('#de-up').addEventListener('click', function(){ var i=a.days.indexOf(day); moveDay(i,i-1); renderTop(); });
+      card.querySelector('#de-down').addEventListener('click', function(){ var i=a.days.indexOf(day); moveDay(i,i+1); renderTop(); });
+      card.querySelector('#de-del').addEventListener('click', function(){ var i=a.days.indexOf(day); if(confirm('Delete Day '+(i+1)+'? This can’t be undone.')){ a.days.splice(i,1); AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); closeModal(); } });
+      card.querySelector('[data-close]').addEventListener('click', popModal);
+    });
+  }
 
-  window.AuraGold = window.AuraGold || {};
-  window.AuraGold.openItinerary = function(){ closeMenu(); iOpen(true); };
+  // ---------- Library pickers ----------
+  function openSpotPicker(day){
+    pushModal(function(card){
+      var have=(day.assigned||[]).filter(function(a){return a.kind==='spot';}).map(function(a){return a.id;});
+      var rows=spots.map(function(s){ var ck=have.indexOf(s.n)!==-1?'checked':'';
+        return '<label class="am-pickrow"><input type="checkbox" data-n="'+s.n+'" '+ck+'><div class="pk-b"><div class="pk-t">'+s.n+'. '+esc(s.name)+'</div><div class="pk-s">'+esc(s.day)+'</div></div></label>'; }).join('');
+      card.innerHTML='<header><button class="am-back" data-back>‹</button><h3>Add spots</h3></header><div class="am-body">'+rows+'<button class="am-btn primary" id="sp-done">Done</button></div>';
+      card.querySelector('[data-back]').addEventListener('click', popModal);
+      card.querySelector('#sp-done').addEventListener('click', function(){
+        var checked=[]; card.querySelectorAll('input[data-n]').forEach(function(b){ if(b.checked) checked.push(+b.getAttribute('data-n')); });
+        var keep=(day.assigned||[]).filter(function(a){ return a.kind!=='spot' || checked.indexOf(a.id)!==-1; });
+        var have2=keep.filter(function(a){return a.kind==='spot';}).map(function(a){return a.id;});
+        checked.forEach(function(n){ if(have2.indexOf(n)===-1) keep.push({kind:'spot', id:n}); });
+        day.assigned=keep; AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); popModal();
+      });
+    });
+  }
+  function openCampPicker(day){
+    pushModal(function(card){
+      var have=(day.assigned||[]).filter(function(a){return a.kind==='camp';}).map(function(a){return a.id;});
+      var rows=camps.map(function(c, i){ var ck=have.indexOf(i)!==-1?'checked':'';
+        return '<label class="am-pickrow"><input type="checkbox" data-i="'+i+'" '+ck+'><div class="pk-b"><div class="pk-t">⛺ '+esc(c.name)+'</div><div class="pk-s">'+esc(c.note||'')+'</div></div></label>'; }).join('');
+      card.innerHTML='<header><button class="am-back" data-back>‹</button><h3>Add camps</h3></header><div class="am-body">'+rows+'<button class="am-btn primary" id="cp-done">Done</button></div>';
+      card.querySelector('[data-back]').addEventListener('click', popModal);
+      card.querySelector('#cp-done').addEventListener('click', function(){
+        var checked=[]; card.querySelectorAll('input[data-i]').forEach(function(b){ if(b.checked) checked.push(+b.getAttribute('data-i')); });
+        var keep=(day.assigned||[]).filter(function(a){ return a.kind!=='camp' || checked.indexOf(a.id)!==-1; });
+        var have2=keep.filter(function(a){return a.kind==='camp';}).map(function(a){return a.id;});
+        checked.forEach(function(i){ if(have2.indexOf(i)===-1) keep.push({kind:'camp', id:i}); });
+        day.assigned=keep; AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); popModal();
+      });
+    });
+  }
+
+  // ---------- Custom / shared waypoint ----------
+  var TYPE_LABELS={ find:'🟡 Find / gold', signal:'🔶 Signal / dig', camp:'⛺ Camp', hole:'⚫ Hole', custom:'📍 Custom / marker' };
+  function typeOpts(sel){ return Object.keys(TYPE_LABELS).map(function(k){ return '<option value="'+k+'" '+(k===sel?'selected':'')+'>'+TYPE_LABELS[k]+'</option>'; }).join(''); }
+  function openCustomWp(day, prefill){
+    prefill = prefill||{};
+    pushModal(function(card){
+      card._source = prefill.source || 'manual';
+      var a=AG.trips.getActive();
+      var dayOpts=a.days.map(function(d,i){ var sel=(day && a.days.indexOf(day)===i)?'selected':''; return '<option value="'+i+'" '+sel+'>Day '+(i+1)+' · '+esc((d.label||'').slice(0,26))+'</option>'; }).join('');
+      card.innerHTML=
+        '<header><button class="am-back" data-back>‹</button><h3>'+(prefill.fromShare?'Add shared place':'Add custom waypoint')+'</h3></header>'+
+        '<div class="am-body">'+
+          (prefill.fromShare?'<div style="font-size:12px;color:#6a6450;margin-bottom:4px">Shared from another app — check the details and add it to your trip.</div>':'')+
+          '<label class="fld">Paste a map link (optional)</label>'+
+          '<div class="am-row2"><div style="flex:3"><input type="text" id="cw-url" placeholder="Google / Apple Maps, geo:, or lat,lng"></div><div style="flex:0 0 auto;align-self:flex-end"><button class="am-mini" id="cw-parse">Detect</button></div></div>'+
+          '<div id="cw-detect"></div>'+
+          '<label class="fld">Name</label><input type="text" id="cw-name" value="'+esc(prefill.name||'')+'" placeholder="e.g. Gully with old workings">'+
+          '<label class="fld">Type</label><select id="cw-type">'+typeOpts(prefill.type||'custom')+'</select>'+
+          '<div class="am-row2"><div><label class="fld">Latitude</label><input type="number" step="any" id="cw-lat" value="'+(prefill.lat!=null?prefill.lat:'')+'"></div><div><label class="fld">Longitude</label><input type="number" step="any" id="cw-lng" value="'+(prefill.lng!=null?prefill.lng:'')+'"></div></div>'+
+          '<button class="am-btn ghost sm" id="cw-gps">📍 Use my current GPS</button>'+
+          '<label class="fld">Notes</label><textarea id="cw-notes" placeholder="Optional">'+esc(prefill.notes||'')+'</textarea>'+
+          '<label class="fld">Add to</label><select id="cw-day"><option value="-1" '+(day?'':'selected')+'>Standalone (map only)</option>'+dayOpts+'</select>'+
+          '<button class="am-btn primary" id="cw-save">Save waypoint</button>'+
+        '</div>';
+      var urlIn=card.querySelector('#cw-url'); if(prefill.mapsUrl) urlIn.value=prefill.mapsUrl;
+      var detect=card.querySelector('#cw-detect');
+      function doParse(){
+        var r=parsePlaceUrl(urlIn.value); if(!r){ detect.innerHTML=''; return; }
+        if(r.lat!=null){ card.querySelector('#cw-lat').value=r.lat; card.querySelector('#cw-lng').value=r.lng; var nmEl=card.querySelector('#cw-name'); if(r.name && !nmEl.value) nmEl.value=r.name; }
+        var cls=r.warning?' warn':'';
+        detect.innerHTML='<div class="am-detected'+cls+'"><b>'+(r.lat!=null?('Detected · '+esc(r.provider)):'Couldn’t read coordinates')+'</b>'+
+          (r.lat!=null?esc((r.name||'(no name)')+' · '+r.lat.toFixed(5)+', '+r.lng.toFixed(5)):'')+
+          (r.warning?'<div style="margin-top:4px">'+esc(r.warning)+'</div>':'')+'</div>';
+      }
+      card.querySelector('#cw-parse').addEventListener('click', doParse);
+      urlIn.addEventListener('paste', function(){ setTimeout(doParse, 40); });
+      card.querySelector('#cw-gps').addEventListener('click', function(){ useGps(card); });
+      card.querySelector('[data-back]').addEventListener('click', popModal);
+      card.querySelector('#cw-save').addEventListener('click', function(){ saveCustom(card, day); });
+      if(prefill.autoParse && urlIn.value) doParse();
+    });
+  }
+  function useGps(card){
+    var btn=card.querySelector('#cw-gps'); var f=(window.AuraGold||{}).lastFix;
+    if(f && (Date.now()-f.ts)<120000){ card.querySelector('#cw-lat').value=f.lat.toFixed(6); card.querySelector('#cw-lng').value=f.lng.toFixed(6); say('Used your last GPS fix'); return; }
+    if(!navigator.geolocation){ say('No GPS available on this device'); return; }
+    btn.textContent='📍 Getting GPS…'; btn.disabled=true;
+    navigator.geolocation.getCurrentPosition(function(p){ card.querySelector('#cw-lat').value=p.coords.latitude.toFixed(6); card.querySelector('#cw-lng').value=p.coords.longitude.toFixed(6); btn.textContent='📍 Use my current GPS'; btn.disabled=false; say('GPS captured'); },
+      function(){ btn.textContent='📍 Use my current GPS'; btn.disabled=false; say('Couldn’t get a GPS fix'); }, { enableHighAccuracy:true, timeout:10000 });
+  }
+  function saveCustom(card, day){
+    var lat=parseFloat(card.querySelector('#cw-lat').value), lng=parseFloat(card.querySelector('#cw-lng').value);
+    if(!isFinite(lat)||!isFinite(lng)){ say('Enter latitude & longitude (paste a link, or tap Use my GPS)'); return; }
+    var name=card.querySelector('#cw-name').value.trim()||'Waypoint';
+    var type=card.querySelector('#cw-type').value;
+    var notes=card.querySelector('#cw-notes').value.trim();
+    var url=card.querySelector('#cw-url').value.trim();
+    var dayIdx=parseInt(card.querySelector('#cw-day').value,10);
+    AG.trips.uwp.add({ name:name, lat:lat, lng:lng, type:type, notes:notes, mapsUrl:url, source:card._source||'manual' }).then(function(wp){
+      var a=AG.trips.getActive();
+      if(dayIdx>=0 && a.days[dayIdx]){ a.days[dayIdx].assigned.push({kind:'user', id:wp.id}); AG.trips.saveActive(); AG.trips.redrawRoute(); }
+      renderDays(); closeModal();
+      say('📍 '+name+' saved'+(dayIdx>=0?(' to Day '+(dayIdx+1)):''));
+      map.setView([lat,lng], Math.max(map.getZoom(),13), {animate:false});
+    });
+  }
+
+  // ---------- Trip-level actions ----------
+  function openTripMenu(){
+    pushModal(function(card){
+      var a=AG.trips.getActive();
+      card.innerHTML='<header><button class="am-x" data-close>×</button><h3>Trip actions</h3></header><div class="am-body">'+
+        '<button class="am-btn ghost" id="ta-rename" style="margin-top:0">✏️ Rename trip</button>'+
+        '<button class="am-btn ghost" id="ta-dup">🧬 Duplicate trip</button>'+
+        '<button class="am-btn ghost" id="ta-switch">🔀 Switch / manage trips</button>'+
+        '<button class="am-btn ghost" id="ta-new">➕ New empty trip</button>'+
+        '<button class="am-btn ghost" id="ta-reset">↩️ Reset to suggested plan</button>'+
+        '<div style="height:6px"></div><label class="fld">Export this trip</label>'+
+        '<div class="am-btnrow"><button class="am-btn gold sm" id="ta-gpx" style="margin-top:0">⤓ GPX</button><button class="am-btn gold sm" id="ta-kml" style="margin-top:0">⤓ KML</button><button class="am-btn gold sm" id="ta-json" style="margin-top:0">⤓ JSON</button></div>'+
+        '<button class="am-btn danger" id="ta-del">🗑 Delete this trip</button></div>';
+      card.querySelector('[data-close]').addEventListener('click', popModal);
+      card.querySelector('#ta-rename').addEventListener('click', function(){ var n=prompt('Trip name:', a.name); if(n!=null && n.trim()){ a.name=n.trim(); AG.trips.saveActive(); renderDays(); renderTop(); } });
+      card.querySelector('#ta-dup').addEventListener('click', function(){ var n=prompt('Name for the duplicate:', a.name+' (copy)'); if(n==null) return; AG.trips.duplicateActive((n.trim()||a.name+' (copy)')).then(function(c){ if(c) AG.trips.switchTo(c.id).then(function(){ renderDays(); closeModal(); say('Duplicated → now editing “'+c.name+'”'); }); }); });
+      card.querySelector('#ta-switch').addEventListener('click', openSwitchTrip);
+      card.querySelector('#ta-new').addEventListener('click', function(){ var n=prompt('New trip name:','My trip'); if(n==null) return; var t={id:AG.trips.newId('trip'), name:(n.trim()||'My trip'), isDefault:false, created:Date.now(), updated:Date.now(), days:[{index:0,label:'Day 1',date:null,assigned:[],notes:''}]}; AG.trips.persistTrip(t).then(function(){ AG.trips.switchTo(t.id).then(function(){ renderDays(); closeModal(); say('New trip created'); }); }); });
+      card.querySelector('#ta-reset').addEventListener('click', function(){ if(confirm('Reset this trip to the suggested 16-day plan? Edits to THIS trip will be replaced.')){ AG.trips.resetToSuggested(); renderDays(); closeModal(); say('Reset to suggested plan'); } });
+      card.querySelector('#ta-gpx').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.gpx','application/gpx+xml',expGpx()); say('GPX exported'); });
+      card.querySelector('#ta-kml').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.kml','application/vnd.google-earth.kml+xml',expKml()); say('KML exported'); });
+      card.querySelector('#ta-json').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.json','application/json',JSON.stringify(a,null,2)); say('JSON exported'); });
+      card.querySelector('#ta-del').addEventListener('click', function(){ delTrip(a); });
+    });
+  }
+  function delTrip(a){
+    AG.trips.listTrips().then(function(list){
+      if(list.length<=1){ if(confirm('This is your only trip. Reset it to the suggested plan instead?')){ AG.trips.resetToSuggested(); renderDays(); closeModal(); } return; }
+      if(!confirm('Delete trip “'+a.name+'”? This can’t be undone.')) return;
+      AG.trips.deleteTrip(a.id).then(function(){ var other=list.filter(function(t){return t.id!==a.id;})[0]; AG.trips.switchTo(other.id).then(function(){ renderDays(); closeModal(); say('Trip deleted'); }); });
+    });
+  }
+  function openSwitchTrip(){
+    pushModal(function(card){
+      card.innerHTML='<header><button class="am-back" data-back>‹</button><h3>Switch / manage trips</h3></header><div class="am-body" id="st-body">Loading…</div>';
+      card.querySelector('[data-back]').addEventListener('click', popModal);
+      AG.trips.listTrips().then(function(list){
+        var a=AG.trips.getActive(); var body=card.querySelector('#st-body');
+        body.innerHTML=list.map(function(t){ var cur=t.id===(a&&a.id);
+          return '<div class="am-pickrow" data-id="'+t.id+'"><div class="pk-b"><div class="pk-t">'+esc(t.name)+(cur?' ✓':'')+'</div><div class="pk-s">'+t.days+' days · updated '+fmtWhen(t.updated)+'</div></div></div>'; }).join('');
+        body.querySelectorAll('[data-id]').forEach(function(r){ r.addEventListener('click', function(){ AG.trips.switchTo(r.getAttribute('data-id')).then(function(){ renderDays(); closeModal(); say('Switched trip'); }); }); });
+      });
+    });
+  }
+
+  // ---------- Exports ----------
+  function allAssigned(){ var a=AG.trips.getActive(), out=[]; if(!a) return out; a.days.forEach(function(d,di){ (d.assigned||[]).forEach(function(ar){ var it=resolve(ar); if(it) out.push({day:di+1, name:it.name, lat:it.lat, lng:it.lng, type:it.type, notes:it.sub||''}); }); }); return out; }
+  function expGpx(){ var a=AG.trips.getActive(); var w=allAssigned().map(function(it){ return '<wpt lat="'+it.lat+'" lon="'+it.lng+'"><name>'+esc(it.name)+'</name><desc>Day '+it.day+(it.notes?' — '+esc(it.notes):'')+'</desc></wpt>'; }).join('\n');
+    var rp=AG.trips.routePts(); var rte=rp.length?('<rte><name>'+esc(a.name)+' route</name>\n'+rp.map(function(p){return '<rtept lat="'+p[0]+'" lon="'+p[1]+'"></rtept>';}).join('\n')+'\n</rte>'):'';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="AuraGold" xmlns="http://www.topografix.com/GPX/1/1">\n'+w+'\n'+rte+'\n</gpx>'; }
+  function expKml(){ var a=AG.trips.getActive(); var marks=allAssigned().map(function(it){ return '<Placemark><name>'+esc(it.name)+'</name><description>Day '+it.day+(it.notes?' — '+esc(it.notes):'')+'</description><Point><coordinates>'+it.lng+','+it.lat+',0</coordinates></Point></Placemark>'; }).join('\n');
+    var rp=AG.trips.routePts(); var line=rp.length?('<Placemark><name>'+esc(a.name)+' route</name><LineString><tessellate>1</tessellate><coordinates>'+rp.map(function(p){return p[1]+','+p[0]+',0';}).join(' ')+'</coordinates></LineString></Placemark>'):'';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(a.name)+'</name>\n'+marks+'\n'+line+'\n</Document></kml>'; }
+
+  // ---------- Navigate to next stop ----------
+  function navNext(){ var a=AG.trips.getActive(); if(!a) return;
+    for(var i=0;i<a.days.length;i++){ var d=a.days[i]; for(var j=0;j<(d.assigned||[]).length;j++){ var it=resolve(d.assigned[j]); if(it){ closePanel(); if(AG.navigateTo) AG.navigateTo(it.lat,it.lng,'Day '+(i+1)+': '+it.name); return; } } }
+    say('No stops assigned yet — add some to a day first'); }
+
+  // ---------- Panel wiring ----------
+  function openPanel(o){ panel.classList.toggle('open',o); panel.setAttribute('aria-hidden', o?'false':'true');
+    if(o){ renderDays(); if(!localStorage.getItem('auragold_trip_tip')){ localStorage.setItem('auragold_trip_tip','1'); setTimeout(function(){ say('Tip: drag ⠿ to reorder days · tap a day to edit it'); }, 450); } } }
+  function closePanel(){ openPanel(false); }
+  document.getElementById('tripClose').addEventListener('click', closePanel);
+  var tBtn=document.getElementById('tripBtn'); if(tBtn) tBtn.addEventListener('click', function(){ closeMenu(); openPanel(true); });
+  document.getElementById('tripMenuBtn').addEventListener('click', openTripMenu);
+  document.getElementById('tripNavNext').addEventListener('click', navNext);
+  document.getElementById('tripAddDay').addEventListener('click', function(){ var a=AG.trips.getActive(); if(!a) return; a.days.push({index:a.days.length, label:'New day', date:null, assigned:[], notes:''}); AG.trips.saveActive(); renderDays(); var rows=tripDays.children; if(rows.length){ rows[rows.length-1].scrollIntoView({block:'nearest'}); } });
+
+  AG.trips.onChange(renderDays);
+  AG.trips.ready.then(renderDays);
+  AG.openTrip = function(){ closeMenu(); openPanel(true); };
+
+  // ---------- Web Share Target handler ----------
+  (function handleShare(){
+    var p; try { p=new URLSearchParams(location.search); } catch(e){ return; }
+    if(!p.has('title') && !p.has('text') && !p.has('url') && !p.has('share')) return;
+    var title=p.get('title')||'', text=p.get('text')||'', url=p.get('url')||'';
+    try { history.replaceState({}, '', location.pathname); } catch(e){}   // strip so refresh won't re-fire
+    var textUrl=(text.match(/https?:\/\/[^\s]+/)||[''])[0];
+    var candidate=url || textUrl || text || title;
+    var r=parsePlaceUrl(candidate) || {};
+    var name=r.name || title || (text && !/^https?:/i.test(text.split(/\n/)[0]) ? text.split(/\n/)[0].trim() : '') || '';
+    if(/^https?:/i.test(name)) name='';
+    AG.trips.ready.then(function(){
+      openPanel(true);
+      openCustomWp(null, { fromShare:true, source:'share', name:name,
+        lat:(r.lat!=null?r.lat:null), lng:(r.lng!=null?r.lng:null), type:'custom',
+        mapsUrl:(url || textUrl || ''), autoParse:true });
+    });
+  })();
 })();
 </script>
 </body>
