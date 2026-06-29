@@ -13,10 +13,11 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v22';
-// Build revision — bumped to force already-installed v22 clients to re-fetch the shell
-// after the v22 bundle grew (gold nuggets + nav menu + DEECA tracks + Maps offline helper).
-const SHELL_REV = 'v22-r2';
+const SHELL_VERSION = 'v23';
+// Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
+// v23: unified top-right Layers panel (base + overlays + tracks + trip, each with a live
+// opacity slider via per-layer panes); removed the duplicate Settings opacity/base controls.
+const SHELL_REV = 'v23';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 

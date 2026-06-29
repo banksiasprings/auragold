@@ -323,6 +323,35 @@
     font-size:13px; color:#1f5a2a; }
   .am-detected.warn { background:#fcf3e3; border-color:#ecd9ab; color:#8a5a00; }
   .am-detected b { display:block; margin-bottom:2px; }
+
+  /* v23 — unified Layers panel (top-right): every layer, tickable, with a live opacity slider */
+  #layerPanel { position:absolute; top:10px; right:10px; z-index:1200; display:flex; flex-direction:column; align-items:flex-end;
+    font:13px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .lp-toggle { display:flex; align-items:center; gap:7px; background:#1f2430; color:#ffd54a; border:none; border-radius:11px;
+    padding:9px 12px; box-shadow:0 2px 9px rgba(0,0,0,.32); cursor:pointer; font-weight:800; font-size:13px; }
+  .lp-toggle svg { width:18px; height:18px; display:block; }
+  .lp-toggle .lp-lbl { white-space:nowrap; }
+  .lp-body { display:none; margin-top:7px; width:min(296px, calc(100vw - 20px)); max-height:72vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; background:#fff; border-radius:13px; box-shadow:0 6px 22px rgba(0,0,0,.28); padding:0 6px 6px; }
+  #layerPanel.open .lp-body { display:block; }
+  #layerPanel.open .lp-toggle { box-shadow:0 2px 9px rgba(0,0,0,.32), 0 0 0 2px #ffd54a inset; }
+  .lp-head { display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff;
+    padding:9px 4px 6px; z-index:1; border-bottom:1px solid #eee; }
+  .lp-head strong { font-size:13.5px; color:#1f2430; }
+  .lp-x { background:none; border:none; font-size:21px; line-height:1; color:#888; cursor:pointer; padding:0 2px; }
+  .lp-grp { font-weight:800; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#9a8a52; padding:9px 4px 3px; }
+  .lp-row { display:flex; align-items:center; gap:7px; padding:5px 3px; }
+  .lp-row + .lp-row { border-top:1px solid #f4f0e6; }
+  .lp-row input[type=checkbox] { width:17px; height:17px; flex:0 0 auto; accent-color:#caa53a; margin:0; }
+  .lp-sw { width:14px; height:14px; border-radius:4px; flex:0 0 auto; border:1px solid rgba(0,0,0,.25); background-size:cover; background-position:center; }
+  .lp-sw.img { border-radius:50%; background-color:#fff; }
+  .lp-name { flex:1 1 auto; min-width:0; font-size:12.5px; color:#222; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lp-op { width:64px; flex:0 0 auto; accent-color:#caa53a; margin:0; }
+  .lp-pct { width:33px; flex:0 0 auto; text-align:right; font-size:11px; color:#777; font-variant-numeric:tabular-nums; }
+  .lp-row.off .lp-name { color:#9a9a9a; }
+  .lp-row.off .lp-op { opacity:.4; }
+  .lp-note { font-size:10.5px; color:#8a8262; padding:8px 5px 2px; line-height:1.45; border-top:1px solid #eee; margin-top:6px; }
+  @media (min-width:769px){ .lp-body { width:300px; } }
 </style>
 </head>
 <body>
@@ -343,7 +372,20 @@
 </button>
 <div id="gpsStatus" role="status" aria-live="polite"></div>
 
-<!-- ☰ Map menu: base map, layers, legend, tools -->
+<!-- v23: unified Layers panel (top-right) — base maps + overlays + tracks + trip data, each with a live opacity slider -->
+<div id="layerPanel" aria-label="Map layers">
+  <button id="lpToggle" class="lp-toggle" type="button" aria-expanded="false" title="Map layers — base maps, overlays, tracks &amp; trip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><polygon points="12 2 22 8.5 12 15 2 8.5 12 2"/><polyline points="2 12.5 12 19 22 12.5"/><polyline points="2 16.5 12 23 22 16.5"/></svg>
+    <span class="lp-lbl">Layers</span>
+  </button>
+  <div class="lp-body" id="lpBody" role="group" aria-label="Map layers list">
+    <div class="lp-head"><strong>Map layers</strong><button class="lp-x" id="lpClose" type="button" aria-label="Collapse">×</button></div>
+    <div id="lpList"></div>
+    <div class="lp-note" id="lpNote"></div>
+  </div>
+</div>
+
+<!-- ☰ Map menu: layers/legend live in the top-right Layers panel; this keeps tools + legend -->
 <aside id="menuPanel" class="ag-panel" aria-hidden="true">
   <header><h2>☰ Map menu</h2><button class="ag-x" id="menuClose" aria-label="Close">×</button></header>
   <div class="ag-body">
@@ -353,11 +395,10 @@
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
       <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
-      <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Overlay opacity · default base map · km / mi</span></button>
+      <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Distance units · app version · force update</span></button>
     </div>
-    <div class="ag-sec"><h3>Base map</h3><div class="ag-card" id="baseList"></div></div>
-    <div class="ag-sec"><h3>Map layers</h3><div class="ag-card" id="layerList"></div></div>
     <div class="ag-sec"><h3>Legend</h3><div class="ag-card menu-legend" id="menuLegend"></div></div>
+    <p class="ag-note" style="padding:2px 2px 0">Toggle base maps, overlays &amp; tracks in the <b>▤ Layers</b> panel (top-right of the map).</p>
   </div>
 </aside>
 
@@ -382,26 +423,6 @@
   <header><h2>⚙ Settings</h2><button class="ag-x" id="settingsClose" aria-label="Close">×</button></header>
   <div class="ag-body">
     <div class="ag-sec">
-      <h3>Overlay opacity</h3>
-      <div class="ag-card">
-        <div class="set-row"><label>🧲 Magnetic RTP <output id="opMagOut">60%</output></label>
-          <input type="range" id="opMag" min="10" max="100" step="5" value="60"></div>
-        <div class="set-row"><label>⛰️ Hillshade / terrain <output id="opHillOut">60%</output></label>
-          <input type="range" id="opHill" min="10" max="100" step="5" value="60"></div>
-      </div>
-      <p class="ag-note" style="padding:0 2px">Applies when the overlay is toggled on (☰ Map layers).</p>
-    </div>
-    <div class="ag-sec">
-      <h3>Forest track opacity</h3>
-      <div class="ag-card" id="trackOpList"></div>
-      <p class="ag-note" style="padding:0 2px">Tracks are off by default — switch them on under ☰ Map layers.</p>
-    </div>
-    <div class="ag-sec">
-      <h3>Default base map</h3>
-      <div class="ag-card" id="setBaseList"></div>
-      <p class="ag-note" style="padding:0 2px">The map this app opens with next time.</p>
-    </div>
-    <div class="ag-sec">
       <h3>Distance units</h3>
       <div class="ag-card">
         <label class="ag-row"><input type="radio" name="agunits" value="km"><span>Kilometres / metres</span></label>
@@ -425,7 +446,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v22</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v23</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -550,7 +571,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v22';
+var APP_VERSION = 'v23';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -668,14 +689,35 @@ const map = L.map("map", {
   worldCopyJump: false,
 }).setView([-36.7, 144.6], 8);
 
+// v23: explicit z-order panes — one per layer. The unified Layers panel drives
+// each layer's opacity LIVE by setting its pane's CSS opacity (works uniformly for
+// tile, SVG-vector, marker-cluster and canvas layers, and preserves each layer's
+// intrinsic fill/stroke ratios because CSS opacity multiplies).
+const PANE_Z = {
+  "p-sat": 200, "p-osm": 201, "p-topo": 202, "p-mag": 203, "p-hill": 204,
+  "p-endow": 300, "p-minocc": 305, "p-gf": 310, "p-el": 315, "p-ml": 320,
+  "p-fire": 325, "p-sf": 330, "p-rcl": 335,
+  "p-walk": 340, "p-4wd": 342, "p-mgmt": 344, "p-fire-track": 346,
+  "p-route": 360, "p-subspots": 365, "p-camp": 368, "p-spots": 370,
+};
+Object.keys(PANE_Z).forEach(function (id) {
+  map.createPane(id);
+  map.getPane(id).style.zIndex = PANE_Z[id];
+});
+// Set a pane's opacity live (0..1). Used by the Layers-panel sliders.
+function setPaneOpacity(paneId, v) {
+  var p = map.getPane(paneId);
+  if (p) p.style.opacity = v;
+}
+
 const baseSat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-  attribution: "Imagery © Esri", maxZoom: 18, noWrap: true,
+  attribution: "Imagery © Esri", maxZoom: 18, noWrap: true, pane: "p-sat",
 });
 const baseTopo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenTopoMap", maxZoom: 17, noWrap: true,
+  attribution: "© OpenTopoMap", maxZoom: 17, noWrap: true, pane: "p-topo",
 });
 const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap", maxZoom: 19, noWrap: true,
+  attribution: "© OpenStreetMap", maxZoom: 19, noWrap: true, pane: "p-osm",
 });
 
 baseSat.addTo(map);
@@ -725,7 +767,7 @@ spots.forEach(s => {
     '<div class="coords">' + s.lat.toFixed(4) + ', ' + s.lng.toFixed(4) + '</div>' +
     '<button class="nav-btn" data-nav="' + s.lat + ',' + s.lng + '" data-navlabel="' + ('#' + s.n + ' ' + s.name).replace(/"/g, '&quot;') + '">🧭 Navigate here</button>' +
     '</div>';
-  const m = L.marker([s.lat, s.lng], { icon: makePinIcon(s.n, statusColors[s.status]) })
+  const m = L.marker([s.lat, s.lng], { pane: "p-spots", icon: makePinIcon(s.n, statusColors[s.status]) })
     .bindPopup(popupHtml)
     .bindTooltip(s.n + ". " + s.name, { direction: "top", offset: [0, -35] })
     .addTo(spotGroup);
@@ -733,14 +775,14 @@ spots.forEach(s => {
 });
 
 camps.forEach(c => {
-  L.marker([c.lat, c.lng], { icon: makeCampIcon() })
+  L.marker([c.lat, c.lng], { pane: "p-camp", icon: makeCampIcon() })
     .bindPopup('<b>' + c.name + '</b><br><span style="font-size:11px;color:#666">' + c.note + '</span><br><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#666">' + c.lat.toFixed(4) + ', ' + c.lng.toFixed(4) + '</span>')
     .bindTooltip(c.name, { direction: "top", offset: [0, -10] })
     .addTo(campGroup);
 });
 
 subSpots.forEach(sub => {
-  L.marker([sub.lat, sub.lng], { icon: makeSubIcon() })
+  L.marker([sub.lat, sub.lng], { pane: "p-subspots", icon: makeSubIcon() })
     .bindPopup('<b>' + sub.name + '</b><br><span style="font-size:11px;color:#666">Sub-spot of #' + sub.parent + '</span><br><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#666">' + sub.lat.toFixed(4) + ', ' + sub.lng.toFixed(4) + '</span>')
     .bindTooltip(sub.name, { direction: "top", offset: [0, -8] })
     .addTo(subGroup);
@@ -758,6 +800,7 @@ const dataFires      = {"type":"FeatureCollection","features":[{"type":"Feature"
 
 // --- 1. Goldfield boundary polygons (red outline, no fill) ---
 const layerGoldfields = L.geoJSON(dataGoldfields, {
+  pane: "p-gf",
   style: { color: "#b91c1c", weight: 1.5, opacity: 0.85, fill: false, dashArray: "1 0" },
   onEachFeature: (f, l) => {
     const p = f.properties;
@@ -777,6 +820,7 @@ const layerGoldfields = L.geoJSON(dataGoldfields, {
 
 // --- 2. 1+ Moz Au endowment zones (translucent gold fill — Trilobite analog) ---
 const layerEndowment = L.geoJSON(dataEndowment, {
+  pane: "p-endow",
   style: f => ({
     color: "#b8860b", weight: 2, opacity: 0.9,
     fillColor: "#ffd54a", fillOpacity: 0.28
@@ -800,6 +844,7 @@ const layerEndowment = L.geoJSON(dataEndowment, {
 
 // --- 3. Active Exploration Licences (EL) - red dashed outline ---
 const layerEL = L.geoJSON(dataEL, {
+  pane: "p-el",
   style: { color: "#dc2626", weight: 1.2, opacity: 0.85,
            fillColor: "#dc2626", fillOpacity: 0.06, dashArray: "5 4" },
   onEachFeature: (f, l) => {
@@ -821,6 +866,7 @@ const layerEL = L.geoJSON(dataEL, {
 
 // --- 4. Active Mining Licences (MIN/ML) - solid red outline ---
 const layerML = L.geoJSON(dataML, {
+  pane: "p-ml",
   style: { color: "#991b1b", weight: 2, opacity: 1,
            fillColor: "#dc2626", fillOpacity: 0.18 },
   onEachFeature: (f, l) => {
@@ -842,6 +888,7 @@ const layerML = L.geoJSON(dataML, {
 
 // --- 5. Recent bushfire scars 2023-2025 (translucent orange) ---
 const layerFires = L.geoJSON(dataFires, {
+  pane: "p-fire",
   style: f => ({
     color: "#ea580c", weight: 1, opacity: 0.7,
     fillColor: "#fb923c", fillOpacity: 0.32
@@ -876,6 +923,7 @@ const nuggetIcon = L.icon({
   iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -9]
 });
 const layerMinOcc = L.markerClusterGroup({
+  clusterPane: "p-minocc",
   chunkedLoading: true,
   chunkInterval: 100,
   maxClusterRadius: 50,
@@ -931,7 +979,7 @@ const layerMinOcc = L.markerClusterGroup({
       for (var i = 0; i < feats.length; i++) {
         var f = feats[i];
         if (!f.geometry || !f.geometry.coordinates) continue;
-        var m = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { icon: nuggetIcon });
+        var m = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { pane: "p-minocc", icon: nuggetIcon });
         m._p = f.properties || {};
         // Lazy popup: build the HTML only when tapped (avoids 11k pre-built strings in memory).
         m.bindPopup(lazyPopup, { maxWidth: 320 });
@@ -962,7 +1010,8 @@ const layerStateForest = L.tileLayer.wms(wmsBase, {
   format: "image/png",
   transparent: true,
   CQL_FILTER: "rec_cat='STATE FOREST'",
-  opacity: 0.45,
+  opacity: 1,            // master opacity carried by pane p-sf (Layers panel)
+  pane: "p-sf",
   attribution: "Public Land © Resources Vic",
   noWrap: true
 });
@@ -973,7 +1022,8 @@ const layerRestricted = L.tileLayer.wms(wmsBase, {
   format: "image/png",
   transparent: true,
   CQL_FILTER: "act_desc='Unavailable Crown Land'",
-  opacity: 0.4,
+  opacity: 1,            // master opacity carried by pane p-rcl (Layers panel)
+  pane: "p-rcl",
   attribution: "Restricted Crown Land © Resources Vic",
   noWrap: true
 });
@@ -983,7 +1033,7 @@ const layerRestricted = L.tileLayer.wms(wmsBase, {
 // simplified to data/tracks/*.geojson (~6.8MB total, gzipped <1MB). Drawn on a shared
 // canvas for performance (~13k polylines each); each file is loaded only when its layer
 // is first switched on, and is SW-cached so it works offline once fetched.
-var trackRenderer = L.canvas({ padding: 0.5 });
+var TRACK_PANE = { walking: "p-walk", fourwd: "p-4wd", management: "p-mgmt", fire: "p-fire-track" };
 var TRACK_DEFS = [
   { key:'walking',    file:'data/tracks/walking.geojson',    color:'#19b6e6', weight:1.6, dash:'3 4', tip:'Walking track — foot only (not for vehicles)' },
   { key:'fourwd',     file:'data/tracks/fourwd.geojson',     color:'#9c6b2e', weight:1.6, dash:null,  tip:'4WD / forest track (public)' },
@@ -991,23 +1041,25 @@ var TRACK_DEFS = [
   { key:'fire',       file:'data/tracks/fire.geojson',       color:'#f08000', weight:2.0, dash:'7 5', tip:'Named fire track / line' }
 ];
 var trackLayers = {};            // key -> L.geoJSON
-var trackOpacity = { walking:0.85, fourwd:0.85, management:0.9, fire:0.9 };  // overwritten from settings
+// Each track gets its OWN canvas renderer + pane, so the Layers panel can drive its
+// opacity live via the pane (a shared renderer would force one opacity for all four).
 TRACK_DEFS.forEach(function(t){
   var lyr = L.geoJSON(null, {
-    renderer: trackRenderer,
-    style: function(){ return { color:t.color, weight:t.weight, opacity:trackOpacity[t.key], dashArray:t.dash, lineCap:'round' }; },
+    pane: TRACK_PANE[t.key],
+    renderer: L.canvas({ padding: 0.5, pane: TRACK_PANE[t.key] }),
+    style: function(){ return { color:t.color, weight:t.weight, opacity:1, dashArray:t.dash, lineCap:'round' }; },
     onEachFeature: function(f, l){
       var nm = (f.properties && f.properties.road_name) ? f.properties.road_name : '';
       l.bindTooltip((nm ? nm + ' — ' : '') + t.tip, { sticky:true });
     }
   });
   lyr._loaded = false; lyr._loading = false;
-  // Lazy-load the GeoJSON the first time the layer is switched on.
+  // Lazy-load the GeoJSON the first time the layer is switched on (opacity is the pane's job).
   lyr.on('add', function(){
     if (lyr._loaded || lyr._loading) return;
     lyr._loading = true;
     fetch(t.file).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function(gj){ lyr.addData(gj); lyr._loaded = true; lyr._loading = false; lyr.setStyle({ opacity: trackOpacity[t.key] }); })
+      .then(function(gj){ lyr.addData(gj); lyr._loaded = true; lyr._loading = false; })
       .catch(function(e){ lyr._loading = false; console.warn('[AuraGold] track layer ' + t.key + ' load failed:', e); });
   });
   trackLayers[t.key] = lyr;
@@ -1018,7 +1070,7 @@ const routeLatLngs = routeOrder.map(n => {
   return [s.lat, s.lng];
 });
 const routeLine = L.polyline(routeLatLngs, {
-  color: "#ff9500", weight: 3, opacity: 0.85, dashArray: "8 6",
+  color: "#ff9500", weight: 3, opacity: 0.85, dashArray: "8 6", pane: "p-route",
 });
 
 spotGroup.addTo(map);
@@ -1830,62 +1882,15 @@ setTimeout(fitToSpots, 400);
   var fb = document.getElementById('findsBtn');
   if (fb) fb.addEventListener('click', function(){ setOpen(false); });
 
-  // Base map (radio) — references the global base layers from the map script.
-  var bases = [['Satellite (Esri)', baseSat], ['Topographic', baseTopo], ['Street', baseOSM]];
-  var baseList = document.getElementById('baseList');
-  bases.forEach(function(b){
-    var row = document.createElement('label'); row.className = 'ag-row base';
-    row.innerHTML = '<input type="radio" name="agbase"><span>' + b[0] + '</span>';
-    var input = row.querySelector('input');
-    input.checked = map.hasLayer(b[1]);
-    input.addEventListener('change', function(){
-      bases.forEach(function(x){ if (map.hasLayer(x[1])) map.removeLayer(x[1]); });
-      b[1].addTo(map);
-    });
-    baseList.appendChild(row);
-  });
-
-  // Geophysics / terrain overlays for spot selection (cached on view by the SW).
+  // Geophysics / terrain base overlays (cached on view by the SW). Opacity is carried by
+  // their panes (p-mag / p-hill) so the unified Layers panel can adjust them live.
   var layerMag = L.tileLayer.wms('https://services.ga.gov.au/gis/geophysical-grids/wms', {
     layers: 'geophys:magmap_v7_2019_RTP', format: 'image/png', transparent: true,
-    opacity: 0.6, maxZoom: 19, maxNativeZoom: 13, noWrap: true,
+    opacity: 1, pane: 'p-mag', maxZoom: 19, maxNativeZoom: 13, noWrap: true,
     attribution: 'Magnetics TMI-RTP © Geoscience Australia' });
   var layerHill = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
-    { opacity: 0.6, maxZoom: 19, maxNativeZoom: 15, noWrap: true, attribution: 'Hillshade © Esri' });
-
-  // Overlay layers (checkbox) — same set/labels as the old top-right control.
-  var layers = [
-    ['Spots (1–12)', spotGroup], ['Camping', campGroup], ['Sub-spots', subGroup],
-    ['Itinerary route line', routeLine],
-    ['📍 My trip waypoints', (window.AuraGold||{}).tripWaypointLayer],
-    ['🎯 My saved finds', (window.AuraGold||{}).waypointLayer],
-    ['🥾 My walked track', (window.AuraGold||{}).trailLayer],
-    ['🧲 Magnetic RTP (structure) — GA', layerMag],
-    ['⛰️ Hillshade / terrain — Esri', layerHill],
-    ['🪙 Mineral occurrences (gold nuggets)', layerMinOcc],
-    ['🟡 1+ Moz Au endowment zones', layerEndowment],
-    ['🔴 Goldfield boundaries', layerGoldfields],
-    ['⛔ Active Exploration Licences (EL)', layerEL],
-    ['⛔ Active Mining Licences (ML / MIN)', layerML],
-    ['🟠 Bushfire scars 2023–2025', layerFires],
-    ['🟢 State Forest (fossicking) — WMS', layerStateForest],
-    ['🚫 Restricted Crown Land — WMS', layerRestricted],
-    ['🥾 Walking tracks', trackLayers.walking],
-    ['🚙 4WD / forest tracks', trackLayers.fourwd],
-    ['⛔ Management-vehicle tracks (closed)', trackLayers.management],
-    ['🔥 Named fire tracks / lines', trackLayers.fire]
-  ];
-  var layerList = document.getElementById('layerList');
-  layers.forEach(function(l){
-    if (!l[1]) return; // layer object missing — skip
-    var row = document.createElement('label'); row.className = 'ag-row';
-    row.innerHTML = '<input type="checkbox"><span>' + l[0] + '</span>';
-    var input = row.querySelector('input');
-    input.checked = map.hasLayer(l[1]);
-    input.addEventListener('change', function(){ input.checked ? l[1].addTo(map) : map.removeLayer(l[1]); });
-    layerList.appendChild(row);
-  });
+    { opacity: 1, pane: 'p-hill', maxZoom: 19, maxNativeZoom: 15, noWrap: true, attribution: 'Hillshade © Esri' });
 
   // Legend (relocated off the map surface).
   document.getElementById('menuLegend').innerHTML =
@@ -1915,29 +1920,10 @@ setTimeout(fitToSpots, 400);
 
   // ---------------- Settings (persisted) ----------------
   var SKEY = 'auragold_settings';
-  var DEFAULTS = { opMag:60, opHill:60, base:'sat', units:'km',
-    opTrk_walking:85, opTrk_fourwd:85, opTrk_management:90, opTrk_fire:90 };
-  var settings; try { settings = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SKEY)) || {}); } catch(e){ settings = Object.assign({}, DEFAULTS); }
+  var settings; try { settings = JSON.parse(localStorage.getItem(SKEY)) || {}; } catch(e){ settings = {}; }
+  if (typeof settings.units !== 'string') settings.units = 'km';
+  if (typeof settings.ly !== 'object' || !settings.ly) settings.ly = {};   // per-layer { on, op }
   function saveSettings(){ try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch(e){} }
-  var BASE_BY_KEY = { sat:baseSat, topo:baseTopo, osm:baseOSM };
-  var BASE_KEYS = [['sat','Satellite (Esri)'],['topo','Topographic'],['osm','Street']];
-
-  // Apply persisted opacity to the overlay layers immediately.
-  layerMag.setOpacity(settings.opMag/100);
-  layerHill.setOpacity(settings.opHill/100);
-  // Seed per-track opacity from settings; live layers restyle when the slider moves.
-  if (typeof TRACK_DEFS !== 'undefined') TRACK_DEFS.forEach(function(t){
-    trackOpacity[t.key] = (settings['opTrk_'+t.key] != null ? settings['opTrk_'+t.key] : 85) / 100;
-  });
-
-  // Apply persisted default base map (the map script adds Satellite by default).
-  (function applyBase(){
-    var want = BASE_BY_KEY[settings.base] || baseSat;
-    if (!map.hasLayer(want)){ Object.keys(BASE_BY_KEY).forEach(function(k){ if(map.hasLayer(BASE_BY_KEY[k])) map.removeLayer(BASE_BY_KEY[k]); }); want.addTo(map); }
-    // keep the menu's Base-map radios in sync (they were built above before this ran)
-    var radios = baseList.querySelectorAll('input[name="agbase"]');
-    bases.forEach(function(b,i){ if(radios[i]) radios[i].checked = map.hasLayer(b[1]); });
-  })();
 
   // Shared distance formatter — respects the units setting. Consumed by nav banner + nearest-spot.
   window.AuraGold = window.AuraGold || {};
@@ -1952,48 +1938,6 @@ setTimeout(fitToSpots, 400);
   document.getElementById('settingsBtn').addEventListener('click', function(){ setOpen(false); sOpen(true); });
   document.getElementById('settingsClose').addEventListener('click', function(){ sOpen(false); });
 
-  var opMag = document.getElementById('opMag'), opMagOut = document.getElementById('opMagOut');
-  var opHill = document.getElementById('opHill'), opHillOut = document.getElementById('opHillOut');
-  opMag.value = settings.opMag; opMagOut.textContent = settings.opMag + '%';
-  opHill.value = settings.opHill; opHillOut.textContent = settings.opHill + '%';
-  opMag.addEventListener('input', function(){ settings.opMag = +opMag.value; opMagOut.textContent = settings.opMag+'%'; layerMag.setOpacity(settings.opMag/100); saveSettings(); });
-  opHill.addEventListener('input', function(){ settings.opHill = +opHill.value; opHillOut.textContent = settings.opHill+'%'; layerHill.setOpacity(settings.opHill/100); saveSettings(); });
-
-  // Per-track opacity sliders (one per forest-track overlay).
-  var trackOpList = document.getElementById('trackOpList');
-  var TRACK_OP_META = { walking:'🥾 Walking', fourwd:'🚙 4WD / forest', management:'⛔ Management-only', fire:'🔥 Fire tracks' };
-  if (trackOpList && typeof TRACK_DEFS !== 'undefined') TRACK_DEFS.forEach(function(t){
-    var skey = 'opTrk_' + t.key, val = settings[skey] != null ? settings[skey] : 85;
-    var row = document.createElement('div'); row.className = 'set-row';
-    row.innerHTML = '<label>' + (TRACK_OP_META[t.key]||t.key) + ' <output>' + val + '%</output></label>' +
-      '<input type="range" min="10" max="100" step="5" value="' + val + '">';
-    var input = row.querySelector('input'), out = row.querySelector('output');
-    input.addEventListener('input', function(){
-      var v = +input.value; out.textContent = v + '%'; settings[skey] = v; saveSettings();
-      trackOpacity[t.key] = v / 100;
-      var lyr = trackLayers[t.key]; if (lyr && lyr._loaded) lyr.setStyle({ opacity: v / 100 });
-    });
-    trackOpList.appendChild(row);
-  });
-
-  // Default-base radios (in the settings panel)
-  var setBaseList = document.getElementById('setBaseList');
-  BASE_KEYS.forEach(function(bk){
-    var row = document.createElement('label'); row.className = 'ag-row';
-    row.innerHTML = '<input type="radio" name="agdefbase" value="'+bk[0]+'"><span>'+bk[1]+'</span>';
-    var input = row.querySelector('input'); input.checked = (settings.base === bk[0]);
-    input.addEventListener('change', function(){
-      settings.base = bk[0]; saveSettings();
-      var want = BASE_BY_KEY[bk[0]];
-      bases.forEach(function(x){ if (map.hasLayer(x[1])) map.removeLayer(x[1]); });
-      want.addTo(map);
-      // sync the ☰ menu base radios
-      var radios = baseList.querySelectorAll('input[name="agbase"]');
-      bases.forEach(function(b,i){ if(radios[i]) radios[i].checked = map.hasLayer(b[1]); });
-    });
-    setBaseList.appendChild(row);
-  });
-
   // Units radios
   Array.prototype.forEach.call(document.querySelectorAll('input[name="agunits"]'), function(r){
     r.checked = (r.value === settings.units);
@@ -2001,11 +1945,115 @@ setTimeout(fitToSpots, 400);
       var f=(window.AuraGold||{}).lastFix; if(f && window.AuraGold.navUpdate) window.AuraGold.navUpdate(f.lat,f.lng); } });
   });
 
-  // Keep the ☰ menu base radios and the settings default-base in sync when the user changes base there.
-  baseList.querySelectorAll('input[name="agbase"]').forEach(function(r,i){
-    r.addEventListener('change', function(){ if(r.checked){ settings.base = BASE_KEYS[i][0]; saveSettings();
-      var sr = setBaseList.querySelectorAll('input[name="agdefbase"]'); if(sr[i]) sr[i].checked = true; } });
+  // ================= v23 unified Layers panel =================
+  // ONE place for every layer: base maps, gold-data overlays, forest tracks and trip
+  // data. Each row = checkbox + colour swatch + name + LIVE opacity slider. Opacity is
+  // applied instantly on `input` by setting the layer's pane CSS opacity — no toggle-off-
+  // on needed (the old bug it replaces). Base maps are stackable (e.g. Topo over Sat @40%).
+  var LP = [
+    { grp:'Base maps' },
+    { k:'sat',  pane:'p-sat',  lyr:baseSat,          name:'Satellite (Esri)',          sw:'#5b7c99', on:true,  op:100 },
+    { k:'osm',  pane:'p-osm',  lyr:baseOSM,          name:'Map view (OpenStreetMap)',  sw:'#aaccee', on:false, op:70 },
+    { k:'topo', pane:'p-topo', lyr:baseTopo,         name:'Topographic / Terrain',     sw:'#cdbd9a', on:false, op:70 },
+    { k:'mag',  pane:'p-mag',  lyr:layerMag,         name:'Magnetic-RTP (GA)',         sw:'linear-gradient(90deg,#222,#bbb,#fff)', on:false, op:60 },
+    { k:'hill', pane:'p-hill', lyr:layerHill,        name:'Hillshade',                 sw:'linear-gradient(135deg,#6b6b6b,#e8e8e8)', on:false, op:60 },
+    { grp:'Gold data' },
+    { k:'endow', pane:'p-endow', lyr:layerEndowment, name:'1+ Moz Au endowment zones', sw:'#ffd54a', on:true,  op:35 },
+    { k:'minocc',pane:'p-minocc',lyr:layerMinOcc,    name:'Mineral occurrences (gold)', sw:'icons/nugget-marker.png', img:true, on:true, op:100 },
+    { k:'gf',   pane:'p-gf',   lyr:layerGoldfields,  name:'Goldfield boundaries',      sw:'#b91c1c', on:false, op:60 },
+    { k:'el',   pane:'p-el',   lyr:layerEL,          name:'Active Exploration Licences', sw:'#dc2626', on:false, op:50 },
+    { k:'ml',   pane:'p-ml',   lyr:layerML,          name:'Active Mining Licences',    sw:'#991b1b', on:false, op:50 },
+    { k:'fire', pane:'p-fire', lyr:layerFires,       name:'Bushfire scars 2023–2025',  sw:'#fb923c', on:false, op:50 },
+    { k:'sf',   pane:'p-sf',   lyr:layerStateForest, name:'State Forest (fossicking)', sw:'#22c55e', on:false, op:40 },
+    { k:'rcl',  pane:'p-rcl',  lyr:layerRestricted,  name:'Restricted Crown Land',     sw:'#ef4444', on:false, op:40 },
+    { grp:'Forest tracks (DEECA)' },
+    { k:'walk',    pane:'p-walk',       lyr:trackLayers.walking,    name:'Walking tracks',           sw:'#19b6e6', on:false, op:85 },
+    { k:'4wd',     pane:'p-4wd',        lyr:trackLayers.fourwd,     name:'4WD / forest tracks',      sw:'#9c6b2e', on:false, op:85 },
+    { k:'mgmt',    pane:'p-mgmt',       lyr:trackLayers.management, name:'Management-vehicle tracks',sw:'#d4242a', on:false, op:90 },
+    { k:'firetrk', pane:'p-fire-track', lyr:trackLayers.fire,       name:'Fire access tracks',       sw:'#f08000', on:false, op:90 },
+    { grp:'Trip data' },
+    { k:'route',    pane:'p-route',    lyr:routeLine, name:'Itinerary route line', sw:'#ff9500', on:true, op:85 },
+    { k:'spots',    pane:'p-spots',    lyr:spotGroup, name:'Spots (1–12)',         sw:'#d8324b', on:true, op:100 },
+    { k:'camp',     pane:'p-camp',     lyr:campGroup, name:'Camping',              sw:'#2563eb', on:true, op:100 },
+    { k:'subspots', pane:'p-subspots', lyr:subGroup,  name:'Sub-spots',            sw:'#ffd700', on:true, op:100 }
+  ];
+  // Optional user-data layers (created by later scripts) — toggle-only, resolved lazily.
+  var LP_DYN = [
+    { name:'📍 My trip waypoints', get:function(){ return (window.AuraGold||{}).tripWaypointLayer; } },
+    { name:'🎯 My saved finds',    get:function(){ return (window.AuraGold||{}).waypointLayer; } },
+    { name:'🥾 My walked track',   get:function(){ return (window.AuraGold||{}).trailLayer; } }
+  ];
+
+  var lpList = document.getElementById('lpList');
+  function lpState(c){ var s = settings.ly[c.k] || {}; return { on:(s.on != null ? s.on : c.on), op:(s.op != null ? s.op : c.op) }; }
+  function lpSave(k, patch){ settings.ly[k] = Object.assign({}, settings.ly[k], patch); saveSettings(); }
+
+  // Apply each core layer's persisted (or default) state to the map + its pane.
+  LP.forEach(function(c){
+    if (c.grp) return;
+    var st = lpState(c);
+    setPaneOpacity(c.pane, st.op/100);
+    if (st.on && !map.hasLayer(c.lyr)) c.lyr.addTo(map);
+    if (!st.on && map.hasLayer(c.lyr)) map.removeLayer(c.lyr);
   });
+
+  // Build the rows.
+  LP.forEach(function(c){
+    if (c.grp){ var h=document.createElement('div'); h.className='lp-grp'; h.textContent=c.grp; lpList.appendChild(h); return; }
+    var st = lpState(c);
+    var row = document.createElement('div'); row.className = 'lp-row' + (st.on?'':' off');
+    var swStyle = c.img ? ('background-image:url('+c.sw+')') : ('background:'+c.sw);
+    row.innerHTML =
+      '<input type="checkbox"' + (st.on?' checked':'') + ' aria-label="'+c.name+'">' +
+      '<span class="lp-sw'+(c.img?' img':'')+'" style="'+swStyle+'"></span>' +
+      '<span class="lp-name" title="'+c.name+'">'+c.name+'</span>' +
+      '<input type="range" class="lp-op" min="0" max="100" step="5" value="'+st.op+'" aria-label="'+c.name+' opacity">' +
+      '<span class="lp-pct">'+st.op+'%</span>';
+    var cb = row.querySelector('input[type=checkbox]'), sl = row.querySelector('input[type=range]'), pct = row.querySelector('.lp-pct');
+    cb.addEventListener('change', function(){
+      if (cb.checked) c.lyr.addTo(map); else map.removeLayer(c.lyr);
+      row.classList.toggle('off', !cb.checked);
+      lpSave(c.k, { on: cb.checked });
+    });
+    sl.addEventListener('input', function(){
+      var v = +sl.value; pct.textContent = v + '%';
+      setPaneOpacity(c.pane, v/100);
+      lpSave(c.k, { op: v });
+    });
+    lpList.appendChild(row);
+  });
+
+  // Dynamic user-data toggles (resolved lazily; rebuilt when the panel opens).
+  var lpDynWrap = document.createElement('div'); lpList.appendChild(lpDynWrap);
+  function buildDyn(){
+    var present = LP_DYN.filter(function(d){ return !!d.get(); });
+    if (!present.length){ lpDynWrap.innerHTML=''; return; }
+    lpDynWrap.innerHTML = '<div class="lp-grp">My data</div>';
+    present.forEach(function(d){
+      var lyr = d.get();
+      var row = document.createElement('div'); row.className='lp-row';
+      row.innerHTML = '<input type="checkbox"'+(map.hasLayer(lyr)?' checked':'')+' aria-label="'+d.name+'">' +
+        '<span class="lp-name" style="margin-left:21px" title="'+d.name+'">'+d.name+'</span>';
+      row.querySelector('input').addEventListener('change', function(){ this.checked ? lyr.addTo(map) : map.removeLayer(lyr); });
+      lpDynWrap.appendChild(row);
+    });
+  }
+  buildDyn();
+
+  // Footer caveat — the Hillshade source (no public Vic LiDAR tile service yet).
+  var lpNote = document.getElementById('lpNote');
+  if (lpNote) lpNote.innerHTML = 'Tip: stack base maps with the sliders (e.g. Topographic over Satellite). ' +
+    '“Hillshade” is Esri global relief — there is no public Victorian LiDAR tile service yet; a real one will be swapped in if it appears.';
+
+  // Panel open / collapse (collapsed by default on phones; expand on tap).
+  var lPanel = document.getElementById('layerPanel');
+  var lpToggle = document.getElementById('lpToggle');
+  var lpClose = document.getElementById('lpClose');
+  function lpOpen(o){ lPanel.classList.toggle('open', o); lpToggle.setAttribute('aria-expanded', o?'true':'false'); if (o) buildDyn(); }
+  lpToggle.addEventListener('click', function(){ lpOpen(!lPanel.classList.contains('open')); });
+  if (lpClose) lpClose.addEventListener('click', function(){ lpOpen(false); });
+  if (L.DomEvent){ L.DomEvent.disableClickPropagation(lPanel); L.DomEvent.disableScrollPropagation(lPanel); }
+  lpOpen(window.innerWidth > 768);
 
   // ---- Version badge + "Force fresh download" ----
   var ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '';
