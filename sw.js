@@ -14,7 +14,10 @@
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
 const SHELL_VERSION = 'v22';
-const SHELL_CACHE = 'auragold-shell-' + SHELL_VERSION;
+// Build revision — bumped to force already-installed v22 clients to re-fetch the shell
+// after the v22 bundle grew (gold nuggets + nav menu + DEECA tracks + Maps offline helper).
+const SHELL_REV = 'v22-r2';
+const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
 // Relative paths so it works under the /auragold/ GitHub Pages subpath.

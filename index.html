@@ -165,6 +165,23 @@
     border:2px solid #fff8e1; box-shadow:0 1px 4px rgba(80,55,0,.55); }
   .ag-nugget-cluster span { font:700 12px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     color:#4a3500; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  /* Navigate action sheet (v22) — Direct (in-app) / Drive / Walk hand-off to Maps. */
+  .nav-sheet-backdrop { position:fixed; inset:0; z-index:2400; background:rgba(15,15,20,.45);
+    display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s; }
+  .nav-sheet-backdrop.open { opacity:1; pointer-events:auto; }
+  .nav-sheet { width:min(96vw,420px); margin:0 0 max(10px,env(safe-area-inset-bottom)); background:#fff; border-radius:16px;
+    padding:12px; box-shadow:0 -4px 24px rgba(0,0,0,.3); transform:translateY(14px); transition:transform .18s; }
+  .nav-sheet-backdrop.open .nav-sheet { transform:translateY(0); }
+  .nav-sheet h4 { margin:4px 6px 10px; font:700 14px -apple-system,BlinkMacSystemFont,sans-serif; color:#2a2620; }
+  .nav-sheet h4 small { display:block; font-weight:500; font-size:11.5px; color:#8a836c; margin-top:1px; }
+  .nav-sheet button { display:flex; align-items:center; gap:11px; width:100%; box-sizing:border-box; text-align:left;
+    border:1px solid #ece4cf; background:#fbf8ef; color:#2a2620; border-radius:11px; padding:12px 14px; margin-bottom:8px;
+    font:600 14.5px -apple-system,BlinkMacSystemFont,sans-serif; cursor:pointer; }
+  .nav-sheet button:active { transform:scale(.985); }
+  .nav-sheet button .ns-ic { font-size:20px; flex:0 0 auto; line-height:1; }
+  .nav-sheet button .ns-sub { display:block; font-weight:500; font-size:11.5px; color:#8a836c; margin-top:1px; }
+  .nav-sheet button.ns-direct { background:#eaf6ec; border-color:#cfe9d4; }
+  .nav-sheet button.ns-cancel { justify-content:center; background:#fff; border-color:#e3ddcb; color:#6a6450; margin-bottom:0; font-weight:600; }
   /* Version badge — bottom-left, floats just above the "Got a hit!" button so it
      never overlaps that pill, the FABs, or the Leaflet attribution strip below it. */
   .version-badge { position:absolute; bottom:64px; left:14px; z-index:1000; pointer-events:none;
@@ -375,6 +392,11 @@
       <p class="ag-note" style="padding:0 2px">Applies when the overlay is toggled on (☰ Map layers).</p>
     </div>
     <div class="ag-sec">
+      <h3>Forest track opacity</h3>
+      <div class="ag-card" id="trackOpList"></div>
+      <p class="ag-note" style="padding:0 2px">Tracks are off by default — switch them on under ☰ Map layers.</p>
+    </div>
+    <div class="ag-sec">
       <h3>Default base map</h3>
       <div class="ag-card" id="setBaseList"></div>
       <p class="ag-note" style="padding:0 2px">The map this app opens with next time.</p>
@@ -442,6 +464,16 @@
         <p style="margin:8px 0 2px">You must hold and <b>carry</b> a current Victorian Miner's Right whenever you prospect. It costs <b>$28.60</b> and lasts <b>10 years</b>. Kids under 18 are covered if they're with an adult who holds one.</p>
         <a class="ag-btn" href="https://www.service.vic.gov.au/services/earth-resources" target="_blank" rel="noopener">Buy / renew a Miner's Right →</a>
         <label class="ag-check"><input type="checkbox" data-key="mr_have" data-scope="trip"><span>Miner's Right bought &amp; on me (digital or printed)</span></label>
+      </div>
+    </div>
+
+    <div class="ag-sec">
+      <h3>Before you leave — offline maps</h3>
+      <div class="ag-card">
+        <p style="margin:8px 0 2px">AuraGold caches its own maps below. But also grab <b>Google Maps offline</b> — it's your road-navigation safety net when you lose signal. Google only lets you download from inside the Maps app, so:</p>
+        <a class="ag-btn" href="https://www.google.com/maps/@-36.7,144.0,8z" target="_blank" rel="noopener">📥 Open Google Maps on the trip region →</a>
+        <p class="ag-note" style="margin:8px 0 2px">Then in Maps: <b>Profile → Offline maps → Select your own map</b>, drag the box to cover the goldfields (Wedderburn south to Ballarat), and <b>Download</b>.</p>
+        <label class="ag-check"><input type="checkbox" data-key="gmaps_offline" data-scope="trip"><span>Downloaded Google Maps offline for the trip region</span></label>
       </div>
     </div>
 
@@ -946,6 +978,41 @@ const layerRestricted = L.tileLayer.wms(wmsBase, {
   noWrap: true
 });
 
+// --- 9. DEECA / Vicmap forest tracks (v22) — 4 lazy, default-OFF vector overlays ---
+// Source: open-data tr_road (Vicmap Transport), pre-filtered by class/restriction +
+// simplified to data/tracks/*.geojson (~6.8MB total, gzipped <1MB). Drawn on a shared
+// canvas for performance (~13k polylines each); each file is loaded only when its layer
+// is first switched on, and is SW-cached so it works offline once fetched.
+var trackRenderer = L.canvas({ padding: 0.5 });
+var TRACK_DEFS = [
+  { key:'walking',    file:'data/tracks/walking.geojson',    color:'#19b6e6', weight:1.6, dash:'3 4', tip:'Walking track — foot only (not for vehicles)' },
+  { key:'fourwd',     file:'data/tracks/fourwd.geojson',     color:'#9c6b2e', weight:1.6, dash:null,  tip:'4WD / forest track (public)' },
+  { key:'management', file:'data/tracks/management.geojson', color:'#d4242a', weight:1.7, dash:'5 5', tip:'Management vehicles only — likely closed to the public' },
+  { key:'fire',       file:'data/tracks/fire.geojson',       color:'#f08000', weight:2.0, dash:'7 5', tip:'Named fire track / line' }
+];
+var trackLayers = {};            // key -> L.geoJSON
+var trackOpacity = { walking:0.85, fourwd:0.85, management:0.9, fire:0.9 };  // overwritten from settings
+TRACK_DEFS.forEach(function(t){
+  var lyr = L.geoJSON(null, {
+    renderer: trackRenderer,
+    style: function(){ return { color:t.color, weight:t.weight, opacity:trackOpacity[t.key], dashArray:t.dash, lineCap:'round' }; },
+    onEachFeature: function(f, l){
+      var nm = (f.properties && f.properties.road_name) ? f.properties.road_name : '';
+      l.bindTooltip((nm ? nm + ' — ' : '') + t.tip, { sticky:true });
+    }
+  });
+  lyr._loaded = false; lyr._loading = false;
+  // Lazy-load the GeoJSON the first time the layer is switched on.
+  lyr.on('add', function(){
+    if (lyr._loaded || lyr._loading) return;
+    lyr._loading = true;
+    fetch(t.file).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(gj){ lyr.addData(gj); lyr._loaded = true; lyr._loading = false; lyr.setStyle({ opacity: trackOpacity[t.key] }); })
+      .catch(function(e){ lyr._loading = false; console.warn('[AuraGold] track layer ' + t.key + ' load failed:', e); });
+  });
+  trackLayers[t.key] = lyr;
+});
+
 const routeLatLngs = routeOrder.map(n => {
   const s = spots.find(x => x.n === n);
   return [s.lat, s.lng];
@@ -1039,6 +1106,14 @@ setTimeout(fitToSpots, 400);
 
   async function prefetch() {
     if (!navigator.onLine) { setLbl('Offline — can’t save now'); return; }
+    // Cache the forest-track GeoJSON overlays (same-origin) so they're available offline
+    // even if the user never switched the layers on. ~6.8MB total, cached once.
+    setLbl('Saving track data…');
+    try {
+      await Promise.all(['walking','fourwd','management','fire'].map(function(k){
+        return fetch('data/tracks/' + k + '.geojson', { cache: 'reload' }).catch(function(){});
+      }));
+    } catch (e) { /* best effort */ }
     var urls = buildList();
     var total = urls.length, done = 0, ok = 0;
     btn.disabled = true; btn.style.opacity = '0.85';
@@ -1688,20 +1763,56 @@ setTimeout(fitToSpots, 400);
   }
   banner.querySelector('.nb-x').addEventListener('click', stopNav);
 
+  // ---- Navigate action sheet: Direct (in-app) / Drive in Maps / Walk in Maps ----
+  // In-app green line stays the "Direct" option for close-range bush nav; Drive/Walk
+  // hand off to the device's maps app for road turn-by-turn (no point reinventing it).
+  var sheet = document.createElement('div');
+  sheet.className = 'nav-sheet-backdrop';
+  sheet.innerHTML =
+    '<div class="nav-sheet" role="dialog" aria-label="Navigate options">' +
+      '<h4 id="nsTitle">Navigate<small id="nsSub"></small></h4>' +
+      '<button class="ns-direct" data-mode="direct"><span class="ns-ic">🧭</span><span>Direct<span class="ns-sub">In-app line + bearing — close-range / bush</span></span></button>' +
+      '<button data-mode="drive"><span class="ns-ic">🚗</span><span>Drive in Maps<span class="ns-sub">Road directions in your maps app</span></span></button>' +
+      '<button data-mode="walk"><span class="ns-ic">🥾</span><span>Walk in Maps<span class="ns-sub">Walking directions in your maps app</span></span></button>' +
+      '<button class="ns-cancel" data-mode="cancel">Cancel</button>' +
+    '</div>';
+  document.body.appendChild(sheet);
+  var nsPending = null;
+  function closeSheet(){ sheet.classList.remove('open'); }
+  sheet.addEventListener('click', function(ev){
+    if (ev.target === sheet){ closeSheet(); return; }                 // tap backdrop
+    var b = ev.target.closest('button[data-mode]'); if(!b || !nsPending) { return; }
+    var mode = b.getAttribute('data-mode'), t = nsPending;
+    closeSheet();
+    if (mode === 'cancel') return;
+    if (mode === 'direct'){ navigateTo(t.lat, t.lng, t.label); return; }
+    var dest = t.lat + ',' + t.lng;
+    var url = (mode === 'walk')
+      ? 'https://www.google.com/maps/dir/?api=1&destination=' + dest + '&travelmode=walking'
+      : 'https://www.google.com/maps/dir/?api=1&destination=' + dest + '&travelmode=driving';
+    window.open(url, '_blank');
+  });
+  function chooseNav(lat, lng, label){
+    nsPending = { lat:lat, lng:lng, label:label||'target' };
+    sheet.querySelector('#nsSub').textContent = label || '';
+    sheet.classList.add('open');
+  }
+
   // Delegate clicks from any popup's "🧭 Navigate" button (spots + waypoints).
   map.on('popupopen', function(e){
     var el=e.popup.getElement(); if(!el) return;
     var btn=el.querySelector('[data-nav]'); if(!btn) return;
     btn.addEventListener('click', function(){
       var c=btn.getAttribute('data-nav').split(',');
-      navigateTo(parseFloat(c[0]), parseFloat(c[1]), btn.getAttribute('data-navlabel')||'target');
       map.closePopup();
+      chooseNav(parseFloat(c[0]), parseFloat(c[1]), btn.getAttribute('data-navlabel')||'target');
     });
   });
 
   window.AuraGold = window.AuraGold || {};
   window.AuraGold.navUpdate = function(la,lo){ if(target) paint(); };
   window.AuraGold.navigateTo = navigateTo;
+  window.AuraGold.chooseNav = chooseNav;
   window.AuraGold.stopNav = stopNav;
 })();
 </script>
@@ -1759,7 +1870,11 @@ setTimeout(fitToSpots, 400);
     ['⛔ Active Mining Licences (ML / MIN)', layerML],
     ['🟠 Bushfire scars 2023–2025', layerFires],
     ['🟢 State Forest (fossicking) — WMS', layerStateForest],
-    ['🚫 Restricted Crown Land — WMS', layerRestricted]
+    ['🚫 Restricted Crown Land — WMS', layerRestricted],
+    ['🥾 Walking tracks', trackLayers.walking],
+    ['🚙 4WD / forest tracks', trackLayers.fourwd],
+    ['⛔ Management-vehicle tracks (closed)', trackLayers.management],
+    ['🔥 Named fire tracks / lines', trackLayers.fire]
   ];
   var layerList = document.getElementById('layerList');
   layers.forEach(function(l){
@@ -1791,11 +1906,17 @@ setTimeout(fitToSpots, 400);
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>' +
     '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Geophysics / terrain (toggle on)</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(90deg,#222,#bbb,#fff);border:1px solid #888"></span> 🧲 Magnetic RTP — reads basement structure / faults</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(135deg,#6b6b6b,#e8e8e8);border:1px solid #888"></span> ⛰️ Hillshade — gullies, ridges, old workings</div>';
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:linear-gradient(135deg,#6b6b6b,#e8e8e8);border:1px solid #888"></span> ⛰️ Hillshade — gullies, ridges, old workings</div>' +
+    '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Forest tracks (toggle on)</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #19b6e6;margin:5px 0"></span> 🥾 Walking track</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px solid #9c6b2e;margin:5px 0"></span> 🚙 4WD / forest track</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #d4242a;margin:5px 0"></span> ⛔ Management only — likely closed</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #f08000;margin:5px 0"></span> 🔥 Named fire track / line</div>';
 
   // ---------------- Settings (persisted) ----------------
   var SKEY = 'auragold_settings';
-  var DEFAULTS = { opMag:60, opHill:60, base:'sat', units:'km' };
+  var DEFAULTS = { opMag:60, opHill:60, base:'sat', units:'km',
+    opTrk_walking:85, opTrk_fourwd:85, opTrk_management:90, opTrk_fire:90 };
   var settings; try { settings = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SKEY)) || {}); } catch(e){ settings = Object.assign({}, DEFAULTS); }
   function saveSettings(){ try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch(e){} }
   var BASE_BY_KEY = { sat:baseSat, topo:baseTopo, osm:baseOSM };
@@ -1804,6 +1925,10 @@ setTimeout(fitToSpots, 400);
   // Apply persisted opacity to the overlay layers immediately.
   layerMag.setOpacity(settings.opMag/100);
   layerHill.setOpacity(settings.opHill/100);
+  // Seed per-track opacity from settings; live layers restyle when the slider moves.
+  if (typeof TRACK_DEFS !== 'undefined') TRACK_DEFS.forEach(function(t){
+    trackOpacity[t.key] = (settings['opTrk_'+t.key] != null ? settings['opTrk_'+t.key] : 85) / 100;
+  });
 
   // Apply persisted default base map (the map script adds Satellite by default).
   (function applyBase(){
@@ -1833,6 +1958,23 @@ setTimeout(fitToSpots, 400);
   opHill.value = settings.opHill; opHillOut.textContent = settings.opHill + '%';
   opMag.addEventListener('input', function(){ settings.opMag = +opMag.value; opMagOut.textContent = settings.opMag+'%'; layerMag.setOpacity(settings.opMag/100); saveSettings(); });
   opHill.addEventListener('input', function(){ settings.opHill = +opHill.value; opHillOut.textContent = settings.opHill+'%'; layerHill.setOpacity(settings.opHill/100); saveSettings(); });
+
+  // Per-track opacity sliders (one per forest-track overlay).
+  var trackOpList = document.getElementById('trackOpList');
+  var TRACK_OP_META = { walking:'🥾 Walking', fourwd:'🚙 4WD / forest', management:'⛔ Management-only', fire:'🔥 Fire tracks' };
+  if (trackOpList && typeof TRACK_DEFS !== 'undefined') TRACK_DEFS.forEach(function(t){
+    var skey = 'opTrk_' + t.key, val = settings[skey] != null ? settings[skey] : 85;
+    var row = document.createElement('div'); row.className = 'set-row';
+    row.innerHTML = '<label>' + (TRACK_OP_META[t.key]||t.key) + ' <output>' + val + '%</output></label>' +
+      '<input type="range" min="10" max="100" step="5" value="' + val + '">';
+    var input = row.querySelector('input'), out = row.querySelector('output');
+    input.addEventListener('input', function(){
+      var v = +input.value; out.textContent = v + '%'; settings[skey] = v; saveSettings();
+      trackOpacity[t.key] = v / 100;
+      var lyr = trackLayers[t.key]; if (lyr && lyr._loaded) lyr.setStyle({ opacity: v / 100 });
+    });
+    trackOpList.appendChild(row);
+  });
 
   // Default-base radios (in the settings panel)
   var setBaseList = document.getElementById('setBaseList');
@@ -2274,7 +2416,7 @@ setTimeout(fitToSpots, 400);
 
   // ---------- Navigate to next stop ----------
   function navNext(){ var a=AG.trips.getActive(); if(!a) return;
-    for(var i=0;i<a.days.length;i++){ var d=a.days[i]; for(var j=0;j<(d.assigned||[]).length;j++){ var it=resolve(d.assigned[j]); if(it){ closePanel(); if(AG.navigateTo) AG.navigateTo(it.lat,it.lng,'Day '+(i+1)+': '+it.name); return; } } }
+    for(var i=0;i<a.days.length;i++){ var d=a.days[i]; for(var j=0;j<(d.assigned||[]).length;j++){ var it=resolve(d.assigned[j]); if(it){ closePanel(); var nav=AG.chooseNav||AG.navigateTo; if(nav) nav(it.lat,it.lng,'Day '+(i+1)+': '+it.name); return; } } }
     say('No stops assigned yet — add some to a day first'); }
 
   // ---------- Panel wiring ----------
