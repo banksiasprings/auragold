@@ -486,6 +486,54 @@
   .ml-cm td.diag { background:#e3f6e3; color:#1f7a32; font-weight:800; }
   .ml-cm td.off { background:#fdeaea; color:#9b2b22; }
   .ml-cm-key { font-size:10.5px; color:#999; text-align:center; margin-top:4px; }
+
+  /* ===== v27 — universal delete-confirmation modal (AG.confirmDelete) ===== */
+  .cd-ov { position:fixed; inset:0; z-index:2600; background:rgba(20,18,10,.58); display:none;
+    align-items:center; justify-content:center; padding:20px; -webkit-tap-highlight-color:transparent; }
+  .cd-ov.show { display:flex; }
+  .cd-card { background:#fbf7ec; width:100%; max-width:340px; border-radius:16px; padding:20px 18px 16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.45); font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#23200f; }
+  .cd-title { margin:0 0 8px; font-size:17px; font-weight:700; color:#23200f; line-height:1.3; }
+  .cd-msg { margin:0 0 14px; font-size:14px; color:#6a6450; }
+  .cd-type { width:100%; box-sizing:border-box; border:1px solid #d9cfa6; border-radius:9px; padding:11px;
+    font:700 15px ui-monospace,Menlo,monospace; letter-spacing:2px; color:#23200f; background:#fff; margin:0 0 14px; text-align:center; }
+  .cd-type::placeholder { letter-spacing:1px; color:#bbb; font-weight:500; }
+  .cd-btns { display:flex; gap:10px; }
+  .cd-btns button { flex:1; border:none; border-radius:10px; padding:12px; font:700 14px -apple-system,sans-serif; cursor:pointer; }
+  .cd-cancel { background:#fff; color:#23200f; border:1px solid #d9cfa6; }
+  .cd-cancel:focus-visible { outline:2px solid #b08800; outline-offset:1px; }
+  .cd-ok { background:#b3261e; color:#fff; }
+  .cd-ok:disabled { background:#e0b6b2; cursor:not-allowed; }
+
+  /* ===== v27 — find outcome badge on the teardrop marker + list/popup outcome tag ===== */
+  .ag-wp { position:relative; }
+  .ag-wp-badge { position:absolute; top:-7px; right:-7px; transform:rotate(45deg); min-width:15px; height:15px;
+    padding:0 1px; border-radius:8px; background:#fff; border:1.5px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; }
+  .wp-otag { display:inline-block; margin-left:6px; font-size:10px; font-weight:700; line-height:1.4; color:#fff;
+    padding:1px 6px; border-radius:9px; vertical-align:middle; }
+  .wp-item .edit { background:none; border:1px solid #d9cfa6; border-radius:6px; color:#6a5a1f;
+    padding:5px 7px; font-size:13px; cursor:pointer; flex:0 0 auto; }
+  .popup-spot .edit2 { display:block; width:100%; box-sizing:border-box; margin-top:6px; padding:7px 9px; border:1px solid #d9cfa6;
+    border-radius:7px; background:#fff; color:#6a5a1f; font:600 13px -apple-system,sans-serif; cursor:pointer; }
+
+  /* ===== v27 — find edit sheet (reuses .ag-modal / .am-card / .am-* from the trip modal) ===== */
+  .fe-coords { font:600 13px ui-monospace,Menlo,monospace; color:#23200f; background:#fff; border:1px solid #ece3c6;
+    border-radius:9px; padding:10px 11px; }
+  .fe-created { font-size:13px; color:#6a6450; padding:2px 1px; }
+  .fe-err { color:#b3261e; font-size:12px; margin:5px 1px 0; }
+  .fe-nophoto { color:#8a8262; font-style:italic; font-size:13px; padding:4px 1px; }
+  .fe-photos { display:flex; flex-wrap:wrap; gap:9px; margin-top:2px; }
+  .fe-pcell { position:relative; width:78px; height:78px; }
+  .fe-pcell img { width:100%; height:100%; object-fit:cover; border-radius:9px; border:1px solid #e1d8b8; cursor:pointer; background:#f3edda; }
+  .fe-pdel { position:absolute; top:-7px; right:-7px; width:24px; height:24px; border-radius:50%; border:none;
+    background:#b3261e; color:#fff; font-size:12px; line-height:1; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.35); }
+  .fe-audio-chip { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#eef6ee; border:1px solid #cfe6cf;
+    border-radius:10px; padding:9px 11px; }
+  .fe-audio-chip .fe-au-t { font-size:13px; font-weight:600; color:#1f5a2a; flex:1 1 auto; min-width:120px; }
+  .fe-audio-chip .fe-au-play { height:32px; flex:1 1 150px; min-width:0; }
+  .fe-audio-chip .fe-au-unlink { background:#fff; border:1px solid #cfe6cf; color:#1f5a2a; border-radius:7px;
+    padding:6px 10px; font:600 12px -apple-system,sans-serif; cursor:pointer; flex:0 0 auto; }
 </style>
 </head>
 <body>
@@ -830,7 +878,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v26';
+var APP_VERSION = 'v28.0.1';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1104,11 +1152,15 @@ const layerEL = L.geoJSON(dataEL, {
     const isFosterville = (p.own_name||'').toUpperCase().indexOf('FOSTERVILLE') !== -1;
     l.bindPopup(
       '<div class="popup-spot">' +
-      '<div class="day" style="color:#dc2626">⛔ No prospecting — active lease</div>' +
+      '<div class="day" style="color:#1f7a32">✅ Active EL — Miner\'s Right fossicking still permitted</div>' +
       '<h3>' + p.tag + (isFosterville ? ' (Fosterville)' : '') + '</h3>' +
       '<div class="desc"><b>Holder:</b> ' + (p.own_name || '—') + '<br>' +
-      '<b>Commodity:</b> ' + (p.min_desc || '—') + '<br>' +
+      '<b>Commodity:</b> ' + (p.min_desc || '—').replace(/;/g, ' · ') + '<br>' +
       '<b>Area:</b> ' + p.hectares + ' ha</div>' +
+      '<div style="background:#eef7ee;border-left:3px solid #1f7a32;padding:6px 8px;margin-top:7px;font-size:11.5px;line-height:1.5;color:#1f5230">' +
+      '🧭 <b>Fossicking note:</b> A current Miner\'s Right ($28.60 / 10&nbsp;yr) covers prospecting on Crown Land &amp; State Forest <b>within</b> this EL. The holder\'s exclusivity is for drilling, major workings &amp; commercial sampling — not detector work by Miner\'s Right holders. Most weekenders self-exclude here unnecessarily.<br><br>' +
+      'Always: stay clear of active workings, respect signed access controls, and check the specific land-tenure overlay (Crown / SF / freehold / restricted).' +
+      '</div>' +
       '<div class="coords">Source: Resources Vic — Current ELs (WFS)</div>' +
       '</div>'
     );
@@ -1126,11 +1178,14 @@ const layerML = L.geoJSON(dataML, {
     const isFosterville = (p.own_name||'').toUpperCase().indexOf('FOSTERVILLE') !== -1;
     l.bindPopup(
       '<div class="popup-spot">' +
-      '<div class="day" style="color:#991b1b">⛔ NO prospecting — active mining lease</div>' +
+      '<div class="day" style="color:#991b1b">⛔ Active ML — fossicking restricted</div>' +
       '<h3>' + p.tag + (isFosterville ? ' (Fosterville)' : '') + '</h3>' +
       '<div class="desc"><b>Holder:</b> ' + (p.own_name || '—') + '<br>' +
-      '<b>Commodity:</b> ' + (p.min_desc || '—') + '<br>' +
+      '<b>Commodity:</b> ' + (p.min_desc || '—').replace(/;/g, ' · ') + '<br>' +
       '<b>Area:</b> ' + p.hectares + ' ha</div>' +
+      '<div style="background:#fdeceb;border-left:3px solid #991b1b;padding:6px 8px;margin-top:7px;font-size:11.5px;line-height:1.5;color:#7a211c">' +
+      '🛑 <b>Fossicking note:</b> MLs cover active extraction. General Miner\'s Right fossicking is typically <b>not</b> permitted on the ML area without the holder\'s permission. Check the specific licence conditions and contact the holder if interested.' +
+      '</div>' +
       '<div class="coords">Source: Resources Vic — Current Mining Licences (WFS)</div>' +
       '</div>'
     );
@@ -1724,7 +1779,8 @@ setTimeout(fitToSpots, 400);
   map.on('popupopen', function(e){
     var el = e.popup.getElement(); if (!el) return;
     var b = el.querySelector('[data-uwpdel]');
-    if (b) b.addEventListener('click', function(){ uwpRemove(b.getAttribute('data-uwpdel')); map.closePopup(); });
+    if (b) b.addEventListener('click', function(){ var id=b.getAttribute('data-uwpdel'); var u=uwpCache[id];
+      window.AuraGold.confirmDelete({ itemName: (u && u.name) || 'this waypoint', onConfirm: function(){ uwpRemove(id); map.closePopup(); } }); });
   });
 
   // ---------- User-waypoint CRUD ----------
@@ -1965,7 +2021,7 @@ setTimeout(fitToSpots, 400);
   // Cache object URLs (id -> blob URL) so thumbnails embed inline & synchronously — no post-render DOM surgery.
   var purls = {};
   function cachePhoto(id, done){ photoGet(id, function(blob){ if(blob){ if(purls[id]) URL.revokeObjectURL(purls[id]); purls[id]=URL.createObjectURL(blob); } done&&done(!!blob); }); }
-  function preloadPhotos(done){ var ids=pts.filter(function(p){return p.photo;}).map(function(p){return p.id;}); var n=ids.length; if(!n){ done&&done(); return; } ids.forEach(function(id){ cachePhoto(id, function(){ if(--n===0) done&&done(); }); }); }
+  function preloadPhotos(done){ var ids=[]; pts.forEach(function(p){ photoKeys(p).forEach(function(k){ ids.push(k); }); }); var n=ids.length; if(!n){ done&&done(); return; } ids.forEach(function(id){ cachePhoto(id, function(){ if(--n===0) done&&done(); }); }); }
   var TYPES = {
     find:   { label: 'Find / gold',   emoji: '🟡', color: '#f1c40f' },
     signal: { label: 'Signal / dig',  emoji: '🔶', color: '#e67e22' },
@@ -1974,27 +2030,45 @@ setTimeout(fitToSpots, 400);
     note:   { label: 'Note / marker', emoji: '📌', color: '#9b59b6' }
   };
   function T(t){ return TYPES[t] || TYPES.note; }
-  function loadPts(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
+  // --- v27: find outcome (label vocabulary aligned with the v26 audio classifier) + multi-photo helpers ---
+  var OUTCOME = {
+    gold:    { badge:'🏆', tag:'GOLD',     color:'#caa53a' },
+    nothing: { badge:'✗',  tag:'FALSE',    color:'#7a828c' },
+    junk:    { badge:'🔩', tag:'JUNK',     color:'#c0392b' },
+    hotRock: { badge:'🪨', tag:'HOT ROCK', color:'#e67e22' }
+  };
+  function byId(id){ return pts.filter(function(x){ return x.id===id; })[0]; }
+  function findName(p){ return (p && p.name && p.name.trim()) ? p.name.trim() : T(p?p.type:'note').label; }
+  function photoKeys(p){ if(p.photos && p.photos.length) return p.photos.slice(); if(p.photo) return [p.id]; return []; }
+  function firstPhoto(p){ var k=photoKeys(p); return k.length?k[0]:null; }
+  function migratePhotos(p){ if(!p.photos) p.photos = p.photo ? [p.id] : []; p.photo = p.photos.length>0; return p; }
+  function newPhotoKey(p){ return p.id+':'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function fmtCreated(ts){ try { return new Date(ts).toLocaleString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' AEST'; } catch(e){ return ''; } }
+  function loadPts(){ try { var a=JSON.parse(localStorage.getItem(KEY)) || []; a.forEach(migratePhotos); return a; } catch(e){ return []; } }
   function persist(){ localStorage.setItem(KEY, JSON.stringify(pts)); }
   var pts = loadPts();
   var layer = L.layerGroup().addTo(map);
   function esc(s){ return (s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmt(ts){ try { return new Date(ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } }
-  function icon(t){ var c=T(t); return L.divIcon({ className:'', html:'<div class="ag-wp" style="background:'+c.color+'"><span>'+c.emoji+'</span></div>', iconSize:[26,26], iconAnchor:[13,24] }); }
+  function icon(t, outcome){ var c=T(t); var o=outcome&&OUTCOME[outcome];
+    var badge=o?'<span class="ag-wp-badge">'+o.badge+'</span>':'';
+    return L.divIcon({ className:'', html:'<div class="ag-wp" style="background:'+c.color+'"><span>'+c.emoji+'</span>'+badge+'</div>', iconSize:[26,26], iconAnchor:[13,24] }); }
 
   function render(){
     layer.clearLayers();
     pts.forEach(function(p){
-      var c=T(p.type);
-      var html='<div class="popup-spot" style="min-width:170px"><b>'+c.emoji+' '+c.label+'</b>'+
+      var c=T(p.type); var fp=firstPhoto(p); var o=p.outcome&&OUTCOME[p.outcome];
+      var otag=o?'<span class="wp-otag" style="background:'+o.color+'">'+o.badge+' '+o.tag+'</span>':'';
+      var html='<div class="popup-spot" style="min-width:170px"><b>'+c.emoji+' '+esc(findName(p))+'</b>'+otag+
         (p.note?'<div class="desc">'+esc(p.note)+'</div>':'')+
         '<div style="font-size:11px;color:#666;margin-top:3px">'+fmt(p.ts)+(p.acc?' · ±'+Math.round(p.acc)+'m':'')+'</div>'+
         '<div class="coords">'+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+'</div>'+
-        ((p.photo&&purls[p.id])?'<img class="thumb" data-view="'+p.id+'" src="'+purls[p.id]+'" alt="Find photo">':'')+
-        '<button class="nav-btn" data-nav="'+p.lat+','+p.lng+'" data-navlabel="'+esc(c.label)+'">🧭 Navigate here</button>'+
-        '<button class="cam" data-cam="'+p.id+'" style="margin-top:4px">'+(p.photo?'📷 Replace photo':'📷 Add photo')+'</button> '+
+        ((fp&&purls[fp])?'<img class="thumb" data-view="'+fp+'" src="'+purls[fp]+'" alt="Find photo">':'')+
+        '<button class="nav-btn" data-nav="'+p.lat+','+p.lng+'" data-navlabel="'+esc(findName(p))+'">🧭 Navigate here</button>'+
+        '<button class="edit2" data-edit="'+p.id+'">✏️ Edit</button>'+
+        '<button class="cam" data-cam="'+p.id+'" style="margin-top:4px">📷 Add photo</button> '+
         '<button class="x" data-del="'+p.id+'" style="margin-top:6px">Delete</button></div>';
-      L.marker([p.lat,p.lng],{icon:icon(p.type)}).bindPopup(html).addTo(layer);
+      L.marker([p.lat,p.lng],{icon:icon(p.type, p.outcome)}).bindPopup(html).addTo(layer);
     });
     var cnt=document.getElementById('findsCount'); if(cnt) cnt.textContent=pts.length;
   }
@@ -2003,12 +2077,14 @@ setTimeout(fitToSpots, 400);
     pts.push({ id:uid(), lat:lat, lng:lng, type:type||'note', note:note||'', ts:Date.now(), acc:acc||null });
     persist(); render();
   }
-  function del(id){ photoDel(id); pts=pts.filter(function(p){return p.id!==id;}); persist(); render(); }
+  function del(id){ var p=byId(id); if(p) photoKeys(p).forEach(photoDel); pts=pts.filter(function(x){return x.id!==id;}); persist(); render(); }
 
   map.on('popupopen', function(e){
     var el=e.popup.getElement(); if(!el) return;
     var b=el.querySelector('[data-del]');
-    if(b) b.addEventListener('click', function(){ del(b.getAttribute('data-del')); map.closePopup(); });
+    if(b) b.addEventListener('click', function(){ var id=b.getAttribute('data-del'); window.AuraGold.confirmDelete({ itemName: findName(byId(id)), onConfirm: function(){ del(id); map.closePopup(); } }); });
+    var ed=el.querySelector('[data-edit]');
+    if(ed) ed.addEventListener('click', function(){ var p=byId(ed.getAttribute('data-edit')); map.closePopup(); if(p) openEdit(p); });
     var cam=el.querySelector('[data-cam]');
     if(cam) cam.addEventListener('click', function(){ capturePhoto(cam.getAttribute('data-cam')); });
     var img=el.querySelector('img.thumb[data-view]');
@@ -2026,10 +2102,12 @@ setTimeout(fitToSpots, 400);
   fileIn.addEventListener('change', function(){
     var f=fileIn.files && fileIn.files[0]; var id=pendingId; fileIn.value=''; pendingId=null;
     if(!f || !id) return;
-    photoPut(id, f, function(ok){
+    var p=byId(id); if(!p) return;
+    var key=newPhotoKey(p);
+    photoPut(key, f, function(ok){
       if(!ok){ say('Could not save photo'); return; }
-      var p=pts.filter(function(x){return x.id===id;})[0]; if(p){ p.photo=true; persist(); }
-      cachePhoto(id, function(){ render(); if(panel.classList.contains('open')) listFinds(); say('📷 Photo attached'); });
+      p.photos=photoKeys(p); p.photos.push(key); p.photo=true; persist();
+      cachePhoto(key, function(){ render(); if(panel.classList.contains('open')) listFinds(); if(editOpenFor===p) renderEditPhotos(); say('📷 Photo attached'); });
     });
   });
   function capturePhoto(id){ pendingId=id; fileIn.click(); }
@@ -2072,15 +2150,16 @@ setTimeout(fitToSpots, 400);
     if(!pts.length){ el.innerHTML='<div class="wp-empty">No saved points yet. Tap <b>🎯 Got a hit!</b> or long-press the map.</div>'; return; }
     el.innerHTML='';
     pts.slice().reverse().forEach(function(p){
-      var c=T(p.type);
+      var c=T(p.type); var fp=firstPhoto(p); var o=p.outcome&&OUTCOME[p.outcome];
+      var otag=o?'<span class="wp-otag" style="background:'+o.color+'">'+o.badge+'</span>':'';
       var row=document.createElement('div'); row.className='wp-item';
-      row.innerHTML='<span class="e">'+c.emoji+'</span><div class="m"><b>'+c.label+'</b><small>'+fmt(p.ts)+' · '+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</small></div>'+
-        ((p.photo&&purls[p.id])?'<img class="thumb" src="'+purls[p.id]+'" alt="Find photo">':'')+
-        '<button class="cam" title="'+(p.photo?'Replace photo':'Add photo')+'">📷</button><button class="x">Del</button>';
+      row.innerHTML='<span class="e">'+c.emoji+'</span><div class="m"><b>'+esc(findName(p))+otag+'</b><small>'+fmt(p.ts)+' · '+p.lat.toFixed(4)+', '+p.lng.toFixed(4)+'</small></div>'+
+        ((fp&&purls[fp])?'<img class="thumb" src="'+purls[fp]+'" alt="Find photo">':'')+
+        '<button class="edit" title="Edit find">✏️</button><button class="x">Del</button>';
       row.querySelector('.m').addEventListener('click', function(){ openPanel(false); map.setView([p.lat,p.lng], Math.max(map.getZoom(),14)); });
-      row.querySelector('.cam').addEventListener('click', function(){ capturePhoto(p.id); });
-      row.querySelector('.x').addEventListener('click', function(){ del(p.id); listFinds(); });
-      var th=row.querySelector('img.thumb'); if(th) th.addEventListener('click', function(){ showPhoto(p.id); });
+      row.querySelector('.edit').addEventListener('click', function(){ openPanel(false); openEdit(p); });
+      row.querySelector('.x').addEventListener('click', function(){ window.AuraGold.confirmDelete({ itemName: findName(p), onConfirm: function(){ del(p.id); listFinds(); } }); });
+      var th=row.querySelector('img.thumb'); if(th) th.addEventListener('click', function(){ showPhoto(fp); });
       el.appendChild(row);
     });
   }
@@ -2098,7 +2177,11 @@ setTimeout(fitToSpots, 400);
   function hasTrail(){ var f=(window.AuraGold||{}).trailGpx; return !!(f && f()); }
   document.getElementById('expGpx').addEventListener('click', function(){ if(!pts.length && !hasTrail()){say('No points or track to export');return;} dl('auragold-finds.gpx','application/gpx+xml',gpx()); });
   document.getElementById('expJson').addEventListener('click', function(){ if(!pts.length){say('No points to export');return;} dl('auragold-finds.json','application/json',JSON.stringify(pts,null,2)); });
-  document.getElementById('clearWp').addEventListener('click', function(){ if((pts.length||hasTrail()) && confirm('Delete all saved points and the walked track?')){ pts.forEach(function(p){ if(p.photo) photoDel(p.id); }); pts=[]; persist(); render(); listFinds(); if(window.AuraGold.clearTrail) window.AuraGold.clearTrail(); say('Points & track cleared'); } });
+  document.getElementById('clearWp').addEventListener('click', function(){
+    if(!(pts.length||hasTrail())){ say('Nothing to clear'); return; }
+    var n=pts.length;
+    window.AuraGold.confirmDelete({ title:'Clear all '+n+' saved point'+(n===1?'':'s')+' & the walked track?', message:'Every find, its photos, and your breadcrumb track will be removed.', count:n, onConfirm:function(){ pts.forEach(function(p){ photoKeys(p).forEach(photoDel); }); pts=[]; persist(); render(); listFinds(); if(window.AuraGold.clearTrail) window.AuraGold.clearTrail(); say('Points & track cleared'); } });
+  });
 
   render();
   preloadPhotos(function(){ render(); if(panel.classList.contains('open')) listFinds(); });
@@ -2290,8 +2373,8 @@ setTimeout(fitToSpots, 400);
     '<div class="legend-item"><img src="icons/nugget-marker.png" width="15" height="15" style="vertical-align:middle;margin-right:1px" alt=""> Mineral occurrence (gold)</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:#ffd54a;border:1.5px solid #b8860b"></span> 1+ Moz Au zone</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:transparent;border:1.5px solid #b91c1c"></span> Goldfield boundary</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — no prospect</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.18);border:2px solid #991b1b"></span> Active ML — no prospect</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.06);border:1.2px dashed #dc2626"></span> Active EL — fossick OK (Miner\'s Right)</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,38,38,0.18);border:2px solid #991b1b"></span> Active ML — fossicking restricted</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(251,146,60,0.32);border:1px solid #ea580c"></span> Bushfire 2023–25</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:12px;background:rgba(34,197,94,0.4);border:1px solid #15803d"></span> State Forest (fossick OK)</div>' +
     '<div style="border-top:1px solid #ddd;margin:6px 0;padding-top:6px;font-weight:600;font-size:11px;color:#555">Geophysics / terrain (toggle on)</div>' +
@@ -2690,7 +2773,7 @@ setTimeout(fitToSpots, 400);
       card.querySelector('#de-custom').addEventListener('click', function(){ openCustomWp(day, null); });
       card.querySelector('#de-up').addEventListener('click', function(){ var i=a.days.indexOf(day); moveDay(i,i-1); renderTop(); });
       card.querySelector('#de-down').addEventListener('click', function(){ var i=a.days.indexOf(day); moveDay(i,i+1); renderTop(); });
-      card.querySelector('#de-del').addEventListener('click', function(){ var i=a.days.indexOf(day); if(confirm('Delete Day '+(i+1)+'? This can’t be undone.')){ a.days.splice(i,1); AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); closeModal(); } });
+      card.querySelector('#de-del').addEventListener('click', function(){ var i=a.days.indexOf(day); window.AuraGold.confirmDelete({ title:'Delete Day '+(i+1)+'?', message:'The day and its stops will be removed from this trip.', onConfirm:function(){ a.days.splice(i,1); AG.trips.reindex(); AG.trips.saveActive(); AG.trips.redrawRoute(); renderDays(); closeModal(); } }); });
       card.querySelector('[data-close]').addEventListener('click', popModal);
     });
   }
@@ -2814,7 +2897,7 @@ setTimeout(fitToSpots, 400);
       card.querySelector('#ta-dup').addEventListener('click', function(){ var n=prompt('Name for the duplicate:', a.name+' (copy)'); if(n==null) return; AG.trips.duplicateActive((n.trim()||a.name+' (copy)')).then(function(c){ if(c) AG.trips.switchTo(c.id).then(function(){ renderDays(); closeModal(); say('Duplicated → now editing “'+c.name+'”'); }); }); });
       card.querySelector('#ta-switch').addEventListener('click', openSwitchTrip);
       card.querySelector('#ta-new').addEventListener('click', function(){ var n=prompt('New trip name:','My trip'); if(n==null) return; var t={id:AG.trips.newId('trip'), name:(n.trim()||'My trip'), isDefault:false, created:Date.now(), updated:Date.now(), days:[{index:0,label:'Day 1',date:null,assigned:[],notes:''}]}; AG.trips.persistTrip(t).then(function(){ AG.trips.switchTo(t.id).then(function(){ renderDays(); closeModal(); say('New trip created'); }); }); });
-      card.querySelector('#ta-reset').addEventListener('click', function(){ if(confirm('Reset this trip to the suggested 16-day plan? Edits to THIS trip will be replaced.')){ AG.trips.resetToSuggested(); renderDays(); closeModal(); say('Reset to suggested plan'); } });
+      card.querySelector('#ta-reset').addEventListener('click', function(){ window.AuraGold.confirmDelete({ title:'Reset this trip to the suggested plan?', message:'Every edit to THIS trip will be replaced by the suggested 16-day plan.', confirmLabel:'RESET', onConfirm:function(){ AG.trips.resetToSuggested(); renderDays(); closeModal(); say('Reset to suggested plan'); } }); });
       card.querySelector('#ta-gpx').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.gpx','application/gpx+xml',expGpx()); say('GPX exported'); });
       card.querySelector('#ta-kml').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.kml','application/vnd.google-earth.kml+xml',expKml()); say('KML exported'); });
       card.querySelector('#ta-json').addEventListener('click', function(){ dl('auragold-'+slug(a.name)+'.json','application/json',JSON.stringify(a,null,2)); say('JSON exported'); });
@@ -2823,9 +2906,13 @@ setTimeout(fitToSpots, 400);
   }
   function delTrip(a){
     AG.trips.listTrips().then(function(list){
-      if(list.length<=1){ if(confirm('This is your only trip. Reset it to the suggested plan instead?')){ AG.trips.resetToSuggested(); renderDays(); closeModal(); } return; }
-      if(!confirm('Delete trip “'+a.name+'”? This can’t be undone.')) return;
-      AG.trips.deleteTrip(a.id).then(function(){ var other=list.filter(function(t){return t.id!==a.id;})[0]; AG.trips.switchTo(other.id).then(function(){ renderDays(); closeModal(); say('Trip deleted'); }); });
+      if(list.length<=1){
+        window.AuraGold.confirmDelete({ title:'This is your only trip.', message:'It can’t be deleted, but you can reset it to the suggested plan.', confirmLabel:'RESET', onConfirm:function(){ AG.trips.resetToSuggested(); renderDays(); closeModal(); say('Reset to suggested plan'); } });
+        return;
+      }
+      window.AuraGold.confirmDelete({ itemName:a.name, message:'The whole trip and its day plan will be removed.', onConfirm:function(){
+        AG.trips.deleteTrip(a.id).then(function(){ var other=list.filter(function(t){return t.id!==a.id;})[0]; AG.trips.switchTo(other.id).then(function(){ renderDays(); closeModal(); say('Trip deleted'); }); });
+      } });
     });
   }
   function openSwitchTrip(){
@@ -3220,7 +3307,7 @@ setTimeout(fitToSpots, 400);
     });
     d.appendChild(row);
     var bDel = document.createElement('button'); bDel.className = 'ev-act del'; bDel.textContent = '🗑 Delete event';
-    bDel.addEventListener('click', function () { if (confirm('Delete this audio event? This removes the clip too.')) { removeEvent(ev); map.closePopup(); } });
+    bDel.addEventListener('click', function () { window.AuraGold.confirmDelete({ title: 'Delete this audio event?', message: 'The GPS-tagged audio clip will be removed too.', onConfirm: function () { removeEvent(ev); map.closePopup(); } }); });
     d.appendChild(bDel);
     return d;
   }
@@ -3676,7 +3763,7 @@ setTimeout(fitToSpots, 400);
   (function wireML() {
     var tb = document.getElementById('mlTrainBtn'); if (tb) tb.addEventListener('click', doTrain);
     var rs = document.getElementById('mlRescoreBtn'); if (rs) rs.addEventListener('click', function () { rescoreAll(); });
-    var del = document.getElementById('mlDeleteBtn'); if (del) del.addEventListener('click', function () { if (confirm('Delete the trained model? Your labelled events are kept; you can retrain anytime.')) { deleteModelNow().then(function () { events.forEach(function (ev) { ev.mlConfidence = null; ev.mlTop = null; evPut(ev); }); rerenderAllMarkers(); renderListIfOpen(); refreshClassifierUI(); toast('Model deleted'); }); } });
+    var del = document.getElementById('mlDeleteBtn'); if (del) del.addEventListener('click', function () { window.AuraGold.confirmDelete({ title: 'Delete the trained model?', message: 'Your labelled events are kept — you can retrain anytime.', onConfirm: function () { deleteModelNow().then(function () { events.forEach(function (ev) { ev.mlConfidence = null; ev.mlTop = null; evPut(ev); }); rerenderAllMarkers(); renderListIfOpen(); refreshClassifierUI(); toast('Model deleted'); }); } }); });
     var cs = document.getElementById('calStartBtn'); if (cs) cs.addEventListener('click', startCalibration);
     var ce = document.getElementById('calEndBtn'); if (ce) ce.addEventListener('click', endCalibration);
     var cl = document.getElementById('calLabels'); if (cl) cl.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.getAttribute('data-l')) calLabel(b.getAttribute('data-l')); });
@@ -3775,9 +3862,16 @@ setTimeout(fitToSpots, 400);
   var auClear = document.getElementById('auClear');
   if (auClear) auClear.addEventListener('click', function () {
     if (!events.length) { toast('No audio events to clear'); return; }
-    if (!confirm('Delete all ' + events.length + ' audio events and their clips? This cannot be undone.')) return;
-    events.forEach(revoke); events = []; dailyCount = {}; audioLayer.clearLayers();
-    evClearStore().then(function () { refreshCounts(); renderListIfOpen(); toast('All audio events cleared'); });
+    var n = events.length;
+    window.AuraGold.confirmDelete({
+      title: 'Delete ALL ' + n + ' audio event' + (n === 1 ? '' : 's') + '?',
+      message: 'Every saved signal clip will be removed.',
+      count: n,
+      onConfirm: function () {
+        events.forEach(revoke); events = []; dailyCount = {}; audioLayer.clearLayers();
+        evClearStore().then(function () { refreshCounts(); renderListIfOpen(); toast('All audio events cleared'); });
+      }
+    });
   });
 
   // ---- panel + menu wiring ----
@@ -3851,6 +3945,9 @@ setTimeout(fitToSpots, 400);
     getRMS: function () { return smoothedRMS; }, count: function () { return events.length; },
     events: function () { return events.map(function (e) { var o = {}; for (var k in e) if (k.charAt(0) !== '_') o[k] = e[k]; return o; }); },
     exportZip: exportZip, setThreshold: function (v) { acfg.threshold = v; saveCfg(); applyThreshUI(); },
+    // v27 — find-edit linking: nearest event to a find's timestamp (±8s) + a playback URL for it.
+    matchFind: function (ts) { var best = null, bd = 8001; events.forEach(function (ev) { var d = Math.abs(ev.timestamp - ts); if (d < bd) { bd = d; best = ev; } }); return best ? { id: best.id, timestamp: best.timestamp, hasAudio: !!best.audioBlob, label: (best.label || null) } : null; },
+    blobUrlFor: function (id) { var ev = events.filter(function (e) { return e.id === id; })[0]; return ev && ev.audioBlob ? blobURL(ev) : null; },
     // inject a synthetic PCM block (`freq` Hz tone at amplitude `amp`, `ms` long, optional noise) — feeds the
     // ring + RMS + auto-flag exactly as a live mic block would. For smoke-testing offline.
     _feed: function (amp, ms, freq, noise) {
@@ -3890,6 +3987,76 @@ setTimeout(fitToSpots, 400);
       refreshCounts(); refreshCalUI(); refreshClassifierUI();
       return made.length;
     }
+  };
+})();
+</script>
+<!-- v27: universal delete-confirmation modal — AG.confirmDelete({...}) gates every destructive action -->
+<script>
+(function () {
+  window.AuraGold = window.AuraGold || {};
+  var AG = window.AuraGold;
+  if (AG.confirmDelete) return;                 // idempotent
+
+  var ov = document.createElement('div');
+  ov.className = 'cd-ov';
+  ov.setAttribute('aria-hidden', 'true');
+  ov.innerHTML =
+    '<div class="cd-card" role="alertdialog" aria-modal="true" aria-labelledby="cdTitle" aria-describedby="cdMsg">' +
+      '<h3 id="cdTitle" class="cd-title"></h3>' +
+      '<p id="cdMsg" class="cd-msg"></p>' +
+      '<input type="text" class="cd-type" placeholder="DELETE" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Type DELETE to confirm">' +
+      '<div class="cd-btns">' +
+        '<button type="button" class="cd-cancel">Cancel</button>' +
+        '<button type="button" class="cd-ok">DELETE</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+
+  var elT = ov.querySelector('.cd-title'), elM = ov.querySelector('.cd-msg'),
+      elIn = ov.querySelector('.cd-type'), btnNo = ov.querySelector('.cd-cancel'), btnYes = ov.querySelector('.cd-ok');
+  var TYPED_THRESHOLD = 20;
+  var state = null;                              // { resolve, onConfirm, typed }
+
+  function close(result) {
+    if (!state) return;
+    var st = state; state = null;
+    ov.classList.remove('show'); ov.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', onKey, true);
+    if (result && st.onConfirm) { try { st.onConfirm(); } catch (e) { try { console.error(e); } catch (x) {} } }
+    if (st.resolve) st.resolve(!!result);
+  }
+  function onKey(e) {
+    if (!state) return;
+    if (e.key === 'Escape') { e.preventDefault(); close(false); return; }
+    if (e.key === 'Enter') {
+      if (state.typed) { if (!btnYes.disabled) { e.preventDefault(); close(true); } }
+      else { e.preventDefault(); close(false); }     // Cancel is the default action
+    }
+  }
+  function validateTyped() { btnYes.disabled = (elIn.value.trim().toUpperCase() !== 'DELETE'); }
+
+  btnNo.addEventListener('click', function () { close(false); });
+  btnYes.addEventListener('click', function () { if (!btnYes.disabled) close(true); });
+  ov.addEventListener('click', function (e) { if (e.target === ov) close(false); });
+  elIn.addEventListener('input', validateTyped);
+
+  // AG.confirmDelete({ title?, itemName?, message?, confirmLabel?, count?, typed?, onConfirm? }) -> Promise<bool>
+  AG.confirmDelete = function (opts) {
+    opts = opts || {};
+    var title = opts.title || ('Delete ' + (opts.itemName ? '“' + opts.itemName + '”' : 'this') + '?');
+    var typed = !!opts.typed || (typeof opts.count === 'number' && opts.count > TYPED_THRESHOLD);
+    var msg = opts.message || 'This can’t be undone.';
+    elT.textContent = title;
+    elM.textContent = msg + (typed ? ' Type DELETE to confirm.' : '');
+    btnYes.textContent = opts.confirmLabel || 'DELETE';
+    if (typed) { elIn.style.display = 'block'; elIn.value = ''; btnYes.disabled = true; }
+    else { elIn.style.display = 'none'; btnYes.disabled = false; }
+    ov.classList.add('show'); ov.setAttribute('aria-hidden', 'false');
+    document.addEventListener('keydown', onKey, true);
+    return new Promise(function (resolve) {
+      state = { resolve: resolve, onConfirm: opts.onConfirm, typed: typed };
+      setTimeout(function () { if (typed) elIn.focus(); else btnNo.focus(); }, 30);   // typed -> input, else Cancel (Enter cancels)
+    });
   };
 })();
 </script>

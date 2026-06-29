@@ -13,8 +13,13 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v26';
+const SHELL_VERSION = 'v28.0.1';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
+// v28.0.1: EL/ML tenement popups now use correct, lease-type-specific fossicking guidance.
+// Active ELs no longer falsely say "NO PROSPECTING" — a Miner's Right still covers Crown/SF
+// fossicking within an EL (the holder's exclusivity is for drilling/major workings, not detector
+// work). MLs keep the restricted framing. Legend labels corrected to match. (Rides on in-progress
+// v27 work — find outcomes, delete-confirm modal, multi-photo — that was already in the tree.)
 // v26: on-device ML classifier for detector-audio events. Feature extraction (meyda MFCCs +
 // spectral stats) runs in a Blob worker at save time; a tf.js dense classifier trains in-browser
 // on labelled clips (4 classes: gold / junk / hot-rock / nothing) and scores every new + historical
@@ -22,7 +27,7 @@ const SHELL_VERSION = 'v26';
 // in every WAV, and ML-enriched ZIP export (events.csv + features_v1.json + model_v1.json). tf.js
 // (~1MB) + meyda (~40KB) precached below for offline training/inference. IndexedDB bumped to v4
 // (adds the `auragold_models` store + per-event features / label / source / mlConfidence fields).
-const SHELL_REV = 'v26';
+const SHELL_REV = 'v28.0.1';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
