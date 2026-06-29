@@ -57,12 +57,30 @@
     justify-content: center; font-weight: 700; font-size: 13px; color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .marker-camp {
-    width: 22px; height: 22px; background: #2563eb; border: 2px solid #fff;
-    border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.45);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 14px;
-  }
+  /* v25 camping layers — coloured marker disc + cluster badge, one colour per source. */
+  .cmp { width:24px; height:24px; border-radius:50% 50% 50% 4px; border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center;
+    font-size:13px; line-height:1; }
+  .cmp-cluster { width:100%; height:100%; border-radius:50%; border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; }
+  .cmp-cluster span { font:700 12px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.5); }
+  /* v25 camp popup */
+  .popup-camp h3 { margin:0 0 2px; font-size:15px; color:#2a2620; }
+  .popup-camp .cp-sub { font-size:11.5px; color:#8a836c; margin-bottom:6px; }
+  .popup-camp .cp-fac { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0; }
+  .popup-camp .cp-chip { font-size:11px; background:#eef3ea; color:#33572f; border-radius:10px; padding:2px 7px; white-space:nowrap; }
+  .popup-camp .cp-note { font-size:11px; color:#6a6450; margin:3px 0; word-break:break-word; }
+  .popup-camp .cp-note a { color:#1f7a32; }
+  .popup-camp .cp-closed { font-size:11.5px; color:#b3261e; font-weight:600; margin:4px 0; }
+  .popup-camp .cp-lbl { font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:#b0a890; margin:9px 0 4px; }
+  .popup-camp .cp-btns { display:flex; gap:6px; flex-wrap:wrap; }
+  .popup-camp .cp-btn { flex:1 1 0; min-width:90px; box-sizing:border-box; text-align:center; cursor:pointer;
+    border-radius:7px; padding:7px 6px; font:600 12px -apple-system,BlinkMacSystemFont,sans-serif; text-decoration:none;
+    border:1px solid #e3ddcb; background:#fff; color:#3a342a; }
+  .popup-camp .cp-btn.dir { background:#eaf6ec; border-color:#cfe9d4; color:#1f7a32; }
+  .popup-camp .cp-btn.ext { background:#f4f0e6; }
+  .popup-camp .cp-btn:active { transform:scale(.97); }
   .popup-spot { min-width: 230px; max-width: 280px; }
   .popup-spot h3 { margin: 0 0 4px; font-size: 14px; color: #1a1a1a; }
   .popup-spot .day { font-size: 11px; color: #b08800; font-weight: 600;
@@ -108,6 +126,13 @@
     padding:9px 13px; border-radius:8px; font-size:13px; margin:8px 0 2px; }
   .ag-link { color:#9a6b00; font-weight:600; text-decoration:none; }
   .ag-links a { display:block; padding:7px 0; border-top:1px solid #f1ead4; color:#9a6b00; text-decoration:none; font-weight:600; }
+  /* v25 collapsible settings section (Camping resources) */
+  .ag-collap { margin:0 0 18px; }
+  .ag-collap > summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px;
+    font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#8a6d00; font-weight:700; margin:0 0 4px; }
+  .ag-collap > summary::-webkit-details-marker { display:none; }
+  .ag-collap > summary::before { content:'▸'; font-size:11px; transition:transform .15s; }
+  .ag-collap[open] > summary::before { transform:rotate(90deg); }
   .ag-links a:first-child { border-top:none; }
   .ag-yes { color:#1f7a32; font-weight:700; } .ag-no { color:#b3261e; font-weight:700; }
   .ag-list { margin:4px 0 0; padding-left:20px; } .ag-list li { margin:4px 0; }
@@ -520,10 +545,26 @@
       <p class="ag-note" style="padding:0 2px">Capture runs only while AuraGold is <b>open on screen</b> (a phone can't keep the mic open in the background). Expect noticeably faster battery drain with audio + GPS both on.</p>
     </div>
 
+    <details class="ag-collap">
+      <summary>📋 Camping resources</summary>
+      <div class="ag-card">
+        <p style="margin:8px 0 6px">Apps &amp; sites that carry the curated facility detail OSM doesn't — open one to cross-check a camp or scout more nearby. The <b>Camping</b> group in the ▤ Layers panel maps the bulk data; these fill the gaps.</p>
+        <div class="ag-links">
+          <a href="https://wikicamps.com.au/" target="_blank" rel="noopener">WikiCamps Australia — app / web ↗</a>
+          <a href="https://www.hipcamp.com/en-AU/" target="_blank" rel="noopener">HipCamp Australia ↗</a>
+          <a href="https://campermate.com/" target="_blank" rel="noopener">CamperMate ↗</a>
+          <a href="https://www.parks.vic.gov.au/camping" target="_blank" rel="noopener">Parks Victoria — Camping bookings ↗</a>
+          <a href="https://www.facebook.com/search/groups/?q=Free%20Camps%20Australia" target="_blank" rel="noopener">Free Camps Australia (Facebook group) ↗</a>
+          <a href="https://discover.data.vic.gov.au/dataset/rest-area" target="_blank" rel="noopener">DataVic — Rest areas master dataset ↗</a>
+        </div>
+        <p class="ag-note" style="margin:9px 0 2px">On a phone, the WikiCamps / HipCamp / CamperMate links open the installed app automatically (and fall back to the website if it isn't installed).</p>
+      </div>
+    </details>
+
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v24</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v25</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -670,7 +711,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v24';
+var APP_VERSION = 'v25';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -797,6 +838,9 @@ const PANE_Z = {
   "p-endow": 300, "p-minocc": 305, "p-gf": 310, "p-el": 315, "p-ml": 320,
   "p-fire": 325, "p-sf": 330, "p-rcl": 335,
   "p-walk": 340, "p-4wd": 342, "p-mgmt": 344, "p-fire-track": 346,
+  // v25: camping layers — below the trip's own route/camp/spot markers so curated
+  // trip pins always sit on top of the bulk OSM/Parks-Vic camp clusters.
+  "p-camp-rest": 350, "p-camp-van": 352, "p-camp-paid": 354, "p-camp-free": 356, "p-camp-parks": 358,
   "p-route": 360, "p-subspots": 365, "p-camp": 368, "p-spots": 370,
   // v24: detector-audio signal-hit markers — above every map/trip layer, below the GPS dot.
   "p-audio": 375,
@@ -833,15 +877,6 @@ function makePinIcon(num, color) {
     popupAnchor: [0, -38],
   });
 }
-function makeCampIcon() {
-  return L.divIcon({
-    className: "",
-    html: '<div class="marker-camp">⛺</div>',
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -12],
-  });
-}
 function makeSubIcon() {
   return L.divIcon({
     className: "",
@@ -875,12 +910,9 @@ spots.forEach(s => {
   spotMarkersById[s.n] = m;
 });
 
-camps.forEach(c => {
-  L.marker([c.lat, c.lng], { pane: "p-camp", icon: makeCampIcon() })
-    .bindPopup('<b>' + c.name + '</b><br><span style="font-size:11px;color:#666">' + c.note + '</span><br><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#666">' + c.lat.toFixed(4) + ', ' + c.lng.toFixed(4) + '</span>')
-    .bindTooltip(c.name, { direction: "top", offset: [0, -10] })
-    .addTo(campGroup);
-});
+// Trip-camp markers (the 6 curated camps) are built in the v25 camping block below,
+// so they share the same rich popup (facility chips + Maps hand-off + search links)
+// as the OSM/Parks-Vic layers. campGroup stays the layer object the Layers panel binds.
 
 subSpots.forEach(sub => {
   L.marker([sub.lat, sub.lng], { pane: "p-subspots", icon: makeSubIcon() })
@@ -1166,6 +1198,131 @@ TRACK_DEFS.forEach(function(t){
   trackLayers[t.key] = lyr;
 });
 
+// --- 10. Camping layers (v25) — 5 lazy, default-OFF clustered marker layers + trip camps ---
+// Data pre-fetched once at build time (OSM via Overpass + Parks Victoria recweb_site WFS),
+// region-clipped to the Vic bbox and bundled in data/*.geojson. Each layer is its own
+// markerClusterGroup on its own pane, so the unified Layers panel drives its opacity live
+// (v23 pattern) and the thousands of camps thin out into individual tents as you zoom in.
+// Each file is fetched only when its layer is first switched on, then SW-cached for offline.
+var CAMP_FAC = {
+  shower:['🚿','Showers'], toilets:['🚻','Toilets'], water:['💧','Water'],
+  pets:['🐕','Pets OK'], fire:['🔥','Fires OK'], dump:['🚯','Dump point'],
+  power:['⚡','Power'], wifi:['📶','Wi-Fi'], bbq:['🍖','BBQ'], access:['♿','Accessible'],
+  tents:['⛺','Tents'], caravans:['🚐','Caravans'], fossick:['⛏️','Fossicking'],
+  fishing:['🎣','Fishing'], picnic:['🧺','Picnic']
+};
+function campEsc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+// Build a camp popup: name, subtitle, facility chips, direct nav, and "search this area in" links.
+// The 🧭 Drive there button reuses the v22 nav hand-off (data-nav → the global popupopen
+// delegate opens the Direct / Drive / Walk action sheet). 🗺️ Open in Maps drops a pin via a
+// Google Maps universal URL. WikiCamps / HipCamp / CamperMate are https links — on a phone the
+// OS routes these to the installed app via universal/app links, and falls back to the web
+// otherwise (the best "deep-link-with-fallback" without a documented custom URL scheme).
+function campPopup(p, lat, lng, cfg){
+  p = p || {};
+  var name = p.name || cfg.fallbackName;
+  var navlabel = campEsc(name);
+  var ll = lat.toFixed(5) + ',' + lng.toFixed(5);
+  var html = '<div class="popup-camp">' +
+    '<h3>' + campEsc(name) + '</h3>' +
+    '<div class="cp-sub">' + campEsc(cfg.subtitle(p)) + '</div>';
+  var fac = p.fac || [];
+  if (fac.length){
+    html += '<div class="cp-fac">';
+    for (var i=0;i<fac.length;i++){ var f=CAMP_FAC[fac[i]]; if(f) html += '<span class="cp-chip">'+f[0]+' '+f[1]+'</span>'; }
+    html += '</div>';
+  }
+  if (p.closed) html += '<div class="cp-closed">⚠ ' + campEsc(p.closed) + '</div>';
+  if (p.description) html += '<div class="cp-note">' + campEsc(p.description) + '</div>';
+  if (p.access) html += '<div class="cp-note">Access: ' + campEsc(p.access) + '</div>';
+  if (p.maxstay) html += '<div class="cp-note">Max stay: ' + campEsc(p.maxstay) + '</div>';
+  if (p.operator) html += '<div class="cp-note">Operator: ' + campEsc(p.operator) + '</div>';
+  if (p.phone) html += '<div class="cp-note">☎ <a href="tel:' + campEsc(p.phone) + '">' + campEsc(p.phone) + '</a></div>';
+  if (p.website){ var w=String(p.website); if(/^https?:\/\//i.test(w)) html += '<div class="cp-note"><a href="'+campEsc(w)+'" target="_blank" rel="noopener">Website ↗</a></div>'; }
+  html += '<div class="cp-lbl">— Direct action —</div>' +
+    '<div class="cp-btns">' +
+      '<a class="cp-btn dir" href="https://www.google.com/maps/search/?api=1&query=' + ll + '" target="_blank" rel="noopener">🗺️ Open in Maps</a>' +
+      '<button class="cp-btn dir" data-nav="' + lat + ',' + lng + '" data-navlabel="' + navlabel + '">🧭 Drive there</button>' +
+    '</div>';
+  var d = 0.12;
+  var hip = 'https://www.hipcamp.com/en-AU/discover?ne_lat=' + (lat+d).toFixed(4) + '&ne_lng=' + (lng+d).toFixed(4) +
+            '&sw_lat=' + (lat-d).toFixed(4) + '&sw_lng=' + (lng-d).toFixed(4);
+  html += '<div class="cp-lbl">— Search this area in —</div>' +
+    '<div class="cp-btns">' +
+      '<a class="cp-btn ext" href="https://wikicamps.com.au/" target="_blank" rel="noopener">WikiCamps</a>' +
+      '<a class="cp-btn ext" href="' + hip + '" target="_blank" rel="noopener">HipCamp</a>' +
+      '<a class="cp-btn ext" href="https://campermate.com/" target="_blank" rel="noopener">CamperMate</a>' +
+    '</div></div>';
+  return html;
+}
+
+function makeCampDisc(color, glyph){
+  return L.divIcon({ className:'', html:'<div class="cmp" style="background:'+color+'">'+glyph+'</div>',
+    iconSize:[24,24], iconAnchor:[12,12], popupAnchor:[0,-13] });
+}
+
+var CAMP_DEFS = [
+  { key:'campfree',  pane:'p-camp-free',  file:'data/camping_free.geojson',          color:'#2c8b3c', glyph:'🏕️',
+    fallbackName:'Camp site',  subtitle:function(p){ return (String(p.fee).toLowerCase()==='no'?'Free camp':'Camp site · fee unconfirmed') + ' · OpenStreetMap'; } },
+  { key:'campvan',   pane:'p-camp-van',   file:'data/camping_caravan_parks.geojson', color:'#2563eb', glyph:'🚐',
+    fallbackName:'Caravan park', subtitle:function(p){ return 'Caravan / holiday park · OpenStreetMap'; } },
+  { key:'camppaid',  pane:'p-camp-paid',  file:'data/camping_paid.geojson',          color:'#d6831e', glyph:'⛺',
+    fallbackName:'Campground', subtitle:function(p){ return 'Paid campground · OpenStreetMap'; } },
+  { key:'camprest',  pane:'p-camp-rest',  file:'data/rest_areas_vic.geojson',        color:'#6b7280', glyph:'🅿️',
+    fallbackName:'Rest area',  subtitle:function(p){ return (p.kind==='services'?'Highway services':'Rest area') + ' · OpenStreetMap'; } },
+  { key:'campparks', pane:'p-camp-parks', file:'data/parks_vic_campsites.geojson',   color:'#14532d', glyph:'🏞️',
+    fallbackName:'Parks Vic site', subtitle:function(p){ var b=[]; if(p.camp)b.push('camping'); if(p.van)b.push('campervan');
+      return 'Parks Victoria' + (p.cls?' · '+p.cls:'') + (b.length?' · '+b.join(' + '):''); } }
+];
+
+var campLayers = {};
+CAMP_DEFS.forEach(function(t){
+  var icon = makeCampDisc(t.color, t.glyph);
+  var grp = L.markerClusterGroup({
+    clusterPane: t.pane, chunkedLoading:true, chunkInterval:80,
+    maxClusterRadius:55, disableClusteringAtZoom:13, spiderfyOnMaxZoom:true,
+    iconCreateFunction: function(cluster){
+      var c = cluster.getChildCount(), size = c<25 ? 28 : (c<150 ? 34 : 40);
+      return L.divIcon({ html:'<div class="cmp-cluster" style="background:'+t.color+'"><span>'+c+'</span></div>',
+        className:'', iconSize:[size,size] });
+    }
+  });
+  grp._loaded = false; grp._loading = false;
+  grp.on('add', function(){
+    if (grp._loaded || grp._loading) return;
+    grp._loading = true;
+    fetch(t.file).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }).then(function(gj){
+      var feats = (gj && gj.features) || [], markers = [];
+      for (var i=0;i<feats.length;i++){
+        var f = feats[i]; if (!f.geometry || !f.geometry.coordinates) continue;
+        var lng = f.geometry.coordinates[0], lat = f.geometry.coordinates[1];
+        var m = L.marker([lat,lng], { pane:t.pane, icon:icon });
+        m._p = f.properties || {}; m._ll = [lat,lng];
+        // Lazy popup — build the HTML only when tapped (thousands of markers, no pre-built strings).
+        m.bindPopup(function(layer){ return campPopup(layer._p, layer._ll[0], layer._ll[1], t); }, { maxWidth:300, className:'camp-pop' });
+        var nm = (f.properties && f.properties.name); if (nm) m.bindTooltip(nm, { direction:'top', offset:[0,-12] });
+        markers.push(m);
+      }
+      grp.addLayers(markers);
+      grp._loaded = true; grp._loading = false;
+      console.info('[AuraGold] camp layer ' + t.key + ' loaded: ' + markers.length);
+    }).catch(function(e){ grp._loading = false; console.warn('[AuraGold] camp layer ' + t.key + ' load failed:', e); });
+  });
+  campLayers[t.key] = grp;
+});
+
+// Trip camps (layer 6) — the 6 curated camps, regrouped here under Camping with the same
+// rich popup. Keeps the existing orange ⛺ tent icon; campGroup is the object the panel binds.
+var TRIP_CAMP_CFG = { fallbackName:'Camp', subtitle:function(p){ return 'Your trip camp · curated'; } };
+camps.forEach(function(c){
+  var m = L.marker([c.lat, c.lng], { pane:'p-camp', icon: makeCampDisc('#f59e0b','⛺') });
+  m._p = { name:c.name, description:c.note }; m._ll = [c.lat, c.lng];
+  m.bindPopup(function(layer){ return campPopup(layer._p, layer._ll[0], layer._ll[1], TRIP_CAMP_CFG); }, { maxWidth:300, className:'camp-pop' });
+  m.bindTooltip(c.name, { direction:'top', offset:[0,-10] });
+  m.addTo(campGroup);
+});
+
 const routeLatLngs = routeOrder.map(n => {
   const s = spots.find(x => x.n === n);
   return [s.lat, s.lng];
@@ -1259,12 +1416,16 @@ setTimeout(fitToSpots, 400);
 
   async function prefetch() {
     if (!navigator.onLine) { setLbl('Offline — can’t save now'); return; }
-    // Cache the forest-track GeoJSON overlays (same-origin) so they're available offline
-    // even if the user never switched the layers on. ~6.8MB total, cached once.
-    setLbl('Saving track data…');
+    // Cache the forest-track + camping GeoJSON overlays (same-origin) so they're available
+    // offline even if the user never switched the layers on. ~7.4MB total, cached once.
+    setLbl('Saving track + camping data…');
     try {
-      await Promise.all(['walking','fourwd','management','fire'].map(function(k){
-        return fetch('data/tracks/' + k + '.geojson', { cache: 'reload' }).catch(function(){});
+      var dataFiles = ['data/tracks/walking.geojson','data/tracks/fourwd.geojson',
+        'data/tracks/management.geojson','data/tracks/fire.geojson',
+        'data/camping_free.geojson','data/camping_caravan_parks.geojson','data/camping_paid.geojson',
+        'data/rest_areas_vic.geojson','data/parks_vic_campsites.geojson'];
+      await Promise.all(dataFiles.map(function(f){
+        return fetch(f, { cache: 'reload' }).catch(function(){});
       }));
     } catch (e) { /* best effort */ }
     var urls = buildList();
@@ -2000,7 +2161,7 @@ setTimeout(fitToSpots, 400);
     '<div class="legend-item"><span class="legend-swatch" style="background:#d8324b"></span> Priority / Top pick</div>' +
     '<div class="legend-item"><span class="legend-swatch" style="background:#2c8b3c"></span> Confirmed area</div>' +
     '<div class="legend-item"><span class="legend-swatch" style="background:#d6831e"></span> Speculative angle</div>' +
-    '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;background:#2563eb;border:2px solid #fff;border-radius:3px"></span> Camping</div>' +
+    '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;background:#f59e0b;border:2px solid #fff;border-radius:50% 50% 50% 3px"></span> Trip camps <span style="color:#8a836c;font-size:11px">(+ Camping layers in ▤ panel)</span></div>' +
     '<div class="legend-item"><span style="display:inline-block;width:10px;height:10px;background:#ffd700;border:2px solid #fff;border-radius:50%"></span> Sub-spot</div>' +
     '<div class="legend-item"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#2f7bff;border:2px solid #fff"></span> You (live GPS)</div>' +
     '<div class="legend-item"><span class="legend-line"></span> Itinerary route</div>' +
@@ -2077,8 +2238,14 @@ setTimeout(fitToSpots, 400);
     { grp:'Trip data' },
     { k:'route',    pane:'p-route',    lyr:routeLine, name:'Itinerary route line', sw:'#ff9500', on:true, op:85 },
     { k:'spots',    pane:'p-spots',    lyr:spotGroup, name:'Spots (1–12)',         sw:'#d8324b', on:true, op:100 },
-    { k:'camp',     pane:'p-camp',     lyr:campGroup, name:'Camping',              sw:'#2563eb', on:true, op:100 },
-    { k:'subspots', pane:'p-subspots', lyr:subGroup,  name:'Sub-spots',            sw:'#ffd700', on:true, op:100 }
+    { k:'subspots', pane:'p-subspots', lyr:subGroup,  name:'Sub-spots',            sw:'#ffd700', on:true, op:100 },
+    { grp:'Camping' },
+    { k:'campfree',  pane:'p-camp-free',  lyr:campLayers.campfree,  name:'🏕️ Free camps (OSM)',       sw:'#2c8b3c', on:false, op:100 },
+    { k:'campvan',   pane:'p-camp-van',   lyr:campLayers.campvan,   name:'🚐 Caravan parks (OSM)',     sw:'#2563eb', on:false, op:100 },
+    { k:'camppaid',  pane:'p-camp-paid',  lyr:campLayers.camppaid,  name:'💰 Paid campgrounds (OSM)',  sw:'#d6831e', on:false, op:100 },
+    { k:'camprest',  pane:'p-camp-rest',  lyr:campLayers.camprest,  name:'🅿️ Rest areas',             sw:'#6b7280', on:false, op:100 },
+    { k:'campparks', pane:'p-camp-parks', lyr:campLayers.campparks, name:'🏞️ Parks Vic campsites',    sw:'#14532d', on:false, op:100 },
+    { k:'camp',      pane:'p-camp',       lyr:campGroup,            name:'📍 Your trip camps',         sw:'#f59e0b', on:true,  op:100 }
   ];
   // Optional user-data layers (created by later scripts) — toggle-only, resolved lazily.
   var LP_DYN = [

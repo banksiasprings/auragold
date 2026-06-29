@@ -378,3 +378,36 @@ Steven (re-flagged today): every map — Magnetic, Terrain, Satellite, Map view,
 - **Honest status:** software trip-ready; **must pass one real hardware test** (Test capture shows audio + a confirmed-gold marker replays) on his phone before relying on it in the field.
 
 ---
+
+## Round / v25 — Camping layer for the Vic trip — 2026-06-29
+
+### Completed
+- **v25 (`SHELL_REV=v25`): new "Camping" group in the unified ▤ Layers panel** — 6 rows, each with the v23 checkbox + live-opacity slider, on their own panes (`p-camp-rest/van/paid/free/parks`, z 350–358, below the trip's own route/spot/camp pins so curated markers stay on top).
+  1. 🏕️ **Free camps (OSM)** — `data/camping_free.geojson`, **2031** features (green disc). `tourism=camp_site` with `fee≠yes`.
+  2. 🚐 **Caravan parks (OSM)** — `data/camping_caravan_parks.geojson`, **556** (blue). `tourism=caravan_site`.
+  3. 💰 **Paid campgrounds (OSM)** — `data/camping_paid.geojson`, **168** (amber). `tourism=camp_site` + `fee=yes`.
+  4. 🅿️ **Rest areas** — `data/rest_areas_vic.geojson`, **917** (grey). OSM `highway=rest_area`+`services` (no clean DataVic GeoJSON via WFS; OSM is the spec'd fallback).
+  5. 🏞️ **Parks Vic campsites** — `data/parks_vic_campsites.geojson`, **362** (dark green). Parks Victoria `recweb_site` WFS, filtered to `camping=Y`/`campervanning=Y`; carries `site_class` + fossicking/pets/bbq tags.
+  6. 📍 **Your trip camps** — the 6 curated camps, **moved out of "Trip data"** into Camping, recoloured to an **orange ⛺ disc** (was a blue square that collided with the new caravan layer); default ON.
+- **Data pre-fetched once at build, region-clipped to the Vic bbox (S −39.2 / N −34.0 / W 140.9 / E 150.0), slimmed to 5-dp coords + a compact facility array.** Combined **627 KB** (well under the 2 MB budget). The 5 dense layers are **lazy** (fetch + build on first toggle) and **clustered** (`markerClusterGroup`, decluster at z13) like the gold-nugget layer — no markers rendered on boot.
+- **Rich popups** (`campPopup`): name · subtitle (type/fee/source) · facility chips (🚿🚻💧🐕🔥🚯⚡📶🍖♿⛺🚐⛏️🎣🧺) · access/maxstay/operator/phone/website · **🗺️ Open in Maps** (Google universal URL) + **🧭 Drive there** (reuses the v22 nav hand-off via `data-nav`) · **WikiCamps / HipCamp (bbox) / CamperMate** search links (https universal links → open the app if installed, web fallback otherwise).
+- **Settings → 📋 Camping resources** — new collapsible `<details>` section (below Audio capture) with 6 global links: WikiCamps, HipCamp, CamperMate, Parks Vic camping bookings, Free Camps Australia FB group, DataVic rest-areas dataset.
+- **SW**: 5 GeoJSON added to precached `SHELL_ASSETS` (small enough to precache, unlike the 6.8 MB tracks) **and** to the "Save maps offline" prefetch list. `SHELL_VERSION`/`APP_VERSION`/`SHELL_REV` → **v25** in lockstep.
+- **Hygiene:** removed the now-orphaned `makeCampIcon()` + `.marker-camp` CSS; menu legend "Camping" → orange "Trip camps (+ Camping layers in ▤ panel)".
+
+### Verified ✓ (real headless Chromium e2e via global playwright-core, 414×896)
+- `APP_VERSION`=v25; Camping group + all 6 rows present; 5 cluster layers registered (`window.campLayers`).
+- Toggle **Free camps** → lazy-loads **2031** markers; opacity slider drives the pane label live (40%).
+- Camp popup renders title/subtitle/facility chips + **Open in Maps + Drive there + WikiCamps + HipCamp + CamperMate** (all present).
+- Settings "Camping resources" present with all **6** correct URLs.
+- **Zero console / page errors**; responsive at 320 / 414 / 768. Screenshots in `qa_screenshots_v25/`.
+
+### Observations (honest)
+- The region is the **bbox, not a Victoria polygon** (per spec). It catches a thin strip of NSW/SA border country along the Murray + SE corner — e.g. a few Snowy-Monaro camps appear. Useful for a border trip, but counts aren't strictly "Victoria only".
+- **OSM facility-tag coverage is sparse** on free camps: 300/2031 (15%) have any facility tags; caravan 21%, rest 13%. Paid (84%) and Parks Vic (77%) are rich. The popup search links bridge the gap, exactly as the brief expected (~60–70% of WikiCamps' curated detail).
+- `mapshaper -simplify` was a **no-op** (point geometry doesn't simplify); the Python build already minifies + rounds to 5 dp, so files are lean without it.
+
+### State update for future sessions
+- **New globals:** `campLayers` (`campfree/campvan/camppaid/camprest/campparks` → `markerClusterGroup`s), `campPopup()`, `makeCampDisc()`, `CAMP_DEFS`, `CAMP_FAC`. New panes `p-camp-{rest,van,paid,free,parks}` in `PANE_Z`.
+- Build scripts (scratchpad, not committed): `fetch_osm.py` (Overpass) + `process_osm.py` + `process_parks.py` (recweb_site WFS). Re-run to refresh `data/camping_*.geojson` / `rest_areas_vic.geojson` / `parks_vic_campsites.geojson`.
+- SW cache is now `auragold-shell-v25`. v26 = ML on the v24 audio dataset (queued).

@@ -13,12 +13,13 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v24';
+const SHELL_VERSION = 'v25';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
-// v24: detector-audio capture — continuous foreground mic into a 30s PCM ring buffer; manual
-// + auto-RMS snapshots save the last 10s as GPS-tagged WAV clips (IndexedDB v3), shown as 🎵
-// markers and managed in the new "Audio events" panel (play / confirm / export ZIP+CSV).
-const SHELL_REV = 'v24';
+// v25: camping layer — new "Camping" group in the unified Layers panel with 5 lazy clustered
+// overlays (OSM free / caravan / paid camps + rest areas + Parks Vic campsites, pre-fetched
+// to data/*.geojson) plus the regrouped trip camps. Rich popups with facility chips, Maps
+// hand-off, and WikiCamps/HipCamp/CamperMate search links; new Settings "Camping resources".
+const SHELL_REV = 'v25';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -28,6 +29,14 @@ const SHELL_ASSETS = [
   './index.html',
   './manifest.webmanifest',
   './data/permitted_land.json',
+  // v25: camping overlays — small region-clipped GeoJSON (~0.6MB total), precached so the
+  // Camping layers work offline immediately. (Forest-track GeoJSON stays runtime-cached only —
+  // it's ~6.8MB and grabbed on demand / via "Save maps offline".)
+  './data/camping_free.geojson',
+  './data/camping_caravan_parks.geojson',
+  './data/camping_paid.geojson',
+  './data/rest_areas_vic.geojson',
+  './data/parks_vic_campsites.geojson',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
