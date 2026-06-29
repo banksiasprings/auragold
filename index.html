@@ -352,6 +352,61 @@
   .lp-row.off .lp-op { opacity:.4; }
   .lp-note { font-size:10.5px; color:#8a8262; padding:8px 5px 2px; line-height:1.45; border-top:1px solid #eee; margin-top:6px; }
   @media (min-width:769px){ .lp-body { width:300px; } }
+
+  /* ===== v24 — audio capture: signal-hit markers, REC indicator, settings, popups ===== */
+  .ag-audio-mk { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 4px rgba(0,0,0,.45); border:2px solid #fff; }
+  .ag-audio-mk span { font-size:13px; line-height:1; filter:drop-shadow(0 0 1px rgba(0,0,0,.3)); }
+  #audioRec { position:absolute; top:10px; left:10px; z-index:1100; display:none; align-items:center; gap:6px;
+    background:rgba(20,20,24,.82); color:#fff; font:600 12px/1 system-ui,sans-serif; padding:7px 11px 7px 9px;
+    border-radius:20px; cursor:pointer; border:none; -webkit-tap-highlight-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  #audioRec.on { display:inline-flex; }
+  #audioRec .dot { width:9px; height:9px; border-radius:50%; background:#ff3b30; box-shadow:0 0 0 0 rgba(255,59,48,.7);
+    animation:agRecPulse 1.4s infinite; }
+  @keyframes agRecPulse { 0%{ box-shadow:0 0 0 0 rgba(255,59,48,.6);} 70%{ box-shadow:0 0 0 7px rgba(255,59,48,0);} 100%{ box-shadow:0 0 0 0 rgba(255,59,48,0);} }
+  /* live RMS meter (settings) */
+  .au-meter { position:relative; flex:1 1 auto; height:14px; background:#eee; border-radius:7px; overflow:hidden; min-width:0; }
+  .au-meter > #auMeterBar { height:100%; width:0%; background:linear-gradient(90deg,#34c759,#ffcc00 65%,#ff3b30);
+    transition:width .06s linear; }
+  .au-meter > #auThreshMark { position:absolute; top:-2px; bottom:-2px; width:2px; background:#1f2430; left:0%; }
+  .au-row { display:flex; align-items:center; gap:9px; padding:7px 2px; font-size:12.5px; color:#333; }
+  .au-row > span:first-child { flex:0 0 96px; }
+  .au-row input[type=range] { flex:1 1 auto; accent-color:#caa53a; margin:0; min-width:0; }
+  .au-row #auThreshVal { flex:0 0 34px; text-align:right; font-variant-numeric:tabular-nums; color:#777; }
+  .ag-select { width:100%; box-sizing:border-box; padding:9px 8px; border:1px solid #d8d2c2; border-radius:8px;
+    background:#fff; font-size:13px; color:#222; margin:4px 0 2px; }
+  .au-stat { font-size:12px; color:#555; padding:9px 2px 4px; font-variant-numeric:tabular-nums; }
+  #auTestOut audio { width:100%; margin-top:8px; }
+  /* audio-event popup */
+  .ag-audio-pop { min-width:220px; }
+  .ag-audio-pop .ev-meta { font-size:11px; color:#666; margin-top:3px; }
+  .ag-audio-pop .ev-coords { font-size:11px; color:#888; font-variant-numeric:tabular-nums; }
+  .ag-audio-pop .ev-b { display:inline-block; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:10px;
+    background:#eef; color:#446; margin-left:4px; vertical-align:middle; }
+  .ag-audio-pop .ev-b.ok { background:#fdf3d0; color:#8a6d12; }
+  .ag-audio-pop .ev-b.no { background:#fde2e0; color:#9b2b22; }
+  .ag-audio-pop .ev-notes { width:100%; box-sizing:border-box; min-height:38px; margin:6px 0 4px; resize:vertical;
+    border:1px solid #ddd; border-radius:6px; padding:5px 6px; font:inherit; font-size:12px; }
+  .ag-audio-pop .ev-btns { display:flex; gap:5px; }
+  .ag-audio-pop .ev-act { flex:1 1 auto; border:none; cursor:pointer; border-radius:6px; padding:7px 4px;
+    font-size:12px; font-weight:600; background:#eef0f3; color:#333; }
+  .ag-audio-pop .ev-act.gold { background:#fdf0c8; color:#7a5e0e; }
+  .ag-audio-pop .ev-act.no { background:#fbe4e2; color:#8d2c22; }
+  .ag-audio-pop .ev-act.del { flex:0 0 40px; background:#f4f4f6; }
+  /* audio-events list panel */
+  .au-filter { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
+  .au-filter button { border:1px solid #ddd6c4; background:#fff; border-radius:14px; padding:5px 11px; font-size:12px;
+    color:#555; cursor:pointer; }
+  .au-filter button.on { background:#caa53a; border-color:#caa53a; color:#fff; font-weight:600; }
+  .au-ev { display:flex; align-items:center; gap:8px; padding:9px 4px; border-bottom:1px solid #f1ece0; }
+  .au-ev .e { font-size:18px; flex:0 0 auto; }
+  .au-ev .m { flex:1 1 auto; min-width:0; }
+  .au-ev .m b { font-size:12.5px; font-weight:600; }
+  .au-ev .m small { display:block; font-size:11px; color:#777; font-variant-numeric:tabular-nums; }
+  .au-ev .tag { font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; background:#eef; color:#447; }
+  .au-ev .tag.gold { background:#fdf0c8; color:#7a5e0e; } .au-ev .tag.no { background:#fbe4e2; color:#8d2c22; }
+  .au-ev .tag.auto { background:#fde9d6; color:#9a5a1e; }
+  .au-ev audio { height:30px; flex:0 0 132px; max-width:132px; }
 </style>
 </head>
 <body>
@@ -394,6 +449,7 @@
       <button id="offlineBtn" class="ag-act" type="button">⤓ <span id="offlineLbl">Save maps offline</span><span class="sub">Cache the trip's base map for no-signal use</span></button>
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
+      <button id="audioBtn" class="ag-act" type="button">🎵 Audio events (<span id="audioMenuCount">0</span>)<span class="sub">GPS-tagged detector-signal clips · play, confirm, export</span></button>
       <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
       <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Distance units · app version · force update</span></button>
     </div>
@@ -404,6 +460,7 @@
 
 <!-- Got-a-hit one-tap field log + saved-finds panel (AuraGold PWA) -->
 <button id="hitBtn" type="button" title="Log a find at your GPS location"><span style="font-size:16px">🎯</span> Got a hit!</button>
+<button id="audioRec" type="button" title="Detector audio is recording — tap to stop"><span class="dot"></span><span id="audioRecLbl">REC</span></button>
 <div class="version-badge" id="versionBadge" aria-hidden="true"></div>
 <aside id="findsPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🎯 My finds</h2><button class="ag-x" id="findsClose" aria-label="Close">×</button></header>
@@ -444,13 +501,55 @@
       </div>
     </div>
     <div class="ag-sec">
+      <h3>🎵 Audio capture (detector signals)</h3>
+      <div class="ag-card">
+        <p style="margin:6px 0 4px">Record your detector's audio on the swing and GPS-tag every hit. Plug the detector's 3.5&nbsp;mm out → TRRS → USB-C adapter into the phone, then pick that adapter below.</p>
+        <label class="au-row" style="display:block"><span style="display:block;margin-bottom:2px">Audio input device</span>
+          <select id="auDevice" class="ag-select"><option value="">Default input</option></select></label>
+        <p class="ag-note" style="margin:0 2px 6px">Pick your <b>USB-C audio adapter</b> — not the built-in phone mic. Names appear after you grant the mic once (Test capture).</p>
+        <div class="au-row"><span>Live level</span>
+          <div class="au-meter"><div id="auMeterBar"></div><div id="auThreshMark"></div></div></div>
+        <label class="au-row"><span>Auto-flag at</span>
+          <input type="range" id="auThresh" min="0" max="90" step="5" value="0"><span id="auThreshVal">off</span></label>
+        <p class="ag-note" style="margin:0 2px 6px">0 = off. When the live level crosses the dark marker, a 10&nbsp;s clip is auto-saved. Repeats within 3&nbsp;s merge into one event.</p>
+        <button id="auTest" class="ag-act" type="button">🎙 Test capture<span class="sub">Records 5&nbsp;s then plays it back — confirm the detector→phone chain works</span></button>
+        <div id="auTestOut"></div>
+        <div class="au-stat"><span id="auCount">0 events</span> · <span id="auSize">0 KB</span> stored</div>
+        <button id="auClear" class="ag-act" type="button" style="color:#b3261e">🗑 Clear all audio events<span class="sub" style="color:#c98">Deletes every saved signal clip — can't be undone</span></button>
+      </div>
+      <p class="ag-note" style="padding:0 2px">Capture runs only while AuraGold is <b>open on screen</b> (a phone can't keep the mic open in the background). Expect noticeably faster battery drain with audio + GPS both on.</p>
+    </div>
+
+    <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v23</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v24</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
     </div>
+  </div>
+</aside>
+
+<!-- v24: GPS-tagged detector-audio events — list, play, confirm, export (AuraGold PWA) -->
+<aside id="audioPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>🎵 Audio events</h2><button class="ag-x" id="audioClose" aria-label="Close">×</button></header>
+  <div class="ag-body">
+    <div class="ag-sec">
+      <div class="au-filter" id="auFilter">
+        <button data-f="all" class="on">All</button>
+        <button data-f="manual">🎯 Manual</button>
+        <button data-f="auto">🔔 Auto</button>
+        <button data-f="gold">🏆 Gold</button>
+        <button data-f="unmarked">Unmarked</button>
+      </div>
+      <div class="ag-card" id="audioList" style="padding:0 6px"></div>
+    </div>
+    <div class="ag-sec">
+      <h3>Export &amp; backup</h3>
+      <button class="ag-act" id="auExport" type="button">⤓ Export ZIP (audio + GPS CSV)<span class="sub">Every clip as .wav + a GPS-stamped CSV — for ML training later</span></button>
+    </div>
+    <p class="ag-note" id="audioHint" style="padding:0 2px">Each 🎵 marker on the map is a saved signal. Tap one to play it back, add notes, and mark it <b>🏆 Confirm gold</b> or <b>✗ False alarm</b>. Everything stays on this phone and works offline.</p>
   </div>
 </aside>
 
@@ -571,7 +670,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v23';
+var APP_VERSION = 'v24';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -699,6 +798,8 @@ const PANE_Z = {
   "p-fire": 325, "p-sf": 330, "p-rcl": 335,
   "p-walk": 340, "p-4wd": 342, "p-mgmt": 344, "p-fire-track": 346,
   "p-route": 360, "p-subspots": 365, "p-camp": 368, "p-spots": 370,
+  // v24: detector-audio signal-hit markers — above every map/trip layer, below the GPS dot.
+  "p-audio": 375,
 };
 Object.keys(PANE_Z).forEach(function (id) {
   map.createPane(id);
@@ -1207,9 +1308,9 @@ setTimeout(fitToSpots, 400);
   window.AuraGold = window.AuraGold || {};
   var AG = window.AuraGold;
 
-  // ---------- IndexedDB (shared DB, bumped to v2: photos + trips + user waypoints) ----------
-  var DB_NAME = 'auragold_photos', DB_VER = 2;
-  var S_TRIPS = 'auragold_trips', S_UWP = 'auragold_user_waypoints', S_PHOTOS = 'photos';
+  // ---------- IndexedDB (shared DB, bumped to v3: photos + trips + user waypoints + audio events) ----------
+  var DB_NAME = 'auragold_photos', DB_VER = 3;
+  var S_TRIPS = 'auragold_trips', S_UWP = 'auragold_user_waypoints', S_PHOTOS = 'photos', S_AUDIO = 'auragold_audio_events';
   var _dbP = null;
   function openDB(){
     if (_dbP) return _dbP;
@@ -1221,6 +1322,8 @@ setTimeout(fitToSpots, 400);
         if (!db.objectStoreNames.contains(S_PHOTOS)) db.createObjectStore(S_PHOTOS);
         if (!db.objectStoreNames.contains(S_TRIPS)) db.createObjectStore(S_TRIPS, { keyPath: 'id' });
         if (!db.objectStoreNames.contains(S_UWP)) db.createObjectStore(S_UWP, { keyPath: 'id' });
+        // v24: detector-audio signal hits (GPS-tagged WAV clips). keyPath id; blob stored inline.
+        if (!db.objectStoreNames.contains(S_AUDIO)) db.createObjectStore(S_AUDIO, { keyPath: 'id' });
       };
       req.onsuccess = function (e) { resolve(e.target.result); };
       req.onerror = function () { reject(req.error); };
@@ -1979,6 +2082,7 @@ setTimeout(fitToSpots, 400);
   ];
   // Optional user-data layers (created by later scripts) — toggle-only, resolved lazily.
   var LP_DYN = [
+    { name:'🎵 My signal hits',    get:function(){ return (window.AuraGold||{}).audioEventLayer; } },
     { name:'📍 My trip waypoints', get:function(){ return (window.AuraGold||{}).tripWaypointLayer; } },
     { name:'🎯 My saved finds',    get:function(){ return (window.AuraGold||{}).waypointLayer; } },
     { name:'🥾 My walked track',   get:function(){ return (window.AuraGold||{}).trailLayer; } }
@@ -2499,6 +2603,500 @@ setTimeout(fitToSpots, 400);
         mapsUrl:(url || textUrl || ''), autoParse:true });
     });
   })();
+})();
+</script>
+
+<!-- ===========================================================================
+  AuraGold v24 — detector-audio capture + GPS-tagged signal-hit logging.
+
+  Continuous foreground mic capture into a 30 s PCM ring buffer. Manual ("Got a
+  hit") and auto-threshold (smoothed RMS) snapshots save the last 10 s as a
+  lossless 16 kHz mono WAV plus the interpolated GPS fix into IndexedDB, rendered
+  as 🎵 markers in their own pane (above spots, below the GPS dot) and listed in
+  the "🎵 Audio events" panel for playback, confirm/false tagging and ZIP export.
+
+  Why lossless WAV, not Opus: it guarantees an exact, valid last-10 s clip fully
+  offline with zero dependencies, and it preserves the 200–1500 Hz tonal detail
+  that a lossy 64 kbps pass would smear — that detail is the signal we want to
+  classify later. Cost is ~320 KB/clip; the daily cap + storage meter manage it.
+  ============================================================================ -->
+<script>
+(function () {
+  if (typeof map === 'undefined' || typeof L === 'undefined') return;
+  var AG = window.AuraGold = window.AuraGold || {};
+
+  // ---- tunables ----
+  var SR_TARGET = 16000, RING_SECONDS = 30, SNAP_SECONDS = 10;
+  var DEBOUNCE_MS = 3000, DAILY_CAP = 500, RMS_WIN_MS = 500;
+  var S_AUDIO = 'auragold_audio_events';
+
+  // ---- persisted audio settings ----
+  var AKEY = 'auragold_audio', acfg;
+  try { acfg = JSON.parse(localStorage.getItem(AKEY)) || {}; } catch (e) { acfg = {}; }
+  if (typeof acfg.threshold !== 'number') acfg.threshold = 0;   // 0 = off (recommended start 0.3)
+  if (typeof acfg.deviceId !== 'string') acfg.deviceId = '';
+  function saveCfg() { try { localStorage.setItem(AKEY, JSON.stringify(acfg)); } catch (e) {} }
+
+  // ---- IndexedDB store helpers (reuse the shared connection) ----
+  function db() { return AG.openDB ? AG.openDB() : Promise.reject(new Error('no-db')); }
+  function evAll() { return db().then(function (d) { return new Promise(function (res, rej) {
+    var out = [], tx = d.transaction(S_AUDIO, 'readonly'), cur = tx.objectStore(S_AUDIO).openCursor();
+    cur.onsuccess = function (e) { var c = e.target.result; if (c) { out.push(c.value); c.continue(); } else res(out); };
+    cur.onerror = function () { rej(cur.error); };
+  }); }); }
+  function evPut(v) { return db().then(function (d) { return new Promise(function (res, rej) {
+    var clean = {}; for (var k in v) { if (k.charAt(0) !== '_') clean[k] = v[k]; }   // strip _marker etc.
+    var tx = d.transaction(S_AUDIO, 'readwrite'); tx.objectStore(S_AUDIO).put(clean);
+    tx.oncomplete = function () { res(v); }; tx.onerror = function () { rej(tx.error); };
+  }); }); }
+  function evDel(id) { return db().then(function (d) { return new Promise(function (res, rej) {
+    var tx = d.transaction(S_AUDIO, 'readwrite'); tx.objectStore(S_AUDIO).delete(id);
+    tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); };
+  }); }); }
+  function evClearStore() { return db().then(function (d) { return new Promise(function (res, rej) {
+    var tx = d.transaction(S_AUDIO, 'readwrite'); tx.objectStore(S_AUDIO).clear();
+    tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); };
+  }); }); }
+
+  // ---- small utils ----
+  function uid() { return 'au' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function isoTs(ts) { try { return new Date(ts).toISOString(); } catch (e) { return ''; } }
+  function fmtTs(ts) { try { return new Date(ts).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }); } catch (e) { return ''; } }
+  function dayKey(ts) { var d = new Date(ts); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function fmtBytes(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+  function toast(m) { var t = document.querySelector('.ag-toast'); if (!t) { t = document.createElement('div'); t.className = 'ag-toast'; document.body.appendChild(t); } t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(function () { t.classList.remove('show'); }, 2600); }
+
+  // ---- WAV encoder (Float32 -> 16-bit mono WAV Blob) [verified] ----
+  function encodeWAV(samples, sampleRate) {
+    var n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function str(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE');
+    str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, 'data'); v.setUint32(40, n * 2, true);
+    var off = 44; for (var i = 0; i < n; i++) { var s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true); off += 2; }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  // ---- PCM ring buffer (last RING_SECONDS) [verified] ----
+  var ring = null, ringLen = 0, ringPos = 0, ringFilled = 0, sampleRate = SR_TARGET;
+  function initRing(sr) { sampleRate = sr; ringLen = Math.floor(RING_SECONDS * sr); ring = new Float32Array(ringLen); ringPos = 0; ringFilled = 0; }
+  function pushSamples(block) {
+    if (!ring) return;
+    var n = block.length;
+    if (n >= ringLen) { ring.set(block.subarray(n - ringLen)); ringPos = 0; ringFilled = ringLen; return; }
+    var first = Math.min(n, ringLen - ringPos);
+    ring.set(block.subarray(0, first), ringPos);
+    if (n > first) ring.set(block.subarray(first), 0);
+    ringPos = (ringPos + n) % ringLen;
+    ringFilled = Math.min(ringLen, ringFilled + n);
+  }
+  function snapshot(seconds) {
+    if (!ring || !ringFilled) return null;
+    var want = Math.min(ringFilled, Math.floor(seconds * sampleRate));
+    var out = new Float32Array(want);
+    var start = (ringPos - want + ringLen) % ringLen;
+    var first = Math.min(want, ringLen - start);
+    out.set(ring.subarray(start, start + first), 0);
+    if (want > first) out.set(ring.subarray(0, want - first), first);
+    return out;
+  }
+
+  // ---- smoothed RMS over RMS_WIN_MS [verified] ----
+  var rmsWin = [], rmsWinSamples = 0, smoothedRMS = 0;
+  function feedRMS(block) {
+    var ss = 0; for (var i = 0; i < block.length; i++) { var s = block[i]; ss += s * s; }
+    rmsWin.push({ n: block.length, ss: ss }); rmsWinSamples += block.length;
+    var maxSamp = Math.floor(RMS_WIN_MS / 1000 * sampleRate);
+    while (rmsWinSamples > maxSamp && rmsWin.length > 1) { var d = rmsWin.shift(); rmsWinSamples -= d.n; }
+    var tot = 0, nn = 0; for (var j = 0; j < rmsWin.length; j++) { tot += rmsWin[j].ss; nn += rmsWin[j].n; }
+    smoothedRMS = nn ? Math.sqrt(tot / nn) : 0;
+    return smoothedRMS;
+  }
+
+  // ---- GPS fix history + interpolation [verified] ----
+  var fixHist = [];
+  function pollFix() {
+    var f = AG.lastFix;
+    if (f && (!fixHist.length || fixHist[fixHist.length - 1].ts !== f.ts)) {
+      fixHist.push({ lat: f.lat, lng: f.lng, acc: f.acc, ts: f.ts });
+      var cutoff = Date.now() - 5 * 60000; while (fixHist.length > 1 && fixHist[0].ts < cutoff) fixHist.shift();
+    }
+  }
+  function fixAt(ts) {
+    if (!fixHist.length) { var f = AG.lastFix; return f ? { lat: f.lat, lng: f.lng, acc: f.acc, ts: f.ts } : null; }
+    var prev = null, next = null;
+    for (var i = 0; i < fixHist.length; i++) { var h = fixHist[i]; if (h.ts <= ts) prev = h; if (h.ts >= ts) { next = h; break; } }
+    if (prev && next && next.ts > prev.ts) { var r = (ts - prev.ts) / (next.ts - prev.ts);
+      return { lat: prev.lat + (next.lat - prev.lat) * r, lng: prev.lng + (next.lng - prev.lng) * r, acc: Math.max(prev.acc || 0, next.acc || 0), ts: ts }; }
+    return prev || next;
+  }
+
+  // ---- store-only ZIP + CRC32 (offline export, no deps) [verified] ----
+  var crcTable = (function () { var t = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8) { var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = crcTable[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function asciiBytes(s) { var u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 0xFF; return u; }
+  function u16(n) { return [n & 0xFF, (n >> 8) & 0xFF]; }
+  function u32(n) { return [n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF]; }
+  function buildZip(files) {
+    var parts = [], central = [], offset = 0;
+    files.forEach(function (f) {
+      var nameB = asciiBytes(f.name), crc = crc32(f.data), sz = f.data.length;
+      var local = new Uint8Array([].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(sz), u32(sz), u16(nameB.length), u16(0)));
+      parts.push(local, nameB, f.data);
+      var cen = new Uint8Array([].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(sz), u32(sz), u16(nameB.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset)));
+      central.push(cen, nameB);
+      offset += local.length + nameB.length + sz;
+    });
+    var cenStart = offset, cenBytes = 0; central.forEach(function (c) { cenBytes += c.length; });
+    var end = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cenBytes), u32(cenStart), u16(0)));
+    return new Blob(parts.concat(central, [end]), { type: 'application/zip' });
+  }
+  function csvCell(s) { s = (s == null ? '' : '' + s).replace(/"/g, '""'); return /[",\n]/.test(s) ? '"' + s + '"' : s; }
+  function downloadBlob(name, blob) { var u = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(u); }, 800); }
+
+  // ---- capture lifecycle ----
+  var stream = null, ctx = null, srcNode = null, procNode = null, zeroGain = null;
+  var running = false, startingP = null, denied = false;
+  var hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+  function setIndicator(on) { var r = document.getElementById('audioRec'); if (r) r.classList.toggle('on', !!on); }
+
+  function start() {
+    if (running) return Promise.resolve(true);
+    if (startingP) return startingP;
+    if (!hasGUM) { denied = true; return Promise.resolve(false); }
+    var ac = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: SR_TARGET };
+    if (acfg.deviceId) ac.deviceId = { exact: acfg.deviceId };
+    startingP = navigator.mediaDevices.getUserMedia({ audio: ac }).then(function (s) {
+      stream = s;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      try { ctx = new AC({ sampleRate: SR_TARGET }); } catch (e) { ctx = new AC(); }
+      initRing(ctx.sampleRate);
+      srcNode = ctx.createMediaStreamSource(s);
+      procNode = ctx.createScriptProcessor(4096, 1, 1);
+      procNode.onaudioprocess = function (e) {
+        var inp = e.inputBuffer.getChannelData(0);
+        var block = new Float32Array(inp.length); block.set(inp);
+        pushSamples(block); feedRMS(block); maybeAutoFlag();
+      };
+      // Route through a muted gain so the ScriptProcessor keeps firing without
+      // playing the detector audio back out of the phone speaker.
+      zeroGain = ctx.createGain(); zeroGain.gain.value = 0;
+      srcNode.connect(procNode); procNode.connect(zeroGain); zeroGain.connect(ctx.destination);
+      if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e2) {} }
+      s.getAudioTracks().forEach(function (tr) { tr.onended = function () { stop(); toast('🎙 Audio input disconnected'); }; });
+      running = true; startingP = null; denied = false;
+      setIndicator(true);
+      return true;
+    }).catch(function (err) {
+      startingP = null; running = false; setIndicator(false);
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.name === 'PermissionDeniedError')) denied = true;
+      try { console.warn('[v24] mic start failed:', err && err.name, err && err.message); } catch (e) {}
+      return false;
+    });
+    return startingP;
+  }
+  function stop() {
+    running = false; startingP = null; setIndicator(false);
+    try { if (procNode) { procNode.disconnect(); procNode.onaudioprocess = null; } } catch (e) {}
+    try { if (zeroGain) zeroGain.disconnect(); } catch (e) {}
+    try { if (srcNode) srcNode.disconnect(); } catch (e) {}
+    try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch (e) {}
+    try { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    stream = ctx = srcNode = procNode = zeroGain = ring = null; ringFilled = 0; rmsWin = []; rmsWinSamples = 0; smoothedRMS = 0;
+  }
+
+  // ---- auto-flag (debounced) ----
+  var lastFlagTs = 0;
+  function maybeAutoFlag() {
+    if (acfg.threshold <= 0 || smoothedRMS < acfg.threshold) return;
+    var t = Date.now();
+    var fresh = (t - lastFlagTs) >= DEBOUNCE_MS;
+    lastFlagTs = t;                 // any over-threshold tick extends the merge window
+    if (fresh) saveEvent('auto');
+  }
+
+  // ---- events model ----
+  var events = [];
+  var dailyCount = {};
+  var audioLayer = L.layerGroup();
+  if (!map.getPane('p-audio')) { map.createPane('p-audio'); map.getPane('p-audio').style.zIndex = 375; }
+  AG.audioEventLayer = audioLayer;
+  audioLayer.addTo(map);                          // "My signal hits" — default ON
+
+  var urls = {};
+  function blobURL(ev) { if (!ev.audioBlob) return ''; if (urls[ev.id]) return urls[ev.id]; urls[ev.id] = URL.createObjectURL(ev.audioBlob); return urls[ev.id]; }
+  function revoke(ev) { if (urls[ev.id]) { URL.revokeObjectURL(urls[ev.id]); delete urls[ev.id]; } }
+
+  function evIcon(ev) {
+    var emoji = ev.confirmed === true ? '🏆' : '🎵';
+    var bg = ev.confirmed === true ? '#caa53a' : (ev.confirmed === false ? '#9aa0a6' : (ev.type === 'auto' ? '#e67e22' : '#2563eb'));
+    return L.divIcon({ className: '', html: '<div class="ag-audio-mk" style="background:' + bg + '"><span>' + emoji + '</span></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
+  }
+  function addMarker(ev) {
+    if (ev.lat == null || ev.lng == null) return;
+    var m = L.marker([ev.lat, ev.lng], { pane: 'p-audio', icon: evIcon(ev) });
+    m.bindPopup(function () { return popupEl(ev); }, { maxWidth: 270, minWidth: 232, autoPan: true });
+    m.addTo(audioLayer); ev._marker = m;
+  }
+  function rerenderMarker(ev) { if (ev._marker) ev._marker.setIcon(evIcon(ev)); }
+  function renderAll() { audioLayer.clearLayers(); events.forEach(function (ev) { ev._marker = null; addMarker(ev); }); }
+
+  function popupEl(ev) {
+    var d = document.createElement('div'); d.className = 'ag-audio-pop';
+    var badge = ev.confirmed === true ? '<span class="ev-b ok">🏆 Confirmed gold</span>'
+      : ev.confirmed === false ? '<span class="ev-b no">✗ False alarm</span>'
+      : '<span class="ev-b">' + (ev.type === 'auto' ? '🔔 Auto-flag' : '🎯 Manual hit') + '</span>';
+    d.innerHTML = '<b>' + (ev.confirmed === true ? '🏆' : '🎵') + ' Signal hit</b> ' + badge +
+      '<div class="ev-meta">' + fmtTs(ev.timestamp) + (ev.durationMs ? ' · ' + (ev.durationMs / 1000).toFixed(1) + 's' : '') + '</div>' +
+      '<div class="ev-coords">' + (ev.lat != null ? ev.lat.toFixed(5) + ', ' + ev.lng.toFixed(5) : 'no GPS fix') + (ev.acc ? ' · ±' + Math.round(ev.acc) + 'm' : '') + '</div>';
+    if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'metadata'; au.style.cssText = 'width:100%;margin:6px 0;height:34px'; au.src = blobURL(ev); d.appendChild(au); }
+    else { var na = document.createElement('div'); na.className = 'ev-meta'; na.textContent = '(no audio captured for this hit)'; d.appendChild(na); }
+    var ta = document.createElement('textarea'); ta.className = 'ev-notes'; ta.placeholder = 'Notes (ground, target ID, depth…)'; ta.value = ev.notes || '';
+    ta.addEventListener('change', function () { ev.notes = ta.value; evPut(ev); renderListIfOpen(); });
+    d.appendChild(ta);
+    var row = document.createElement('div'); row.className = 'ev-btns';
+    var bGold = document.createElement('button'); bGold.className = 'ev-act gold'; bGold.textContent = '🏆 Gold';
+    var bNo = document.createElement('button'); bNo.className = 'ev-act no'; bNo.textContent = '✗ False';
+    var bDel = document.createElement('button'); bDel.className = 'ev-act del'; bDel.textContent = '🗑';
+    bGold.addEventListener('click', function () { ev.confirmed = ev.confirmed === true ? null : true; evPut(ev); rerenderMarker(ev); refreshCounts(); renderListIfOpen(); map.closePopup(); toast(ev.confirmed ? '🏆 Confirmed gold' : 'Mark cleared'); });
+    bNo.addEventListener('click', function () { ev.confirmed = ev.confirmed === false ? null : false; evPut(ev); rerenderMarker(ev); refreshCounts(); renderListIfOpen(); map.closePopup(); toast(ev.confirmed === false ? 'Marked false alarm' : 'Mark cleared'); });
+    bDel.addEventListener('click', function () { if (confirm('Delete this audio event? This removes the clip too.')) { removeEvent(ev); map.closePopup(); } });
+    row.appendChild(bGold); row.appendChild(bNo); row.appendChild(bDel); d.appendChild(row);
+    return d;
+  }
+  function removeEvent(ev) { revoke(ev); if (ev._marker) audioLayer.removeLayer(ev._marker); events = events.filter(function (x) { return x.id !== ev.id; }); evDel(ev.id); refreshCounts(); renderListIfOpen(); }
+
+  // ---- save a signal hit (manual | auto) ----
+  function saveEvent(type) {
+    var ts = Date.now(), dk = dayKey(ts);
+    if ((dailyCount[dk] || 0) >= DAILY_CAP) { if (type === 'manual') toast('Daily audio cap (' + DAILY_CAP + ') reached'); return Promise.resolve(null); }
+    pollFix();
+    var samples = snapshot(SNAP_SECONDS);
+    var dur = samples ? Math.round(samples.length / sampleRate * 1000) : 0;
+    var fx = fixAt(ts - Math.floor(dur / 2));
+    var ev = { id: uid(), timestamp: ts, lat: fx ? fx.lat : null, lng: fx ? fx.lng : null, acc: fx ? fx.acc : null,
+      audioBlob: samples ? encodeWAV(samples, sampleRate) : null, durationMs: dur, sr: sampleRate,
+      type: type, confirmed: null, notes: '', photoIds: [] };
+    dailyCount[dk] = (dailyCount[dk] || 0) + 1;
+    events.push(ev); addMarker(ev); refreshCounts(); renderListIfOpen();
+    if (type === 'manual') toast(ev.audioBlob ? '🎵 Signal saved · ' + (dur / 1000).toFixed(0) + 's audio' : '🎯 Hit saved (no audio yet)');
+    else toast('🔔 Auto-flagged a signal');
+    return evPut(ev).catch(function (e) { try { console.warn('[v24] save failed', e); } catch (x) {} return null; });
+  }
+
+  // ---- counts / storage ----
+  function totalBytes() { var b = 0; events.forEach(function (ev) { if (ev.audioBlob) b += ev.audioBlob.size; }); return b; }
+  function refreshCounts() {
+    var n = events.length;
+    var mc = document.getElementById('audioMenuCount'); if (mc) mc.textContent = n;
+    var c = document.getElementById('auCount'); if (c) c.textContent = n + (n === 1 ? ' event' : ' events');
+    var sz = document.getElementById('auSize'); if (sz) sz.textContent = fmtBytes(totalBytes());
+  }
+
+  // ---- audio-events list panel ----
+  var aPanel = document.getElementById('audioPanel');
+  var curFilter = 'all';
+  function aOpen(o) { if (!aPanel) return; aPanel.classList.toggle('open', o); aPanel.setAttribute('aria-hidden', o ? 'false' : 'true'); if (o) renderList(); }
+  function matchFilter(ev) {
+    if (curFilter === 'all') return true;
+    if (curFilter === 'manual') return ev.type === 'manual';
+    if (curFilter === 'auto') return ev.type === 'auto';
+    if (curFilter === 'gold') return ev.confirmed === true;
+    if (curFilter === 'unmarked') return ev.confirmed == null;
+    return true;
+  }
+  function renderListIfOpen() { if (aPanel && aPanel.classList.contains('open')) renderList(); }
+  function renderList() {
+    var el = document.getElementById('audioList'); if (!el) return;
+    var list = events.filter(matchFilter).slice().sort(function (a, b) { return b.timestamp - a.timestamp; });
+    if (!list.length) { el.innerHTML = '<div class="wp-empty" style="padding:14px 6px;color:#888;font-size:13px">No audio events' + (curFilter === 'all' ? ' yet. Arm capture, then tap 🎯 Got a hit! while swinging.' : ' for this filter.') + '</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(function (ev) {
+      var tag = ev.confirmed === true ? '<span class="tag gold">🏆 Gold</span>' : ev.confirmed === false ? '<span class="tag no">✗ False</span>' : ev.type === 'auto' ? '<span class="tag auto">🔔 Auto</span>' : '<span class="tag">🎯 Manual</span>';
+      var coords = ev.lat != null ? ev.lat.toFixed(4) + ', ' + ev.lng.toFixed(4) : 'no GPS';
+      var row = document.createElement('div'); row.className = 'au-ev';
+      row.innerHTML = '<span class="e">' + (ev.confirmed === true ? '🏆' : '🎵') + '</span>' +
+        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + '</small></div>';
+      if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'none'; au.src = blobURL(ev); row.appendChild(au); }
+      row.querySelector('.m').addEventListener('click', function () { if (ev.lat != null) { aOpen(false); map.setView([ev.lat, ev.lng], Math.max(map.getZoom(), 15)); if (ev._marker) ev._marker.openPopup(); } });
+      el.appendChild(row);
+    });
+  }
+
+  // ---- ZIP export ----
+  function exportZip() {
+    var list = events.slice().sort(function (a, b) { return a.timestamp - b.timestamp; });
+    if (!list.length) { toast('No audio events to export'); return; }
+    toast('Building export…');
+    var rows = ['id,timestamp_iso,lat,lng,accuracy_m,type,confirmed,duration_ms,sample_rate,audio_file,notes'];
+    var jobs = list.map(function (ev, i) {
+      var fname = 'clip_' + String(i + 1) + '_' + ev.id + '.wav';
+      var conf = ev.confirmed === true ? 'gold' : ev.confirmed === false ? 'false' : 'unmarked';
+      rows.push([ev.id, isoTs(ev.timestamp), ev.lat != null ? ev.lat : '', ev.lng != null ? ev.lng : '', ev.acc != null ? Math.round(ev.acc) : '', ev.type, conf, ev.durationMs, ev.sr || sampleRate, ev.audioBlob ? fname : '', csvCell(ev.notes)].join(','));
+      return ev.audioBlob ? ev.audioBlob.arrayBuffer().then(function (ab) { return { name: fname, data: new Uint8Array(ab) }; }) : Promise.resolve(null);
+    });
+    Promise.all(jobs).then(function (files) {
+      files = files.filter(Boolean);
+      files.push({ name: 'audio_events.csv', data: new TextEncoder().encode(rows.join('\n')) });
+      downloadBlob('auragold-audio-' + Date.now() + '.zip', buildZip(files));
+      toast('⤓ Exported ' + (files.length - 1) + ' clips');
+    }).catch(function (e) { try { console.warn('[v24] export failed', e); } catch (x) {} toast('Export failed'); });
+  }
+
+  // ---- settings: device list, threshold, meter, test, clear ----
+  function populateDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    navigator.mediaDevices.enumerateDevices().then(function (devs) {
+      var sel = document.getElementById('auDevice'); if (!sel) return;
+      var ins = devs.filter(function (d) { return d.kind === 'audioinput'; });
+      var cur = acfg.deviceId || '';
+      sel.innerHTML = '<option value="">Default input</option>' + ins.map(function (d, i) {
+        var label = d.label || ('Microphone ' + (i + 1) + ' (grant mic to see name)');
+        return '<option value="' + d.deviceId + '"' + (d.deviceId === cur ? ' selected' : '') + '>' + label.replace(/[<>&]/g, '') + '</option>';
+      }).join('');
+    }).catch(function () {});
+  }
+  var auDevice = document.getElementById('auDevice');
+  if (auDevice) auDevice.addEventListener('change', function () {
+    acfg.deviceId = auDevice.value; saveCfg();
+    if (running) { stop(); start().then(function () { populateDevices(); }); }   // re-open on the chosen device
+  });
+
+  var auThresh = document.getElementById('auThresh'), auThreshVal = document.getElementById('auThreshVal'), auThreshMark = document.getElementById('auThreshMark');
+  function applyThreshUI() {
+    var pct = Math.round(acfg.threshold * 100);
+    if (auThresh) auThresh.value = pct;
+    if (auThreshVal) auThreshVal.textContent = pct === 0 ? 'off' : '0.' + (pct < 10 ? '0' : '') + pct;
+    if (auThreshMark) auThreshMark.style.left = pct + '%';
+  }
+  if (auThresh) auThresh.addEventListener('input', function () { acfg.threshold = (+auThresh.value) / 100; saveCfg(); applyThreshUI(); });
+  applyThreshUI();
+
+  // live meter loop — only while the Settings panel is open
+  var meterBar = document.getElementById('auMeterBar');
+  var sPanelEl = document.getElementById('settingsPanel');
+  (function meterLoop() {
+    if (meterBar && sPanelEl && sPanelEl.classList.contains('open')) {
+      var pct = Math.min(100, Math.round(smoothedRMS * 100));
+      meterBar.style.width = (running ? pct : 0) + '%';
+    }
+    requestAnimationFrame(meterLoop);
+  })();
+  // arm capture (if already permitted) when Settings opens, so the meter is live
+  if (sPanelEl) {
+    var mo = new MutationObserver(function () {
+      if (sPanelEl.classList.contains('open')) { populateDevices(); if (!running && !denied) tryAutoStart(); }
+    });
+    mo.observe(sPanelEl, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  var auTest = document.getElementById('auTest');
+  if (auTest) auTest.addEventListener('click', function () {
+    var out = document.getElementById('auTestOut'); if (!out) return;
+    out.innerHTML = '<div class="ag-note" style="margin:6px 2px">Starting microphone…</div>';
+    start().then(function (okv) {
+      if (!okv) { out.innerHTML = '<div class="ag-note" style="margin:6px 2px;color:#b3261e">Microphone unavailable or denied. On Android, open AuraGold in <b>Chrome</b> and allow the mic prompt. If you installed it to the home screen and the prompt never appears, open it in a Chrome tab instead.</div>'; return; }
+      populateDevices();
+      var t0 = Date.now();
+      var iv = setInterval(function () { var s = Math.max(0, 5 - (Date.now() - t0) / 1000); out.innerHTML = '<div class="ag-note" style="margin:6px 2px">● Recording ' + s.toFixed(1) + 's… swing over a known target</div>'; }, 150);
+      setTimeout(function () {
+        clearInterval(iv);
+        var samples = snapshot(5);
+        if (!samples || !samples.length) { out.innerHTML = '<div class="ag-note" style="margin:6px 2px;color:#b3261e">No audio captured — check the adapter is selected above.</div>'; return; }
+        var blob = encodeWAV(samples, sampleRate), pk = 0;
+        for (var i = 0; i < samples.length; i++) { var a = Math.abs(samples[i]); if (a > pk) pk = a; }
+        out.innerHTML = '';
+        var au = document.createElement('audio'); au.controls = true; au.src = URL.createObjectURL(blob); out.appendChild(au);
+        var info = document.createElement('div'); info.className = 'ag-note'; info.style.margin = '6px 2px';
+        info.innerHTML = 'Captured 5s @ ' + sampleRate + ' Hz · peak ' + Math.round(pk * 100) + '% · ' + fmtBytes(blob.size) + '. <b>If you can hear your detector, the chain works.</b>' + (pk < 0.01 ? ' ⚠️ Peak is near zero — the phone may not be receiving line-in audio from this adapter.' : '');
+        out.appendChild(info);
+      }, 5000);
+    });
+  });
+
+  var auClear = document.getElementById('auClear');
+  if (auClear) auClear.addEventListener('click', function () {
+    if (!events.length) { toast('No audio events to clear'); return; }
+    if (!confirm('Delete all ' + events.length + ' audio events and their clips? This cannot be undone.')) return;
+    events.forEach(revoke); events = []; dailyCount = {}; audioLayer.clearLayers();
+    evClearStore().then(function () { refreshCounts(); renderListIfOpen(); toast('All audio events cleared'); });
+  });
+
+  // ---- panel + menu wiring ----
+  var menuPanel = document.getElementById('menuPanel');
+  function closeMenu() { if (menuPanel) { menuPanel.classList.remove('open'); menuPanel.setAttribute('aria-hidden', 'true'); } }
+  var audioBtn = document.getElementById('audioBtn');
+  if (audioBtn) audioBtn.addEventListener('click', function () { closeMenu(); aOpen(true); });
+  var audioClose = document.getElementById('audioClose');
+  if (audioClose) audioClose.addEventListener('click', function () { aOpen(false); });
+  var auFilter = document.getElementById('auFilter');
+  if (auFilter) auFilter.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    curFilter = b.getAttribute('data-f');
+    Array.prototype.forEach.call(auFilter.querySelectorAll('button'), function (x) { x.classList.toggle('on', x === b); });
+    renderList();
+  });
+  var auExport = document.getElementById('auExport');
+  if (auExport) auExport.addEventListener('click', exportZip);
+
+  // ---- REC indicator: tap to toggle capture ----
+  var recBtn = document.getElementById('audioRec');
+  if (recBtn) recBtn.addEventListener('click', function () { if (running) { stop(); toast('Audio capture stopped'); } else start().then(function (ok) { if (ok) toast('🎙 Audio capture on'); }); });
+
+  // ---- "Got a hit!" — also snapshot audio (existing handler still logs the GPS find) ----
+  var hitBtn = document.getElementById('hitBtn');
+  if (hitBtn) hitBtn.addEventListener('click', function () {
+    if (!hasGUM || denied) return;                       // GPS-only fallback already handled elsewhere
+    if (running) { saveEvent('manual'); }
+    else { start().then(function (ok) { if (ok) toast('🎙 Audio armed — your next hit will save a clip'); }); }
+  });
+
+  // ---- keep capture alive across foreground/background flips ----
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && running && ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+  });
+
+  // ---- auto-start capture if the user already granted the mic (continuous foreground) ----
+  function tryAutoStart() {
+    if (!hasGUM || running || denied) return;
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'microphone' }).then(function (st) {
+        if (st.state === 'granted') start();
+        if (st.onchange === null) st.onchange = function () { if (st.state === 'denied') { denied = true; stop(); } };
+      }).catch(function () {});
+    }
+  }
+
+  // ---- init: load saved events, render, wire counts ----
+  evAll().then(function (list) {
+    events = (list || []).map(function (ev) { ev._marker = null; return ev; });
+    events.forEach(function (ev) { var dk = dayKey(ev.timestamp); dailyCount[dk] = (dailyCount[dk] || 0) + 1; });
+    renderAll(); refreshCounts(); renderListIfOpen();
+    tryAutoStart();
+  }).catch(function (e) { try { console.warn('[v24] load events failed', e); } catch (x) {} });
+
+  // poll GPS into the fix history while capturing
+  setInterval(function () { if (running) pollFix(); }, 1000);
+
+  // ---- test/automation surface (drive the full pipeline without a real mic) ----
+  AG.audio = {
+    start: start, stop: stop, isRunning: function () { return running; }, isDenied: function () { return denied; },
+    getRMS: function () { return smoothedRMS; }, count: function () { return events.length; },
+    events: function () { return events.map(function (e) { var o = {}; for (var k in e) if (k.charAt(0) !== '_') o[k] = e[k]; return o; }); },
+    exportZip: exportZip, setThreshold: function (v) { acfg.threshold = v; saveCfg(); applyThreshUI(); },
+    // inject a synthetic PCM block (600 Hz tone at amplitude `amp`, `ms` long) — feeds the
+    // ring + RMS + auto-flag exactly as a live mic block would. For smoke-testing offline.
+    _feed: function (amp, ms) {
+      if (!ring) initRing(SR_TARGET);
+      var n = Math.floor((ms || 300) / 1000 * sampleRate), b = new Float32Array(n);
+      for (var i = 0; i < n; i++) b[i] = Math.sin(2 * Math.PI * 600 * i / sampleRate) * amp;
+      pushSamples(b); feedRMS(b); maybeAutoFlag(); return smoothedRMS;
+    },
+    _save: function (type) { return saveEvent(type || 'manual'); },
+    _pushFix: function (lat, lng, acc, ts) { fixHist.push({ lat: lat, lng: lng, acc: acc || 10, ts: ts || Date.now() }); }
+  };
 })();
 </script>
 </body>

@@ -352,3 +352,29 @@ Steven (re-flagged today): every map — Magnetic, Terrain, Satellite, Map view,
 - SW cache is now `auragold-shell-v23` (`SHELL_REV='v23'`). Same dev rule: unregister SWs + delete `auragold-shell-*` + reload to see edits; bump `SHELL_VERSION`+`APP_VERSION` in lockstep.
 
 ---
+
+## Phase 4 — detector-audio capture (v24)
+
+### Completed — **v24**
+- **Continuous foreground mic capture** (Web Audio API) into a **30 s PCM ring buffer**. `getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:1, sampleRate:16000}})` → `AudioContext` → `MediaStreamSource` → **`ScriptProcessorNode(4096)`** → muted gain → destination (muted so the detector audio isn't played back out the phone). Each block feeds the ring + a 500 ms smoothed-RMS window + the auto-flag check.
+- **Two save paths**, both snapshot the **last 10 s** as a lossless **16 kHz mono WAV** (hand-rolled encoder) + GPS: **Path A** the existing **🎯 Got a hit!** button (`type:'manual'`); **Path B** an **RMS auto-flag** (`type:'auto'`) — fires when smoothed RMS ≥ user threshold, **3 s debounce** merges a sustained signal into one event, **500/day cap** guards storage.
+- **GPS pairing:** a 5-min `fixHist` ring (polled 1 Hz from `AG.lastFix`); `fixAt(midpoint)` interpolates the position at the clip's midpoint, so a clip spanning two fixes gets the in-between coord.
+- **IndexedDB bumped to v3** — new store `auragold_audio_events` (keyPath `id`; Blob inline). Schema `{id, timestamp, lat, lng, acc, audioBlob, durationMs, sr, type, confirmed, notes, photoIds}`. Shares the one `auragold_photos` connection via `AG.openDB`.
+- **Markers:** own pane **`p-audio` (z 375)** — above spots (370), below the GPS dot. 🎵 (blue manual / orange auto), upgrades to **🏆** on confirm-gold, greys on false-alarm. Layer = `AG.audioEventLayer`, added to the unified panel via a new **`LP_DYN`** row **"🎵 My signal hits"** (default ON). Popup = timestamp/coords + `<audio controls>` + notes + **🏆 Gold / ✗ False / 🗑**.
+- **New "🎵 Audio events" panel** (☰ menu): filter chips (all/manual/auto/gold/unmarked), inline playback, **Export ZIP** = every `.wav` + GPS-stamped `audio_events.csv` (store-only ZIP + CRC32, hand-rolled, no deps).
+- **Settings → 🎵 Audio capture:** device dropdown (`enumerateDevices`), auto-flag threshold slider, **live RMS meter** (rAF, only while panel open), **Test capture** (5 s record→playback + peak %), event count + storage used, **Clear all**.
+- **REC indicator** (`#audioRec`, top-left, pulsing) while capturing; tap to toggle. Auto-starts on load **only if** the mic permission is already `granted`; first-ever use is armed by the first 🎯 tap / Test capture.
+
+### Verified ✓ (Node pure-logic + real-Chrome Playwright e2e, 412×915)
+- **Pure logic (Node, external validators):** WAV header + roundtrip read by Python `wave` (1ch/16-bit/16000Hz); ring last-N correctness across wrap + underfill; RMS = A/√2; GPS interpolation; CRC32 check-vector `0xCBF43926`; ZIP read by Python `zipfile.testzip()` = OK.
+- **End-to-end (real Google Chrome, oscillator-stubbed `getUserMedia`):** **29/29 passed.** Constraints exact; live RMS 0.707 from real `ScriptProcessor` frames; manual + auto save → WAV + GPS + marker; **6 rapid triggers ⇒ exactly 1 auto event (debounce proven)**; below-threshold adds nothing; list/filter/menu-count; **real ZIP download** validated (2 readable WAVs + correct CSV schema); **persistence across reload** (events + markers + replayable blobs); "My signal hits" in Layers panel; **zero console/page errors**.
+- ⚠️ **Not machine-verifiable here:** the OS mic-permission prompt + real USB-C line-in audio — need Steven's Motorola + adapter chain. The live audio *graph* is proven via a real-stream stub; only the hardware bridge is untested.
+
+### State update for future sessions
+- **New globals:** `AG.audioEventLayer`; `AG.audio` (automation surface: `start/stop/isRunning/getRMS/count/events/exportZip/setThreshold` + `_feed/_save/_pushFix` synthetic hooks). Pane `p-audio` z 375 added to `PANE_Z`.
+- **IndexedDB is v3.** Any new store = bump `DB_VER` again + add a guarded `createObjectStore` in the one `onupgradeneeded`. Audio settings persist under their own key `auragold_audio` ({threshold, deviceId}) — *not* in `auragold_settings`.
+- Adding an audio-style user layer to the panel = push to `LP_DYN` (toggle-only, lazy `get()`), not `LP`.
+- SW cache is now `auragold-shell-v24` (`SHELL_REV='v24'`). Same dev rule as before.
+- **Honest status:** software trip-ready; **must pass one real hardware test** (Test capture shows audio + a confirmed-gold marker replays) on his phone before relying on it in the field.
+
+---

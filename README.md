@@ -93,6 +93,72 @@ app installed) it appears in the system share sheet:
 
 ---
 
+## Recording detector audio (v24)
+
+AuraGold can record your **detector's audio** while you swing and GPS-tag every
+hit — building a dataset of *“what the ground sounded like where the gold was.”*
+Everything runs **on the phone, fully offline**, and stays on the phone.
+
+### Hardware — getting detector audio into the phone
+
+The phone hears the detector as a microphone. The wiring (Path A):
+
+```
+ Detector 3.5 mm headphone out
+        │
+        ▼
+ 3.5 mm Y-splitter ──► your headphones (you still hear the detector)
+        │
+        └──► 3.5 mm → TRRS adapter ──► USB-C audio adapter ──► phone USB-C port
+```
+
+- The **Y-splitter** lets you keep listening on headphones while the phone also
+  receives the signal.
+- The **TRRS adapter** presents the detector's output on the mic ring so the
+  USB-C audio adapter treats it as a microphone input.
+- In **Settings → 🎵 Audio capture → Audio input device**, select that **USB-C
+  audio adapter** — *not* the built-in phone mic.
+
+> ⚠️ **Test the chain before you rely on it.** Many phones don't pass USB-C
+> line-in audio cleanly. After plugging in, open **Settings → 🎵 Audio capture →
+> Test capture**, swing over a known target, and confirm you hear the detector in
+> the 5-second playback (the readout also shows a peak %). If the peak is near
+> zero, your phone/adapter isn't receiving line-in — fall back to a Bluetooth
+> lavalier mic clipped near the detector's speaker.
+
+### Field workflow
+
+1. Plug in the adapter chain and pick the device in Settings (once).
+2. Tap the **● REC** chip (top-left) — or just tap **🎯 Got a hit!** — to grant
+   the mic and start capture. A pulsing red **REC** chip shows while recording.
+3. Swing. When you get a signal, tap **🎯 Got a hit!** — the **last 10 seconds**
+   of audio is saved with your GPS position as a 🎵 marker.
+4. *(Optional)* set an **auto-flag threshold** so loud responses are captured
+   automatically. Watch the live level meter to pick a sensible level; start
+   around **0.3** and adjust.
+5. Dig. Back at the marker (tap it, or **Menu → 🎵 Audio events**), play the clip
+   and mark **🏆 Confirm gold** or **✗ False alarm**, and add notes.
+6. Export everything from **🎵 Audio events → Export ZIP** — `.wav` clips plus a
+   GPS-stamped CSV — for training a signal classifier later.
+
+### Things to know
+
+- **Foreground only.** A phone can't keep the microphone open in the background,
+  so capture pauses if you switch apps or lock the screen. Keep AuraGold on screen
+  while prospecting.
+- **Battery.** Continuous audio + GPS draws noticeably more power — carry a power
+  bank for a full day.
+- **Storage.** Each clip is lossless ~320 KB (10 s @ 16 kHz). A 200-hit day is
+  ~64 MB. The **storage readout**, a **3-second auto-flag debounce**, and a
+  **500-events-per-day cap** keep it in check; **Clear all audio events** wipes it.
+- **Why WAV, not Opus.** Lossless 16 kHz preserves the 200–1500 Hz tonal detail
+  that distinguishes target responses — the exact signal a classifier needs.
+- **iOS.** PWA microphone access on iOS Safari is unreliable; this feature is
+  built and tested for **Android Chrome**. On iPhone, run it in a Chrome/Safari
+  tab rather than the installed app if the mic prompt doesn't appear.
+
+---
+
 ## Shipped
 
 **Day 1 — base map**
@@ -128,11 +194,33 @@ app installed) it appears in the system share sheet:
 - **Web Share Target** (Android) + universal **paste-URL** parser (Google /
   Apple Maps, `geo:`, plain `lat,lng`).
 
+**Phase 4 — detector audio capture (this round, v24)**
+
+- Continuous foreground microphone capture into a rolling **30-second PCM ring
+  buffer** (Web Audio API). Tonal-preserving constraints (no echo-cancel, no
+  noise-suppression, no auto-gain, 16 kHz mono).
+- **🎯 Got a hit!** and an optional **auto-flag** (smoothed-RMS threshold, 3 s
+  debounce) each snapshot the **last 10 seconds** as a lossless **16 kHz mono
+  WAV** + the interpolated GPS fix, saved to IndexedDB (`auragold_audio_events`,
+  DB bumped to **v3**).
+- Saved hits render as **🎵 markers** (🏆 once you confirm gold) in their own map
+  pane and a **"🎵 My signal hits"** layer in the unified Layers panel. Tap a
+  marker to play the clip back, add notes, and mark **Confirm gold / False alarm**.
+- New **☰ Menu → 🎵 Audio events** panel: filterable list (manual / auto / gold /
+  unmarked), inline playback, and **Export ZIP** (every clip as `.wav` + a
+  GPS-stamped `audio_events.csv`) for later ML training.
+- **Settings → 🎵 Audio capture:** pick the USB-C audio adapter, set the auto-flag
+  threshold against a **live level meter**, run a **Test capture** (5 s record +
+  playback to verify the detector→phone chain), and see event count / storage used.
+
+See **[Recording detector audio](#recording-detector-audio-v24)** below for the
+hardware wiring and field workflow.
+
 ## Roadmap
 
-- Voice memo via the MediaRecorder API
 - Per-day photo galleries attached to waypoints
 - Background GPS recording (service-worker keepalive)
+- On-device signal classifier trained on the exported audio + GPS dataset
 - Refactor the single-file `index.html` into the modular `css/ js/ data/` layout
   (kept single-file so far to ship without risking the working map)
 
