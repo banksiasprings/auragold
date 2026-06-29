@@ -19,7 +19,10 @@ const SHELL_VERSION = 'v25';
 // overlays (OSM free / caravan / paid camps + rest areas + Parks Vic campsites, pre-fetched
 // to data/*.geojson) plus the regrouped trip camps. Rich popups with facility chips, Maps
 // hand-off, and WikiCamps/HipCamp/CamperMate search links; new Settings "Camping resources".
-const SHELL_REV = 'v25';
+// v25a: data refresh — Overpass re-fetch now includes site/multipolygon RELATIONS (+21 named
+// camps, +13 rest areas) per the Open Camping Map (giggls/opencampsitemap) tag set, and popups
+// gained 🛖 Cabins / 🧼 Laundry chips. SHELL_REV bumped so existing v25 installs re-precache.
+const SHELL_REV = 'v25a';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
