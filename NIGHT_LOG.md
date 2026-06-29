@@ -326,3 +326,29 @@ Directed round (not the overnight loop). Three connected features so Steven can 
 - SortableJS (`sortablejs@1.15.2`) is precached in the SW shell for offline drag-reorder.
 
 ---
+
+## Phase 3 — Unified Layers panel (v23) — 2026-06-29
+
+### Success criterion
+Steven (re-flagged today): every map — Magnetic, Terrain, Satellite, Map view, LiDAR/Hillshade — and every overlay/track in **one place**, tickable, each with an opacity slider next to it. The old split was the complaint: toggles lived in the ☰ menu while opacity sliders lived in Settings (and only for Magnetic + Hillshade + the 4 tracks), and the sliders didn't apply until you toggled the layer off and back on.
+
+### Completed — **v23 (`c2f4806`)**
+- **One top-right `#layerPanel`** ("▤ Layers"): collapsed to an icon button at ≤768px, expands on tap; auto-open on desktop (>768). Groups: **Base maps (5) · Gold data (8) · Forest tracks DEECA (4) · Trip data (4)** = the 21 brief rows, plus a **My data** group (trip waypoints / saved finds / walked track, toggle-only). Each row = checkbox + colour swatch + name + **live opacity slider** + %.
+- **Live opacity via per-layer Leaflet panes** (the fix). 21 panes created after map init with explicit z-index (`PANE_Z`); every layer carries a `pane:` option. The slider's `input` handler calls `setPaneOpacity(paneId, v)` → `getPane(id).style.opacity = v`, so it applies instantly while dragging. One mechanism for tile / SVG-vector / marker-cluster / canvas layers; intrinsic fill/stroke ratios preserved because CSS opacity multiplies. **Base maps are now stackable** (e.g. Topographic over Satellite @ 40%).
+- DEECA tracks: shared canvas renderer split into **one renderer + pane per track** (a shared renderer can't carry per-track opacity); intrinsic track opacity set to 1, pane drives it.
+- WMS overlays (State Forest, Restricted): intrinsic `opacity` → 1, pane carries the %.
+- **Removed duplicates:** Settings lost the *Overlay opacity*, *Forest track opacity* and *Default base map* sections; the ☰ menu lost its *Base map* + *Map layers* lists. Settings now = Distance units · Saving places · App version; menu = Tools + Legend.
+- Persistence: `auragold_settings.ly = { <key>: {on, op} }` (replaces `opMag/opHill/base/opTrk_*`). `units` preserved.
+- Hillshade is still Esri global relief — **no public Victorian LiDAR tile service exists yet** (noted in a panel footer; swap in a real one if it appears).
+
+### Verified ✓ (preview MCP, fresh SW bust, 414×896 + 320/768/1024)
+- Live slider proven at the **computed-style** level: endowment pane opacity 0.35→0.8→0.1 as the slider fires `input`, layer never toggled. Base-map stack (Topo @0.4 over Sat) confirmed. Canvas track (4WD) pane opacity 0.3 live. Toggle add/remove + row-grey confirmed. Settings headings = the 3 kept only. Menu = Tools + Legend. 12 spots, popups + Navigate, route, GPS, "Got a hit", nuggets all intact. No console errors/warnings.
+- Live deploy https://banksiasprings.github.io/auragold/ serving **v23** (`APP_VERSION`/`SHELL_REV`), `layerPanel`+`setPaneOpacity` present, all removed sections absent (curl-grep).
+
+### State update for future sessions
+- **New globals (main map script, not behind the IIFE):** `PANE_Z` (21 panes), `setPaneOpacity(paneId, 0..1)`. Layer opacity = pane CSS opacity; don't reintroduce per-layer `setOpacity`/`setStyle` opacity for these.
+- Adding a layer now = create it with a `pane:` option, add an entry to the `LP` array in the menu IIFE (`{k,pane,lyr,name,sw,on,op}`) and a z-index in `PANE_Z`. That's the single source of truth for the panel.
+- ⚠️ Gone: `opMag`/`opHill`/`trackOpacity`/`trackRenderer`/`setBaseList`/`baseList`/`layerList` and the `auragold_settings` keys `opMag/opHill/base/opTrk_*`.
+- SW cache is now `auragold-shell-v23` (`SHELL_REV='v23'`). Same dev rule: unregister SWs + delete `auragold-shell-*` + reload to see edits; bump `SHELL_VERSION`+`APP_VERSION` in lockstep.
+
+---
