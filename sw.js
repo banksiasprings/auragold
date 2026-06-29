@@ -13,16 +13,16 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v25';
+const SHELL_VERSION = 'v26';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
-// v25: camping layer — new "Camping" group in the unified Layers panel with 5 lazy clustered
-// overlays (OSM free / caravan / paid camps + rest areas + Parks Vic campsites, pre-fetched
-// to data/*.geojson) plus the regrouped trip camps. Rich popups with facility chips, Maps
-// hand-off, and WikiCamps/HipCamp/CamperMate search links; new Settings "Camping resources".
-// v25a: data refresh — Overpass re-fetch now includes site/multipolygon RELATIONS (+21 named
-// camps, +13 rest areas) per the Open Camping Map (giggls/opencampsitemap) tag set, and popups
-// gained 🛖 Cabins / 🧼 Laundry chips. SHELL_REV bumped so existing v25 installs re-precache.
-const SHELL_REV = 'v25a';
+// v26: on-device ML classifier for detector-audio events. Feature extraction (meyda MFCCs +
+// spectral stats) runs in a Blob worker at save time; a tf.js dense classifier trains in-browser
+// on labelled clips (4 classes: gold / junk / hot-rock / nothing) and scores every new + historical
+// event. New 🏠 Home calibration mode + 🧠 Smart classifier in Settings, GUANO GPS metadata embedded
+// in every WAV, and ML-enriched ZIP export (events.csv + features_v1.json + model_v1.json). tf.js
+// (~1MB) + meyda (~40KB) precached below for offline training/inference. IndexedDB bumped to v4
+// (adds the `auragold_models` store + per-event features / label / source / mlConfidence fields).
+const SHELL_REV = 'v26';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -56,6 +56,10 @@ const SHELL_ASSETS = [
   'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js',
   // SortableJS — drag-reorder for the trip planner; precached so reordering works offline.
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js',
+  // v26: TensorFlow.js (~1MB) + Meyda (~40KB) — on-device audio classifier. Precached so feature
+  // extraction, training, and inference all work in the field with no signal.
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js',
+  'https://cdn.jsdelivr.net/npm/meyda@5.6.0/dist/web/meyda.min.js',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
