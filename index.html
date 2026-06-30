@@ -534,6 +534,78 @@
   .fe-audio-chip .fe-au-play { height:32px; flex:1 1 150px; min-width:0; }
   .fe-audio-chip .fe-au-unlink { background:#fff; border:1px solid #cfe6cf; color:#1f5a2a; border-radius:7px;
     padding:6px 10px; font:600 12px -apple-system,sans-serif; cursor:pointer; flex:0 0 auto; }
+
+  /* ===== v29 — Powerline EMI overlay popup ===== */
+  .pl-pop .leaflet-popup-content-wrapper { border-radius:12px; }
+  .pl-popbody { font:13px/1.42 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; min-width:200px; }
+  .pl-popbody h3 { margin:0 0 3px; font-size:14px; color:#7a1010; }
+  .pl-op { font-size:11.5px; color:#555; font-weight:600; margin-bottom:6px; }
+  .pl-emi { font-size:12px; color:#333; background:#fff6e0; border:1px solid #f0dca0; border-radius:8px; padding:6px 8px; margin-bottom:6px; }
+  .pl-dist { font-size:12px; color:#1f2430; font-weight:600; }
+  .pl-dist.pl-muted { color:#999; font-weight:400; font-style:italic; }
+
+  /* ===== v29 — Detection Window: top-of-map badge ===== */
+  .det-badge { position:absolute; top:60px; left:50%; transform:translateX(-50%); z-index:1150;
+    display:none; align-items:center; gap:8px; background:rgba(20,20,28,.92); color:#fff;
+    border:none; border-radius:22px; padding:7px 13px 7px 11px; cursor:pointer;
+    box-shadow:0 2px 11px rgba(0,0,0,.4); font:13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-tap-highlight-color:transparent; max-width:94vw; }
+  .det-badge.show { display:inline-flex; }
+  .det-badge .db-dot { font-size:15px; line-height:1; }
+  .det-badge .db-now { font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; }
+  .det-badge .db-sep { opacity:.35; }
+  .det-badge .db-best { font-size:11.5px; color:#ffd54a; font-weight:700; white-space:nowrap; }
+  .det-badge .db-best small { color:#cdd2db; font-weight:500; }
+  @media (max-width:430px){ .det-badge { top:54px; padding:6px 11px 6px 9px; gap:6px; } .det-badge .db-now { font-size:14px; } .det-badge .db-best { font-size:11px; } }
+
+  /* ===== v29 — Detection Window: 24h chart panel ===== */
+  .dw-head { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin:2px 2px 8px; }
+  .dw-now { font:800 30px/1 -apple-system,sans-serif; font-variant-numeric:tabular-nums; }
+  .dw-now small { font-size:13px; font-weight:600; color:#888; }
+  .dw-loc { font-size:11.5px; color:#888; flex:1 1 100%; }
+  .dw-windows { display:flex; gap:8px; margin:0 0 10px; }
+  .dw-win { flex:1 1 0; border-radius:10px; padding:7px 9px; font-size:12px; }
+  .dw-win.best { background:#e8f6ea; border:1px solid #b6e0bf; }
+  .dw-win.worst { background:#fdeceb; border:1px solid #f3c4bf; }
+  .dw-win .dw-wl { font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:800; opacity:.7; }
+  .dw-win.best .dw-wl { color:#1c7a32; } .dw-win.worst .dw-wl { color:#b23028; }
+  .dw-win .dw-wt { font-weight:700; color:#1f2430; margin-top:1px; }
+  .dw-win .dw-wd { font-size:11px; color:#555; }
+  /* bar chart */
+  .dw-chart { display:flex; align-items:flex-end; gap:2px; height:140px; padding:14px 2px 0; position:relative; }
+  .dw-bar { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    height:100%; cursor:pointer; position:relative; }
+  .dw-bar .dw-fill { width:78%; border-radius:3px 3px 0 0; transition:filter .12s; }
+  .dw-bar.sel .dw-fill { outline:2px solid #1f2430; outline-offset:1px; }
+  .dw-bar.now .dw-fill { box-shadow:0 0 0 2px #fff, 0 0 0 4px #1f2430; }
+  .dw-bar .dw-hr { font-size:8.5px; color:#999; margin-top:3px; font-variant-numeric:tabular-nums; transform:rotate(-0deg); white-space:nowrap; }
+  .dw-bar .dw-night { position:absolute; top:0; bottom:16px; left:0; right:0; background:rgba(40,52,90,.07); border-radius:2px; z-index:0; }
+  .dw-bar .dw-fill, .dw-bar .dw-hr { position:relative; z-index:1; }
+  .dw-axis { display:flex; justify-content:space-between; font-size:10px; color:#aaa; padding:2px 4px 0; }
+  /* breakdown */
+  .dw-why { margin-top:10px; background:#f7f5ef; border-radius:11px; padding:10px 11px; display:none; }
+  .dw-why.show { display:block; }
+  .dw-why h4 { margin:0 0 7px; font-size:13px; color:#1f2430; }
+  .dw-why h4 .dw-score { float:right; font-weight:800; }
+  .dw-prow { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:12px; }
+  .dw-prow .dw-pl { flex:0 0 96px; color:#555; }
+  .dw-prow .dw-pbar { flex:1 1 auto; height:7px; background:#e3ded2; border-radius:4px; overflow:hidden; }
+  .dw-prow .dw-pbar i { display:block; height:100%; border-radius:4px; }
+  .dw-prow .dw-pv { flex:0 0 30px; text-align:right; font-variant-numeric:tabular-nums; color:#333; font-weight:600; }
+  .dw-facts { margin:8px 0 0; font-size:11.5px; color:#555; line-height:1.5; }
+  .dw-facts div { padding:1px 0; }
+  .dw-facts b { color:#1f2430; }
+  .dw-foot { font-size:10.5px; color:#8a8262; line-height:1.45; margin-top:10px; padding-top:8px; border-top:1px solid #e8e2d2; }
+  .dw-src { font-size:10.5px; color:#9a9a9a; margin-top:5px; }
+  .dw-refresh { font-size:11px; color:#caa53a; background:none; border:none; cursor:pointer; font-weight:700; padding:2px 0; }
+  /* weight sliders (Settings) */
+  .dw-wrow { display:flex; align-items:center; gap:8px; margin:7px 2px; font-size:12.5px; }
+  .dw-wrow .dw-wn { flex:0 0 108px; color:#333; }
+  .dw-wrow input[type=range] { flex:1 1 auto; accent-color:#caa53a; }
+  .dw-wrow .dw-wv { flex:0 0 34px; text-align:right; font-variant-numeric:tabular-nums; color:#666; }
+  .dw-wsum { font-size:11.5px; margin:4px 2px 0; font-weight:600; }
+  .au-det { display:inline-block; background:#eef3ff; color:#33518a; border:1px solid #cdd9f3; border-radius:6px;
+    padding:0 5px; font-size:10.5px; font-weight:700; vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -577,6 +649,7 @@
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
       <button id="audioBtn" class="ag-act" type="button">🎵 Audio events (<span id="audioMenuCount">0</span>)<span class="sub">GPS-tagged detector-signal clips · play, confirm, export</span></button>
+      <button id="detBtn" class="ag-act" type="button">🌙 Best times today<span class="sub">Per-hour detection-efficiency forecast · solar · grid EMI · powerlines</span></button>
       <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
       <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Distance units · app version · force update</span></button>
     </div>
@@ -703,6 +776,22 @@
       </div>
     </div>
 
+    <div class="ag-sec">
+      <h3>🌙 Detection Window</h3>
+      <div class="ag-card">
+        <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">Forecasts per-hour detector efficiency for the next 24&nbsp;h from your location — solar/geomagnetic &amp; grid EMI, atmosphere, ground coupling, moonlight and powerline proximity. A first-of-its-kind, fully heuristic estimate. Open the full chart from <b>☰ Menu → 🌙 Best times today</b> or the badge at the top of the map.</p>
+        <button id="detOpenBtn" class="ag-act" type="button">🌙 Open Best-times chart<span class="sub">24-hour detection-efficiency forecast</span></button>
+        <details class="ag-collap" id="detAdvanced" style="margin-top:8px">
+          <summary>Advanced: detection-model weights</summary>
+          <p class="ag-note" style="margin:7px 2px">How much each factor counts toward the score. Defaults are conservative — nudge them to match your detector &amp; ground, then re-open the chart. Weights renormalise to 100%.</p>
+          <div id="dwWeights"></div>
+          <div class="dw-wsum" id="dwWsum"></div>
+          <button id="dwWreset" class="dw-refresh" type="button" style="margin-top:6px">↺ Reset to defaults</button>
+        </details>
+        <p class="ag-note" style="margin:8px 2px 2px">Live inputs (NOAA space weather, weather, AEMO grid demand) are cached for offline use; solar &amp; moon are computed on-device and always work with no signal.</p>
+      </div>
+    </div>
+
     <details class="ag-collap">
       <summary>📋 Camping resources</summary>
       <div class="ag-card">
@@ -722,7 +811,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v26</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v29</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -758,6 +847,32 @@
       <button class="ag-act" id="auExport" type="button">⤓ Export ZIP (audio + features + model)<span class="sub">GUANO-tagged .wav clips · events.csv · features_v1.json · model_v1.json</span></button>
     </div>
     <p class="ag-note" id="audioHint" style="padding:0 2px">Each marker on the map is a saved signal. Tap one to play it back, add notes, and label it <b>🪙 Gold / 🔩 Junk / 🪨 Hot rock / 🚫 Nothing</b>. A 🧠 badge shows the model's guess once trained. Everything stays on this phone and works offline.</p>
+  </div>
+</aside>
+
+<!-- v29: Detection Window forecaster — per-hour detection-efficiency for the next 24h -->
+<aside id="detPanel" class="ag-panel" aria-hidden="true">
+  <header><h2>🌙 Best times today</h2><button class="ag-x" id="detClose" aria-label="Close">×</button></header>
+  <div class="ag-body">
+    <div class="ag-sec">
+      <div class="dw-head">
+        <div class="dw-now" id="dwNow">–<small>/100</small></div>
+        <div id="dwWindowsLine" style="flex:1 1 auto"></div>
+        <div class="dw-loc" id="dwLoc"></div>
+      </div>
+      <div class="dw-windows" id="dwWindows"></div>
+      <div class="dw-chart" id="dwChart"></div>
+      <div class="dw-axis"><span id="dwAxisL">now</span><span>+12 h</span><span>+24 h</span></div>
+      <div class="dw-why" id="dwWhy"></div>
+      <p class="ag-note" style="margin:9px 2px 0;font-size:11px">Tap any bar for the hour-by-hour “why”. Shaded bars are after dark. Scores are <b>heuristic estimates</b>, not guarantees.</p>
+      <div class="dw-src" id="dwSrc"></div>
+      <button class="dw-refresh" id="dwRefresh" type="button">↻ Refresh live data</button>
+    </div>
+    <div class="ag-sec">
+      <div class="dw-foot">
+        <b>How it works.</b> Each hour is scored 0–100 from five factors — grid/solar <b>EMI</b> (35%), <b>atmosphere</b> (20%, thermal transitions at dawn/dusk), <b>ground</b> coupling (20%, recent rain &amp; temperature), <b>visibility</b> (10%, daylight or moonlight), and <b>powerline</b> proximity (15%). A 20–25% lift over the daily average is a real, workable edge — and yes, that can mean a night shift. Tune the weights in <b>⚙ Settings → Detection Window</b>. Calibrate further by labelling confirmed-gold events in <b>🎵 Audio events</b>.
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -878,7 +993,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v28.0.1';
+var APP_VERSION = 'v29';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1004,6 +1119,8 @@ const PANE_Z = {
   "p-sat": 200, "p-osm": 201, "p-topo": 202, "p-mag": 203, "p-hill": 204,
   "p-endow": 300, "p-minocc": 305, "p-gf": 310, "p-el": 315, "p-ml": 320,
   "p-fire": 325, "p-sf": 330, "p-rcl": 335,
+  // v29: powerline EMI overlay — buffer halos directly beneath the colour-coded lines.
+  "p-power-buf": 337, "p-power": 338,
   "p-walk": 340, "p-4wd": 342, "p-mgmt": 344, "p-fire-track": 346,
   // v25: camping layers — below the trip's own route/camp/spot markers so curated
   // trip pins always sit on top of the bulk OSM/Parks-Vic camp clusters.
@@ -1526,6 +1643,139 @@ fitToSpots();
 // Re-fit once layout settles (iOS standalone launch / orientation can resize late).
 map.whenReady(fitToSpots);
 setTimeout(fitToSpots, 400);
+
+/* ===== v29 — Powerline EMI overlay (data/powerlines_vic.geojson) =====
+ * Colour-coded lines by voltage tier + optional zoom-scaled buffer halos (50/100/200 m).
+ * Loaded once, lazily; the parsed geometry feeds the lines, the halos AND the
+ * nearest-distance index that the Detection Window forecaster uses for its EMI term. */
+var powerLayers = (function () {
+  var AG = window.AuraGold = window.AuraGold || {};
+  var PL_FILE = 'data/powerlines_vic.geojson';
+  // Tier → render style. EMI roughly tracks voltage, so colour/thickness do too.
+  var TIER_STYLE = {
+    transmission:    { color:'#8b0000', weight:2.6, label:'transmission line' },
+    subtransmission: { color:'#e8730c', weight:1.9, label:'sub-transmission line' },
+    distribution:    { color:'#e3b505', weight:1.3, label:'distribution line' },
+    unknown:         { color:'#9aa0a6', weight:1.0, label:'power line' }
+  };
+  function tierOf(p) { return (p && TIER_STYLE[p.tier]) ? p.tier : 'unknown'; }
+  // Buffer bands: outer→inner, decreasing radius + increasing alpha (per the brief).
+  var BANDS = [ { m:200, color:'#e3b505', op:0.15 }, { m:100, color:'#e8730c', op:0.25 }, { m:50, color:'#dd1111', op:0.40 } ];
+
+  var gjData = null, loadP = null;        // parsed FeatureCollection + its load promise
+  // Coarse 0.1°(~11 km) spatial grid of line segments for fast nearest-distance queries.
+  var grid = null;
+  function cellKey(la, lo) { return Math.round(la*10) + '|' + Math.round(lo*10); }
+  function buildGrid(fc) {
+    grid = {};
+    for (var i=0;i<fc.features.length;i++){
+      var c = fc.features[i].geometry && fc.features[i].geometry.coordinates; if (!c) continue;
+      for (var j=0;j<c.length-1;j++){
+        var a=c[j], b=c[j+1];                              // [lng,lat]
+        var seg=[a[1],a[0],b[1],b[0]];                     // lat1,lng1,lat2,lng2
+        var k=cellKey((a[1]+b[1])/2,(a[0]+b[0])/2);
+        (grid[k]||(grid[k]=[])).push(seg);
+      }
+    }
+  }
+  // Point→segment distance (m) via local equirectangular projection (accurate at field scale).
+  function ptSegM(plat,plng,la1,lo1,la2,lo2){
+    var R=6371000, rad=Math.PI/180, clat=Math.cos(plat*rad);
+    function xy(la,lo){ return [ lo*rad*clat*R, la*rad*R ]; }
+    var p=xy(plat,plng), a=xy(la1,lo1), b=xy(la2,lo2);
+    var dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+    var t = L2 ? ((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L2 : 0; t=Math.max(0,Math.min(1,t));
+    var ex=a[0]+t*dx-p[0], ey=a[1]+t*dy-p[1];
+    return Math.sqrt(ex*ex+ey*ey);
+  }
+  var _nearCache = {};
+  // Nearest powerline distance (m) to a point, or null if data not loaded / nothing near.
+  function nearestDistance(lat, lng) {
+    if (!grid) return null;
+    var ck = (Math.round(lat*200)/200) + ',' + (Math.round(lng*200)/200);   // ~500 m cache bucket
+    if (_nearCache[ck] !== undefined) return _nearCache[ck];
+    var gla=Math.round(lat*10), glo=Math.round(lng*10), best=Infinity;
+    for (var dla=-1;dla<=1;dla++) for (var dlo=-1;dlo<=1;dlo++){
+      var arr=grid[(gla+dla)+'|'+(glo+dlo)]; if(!arr) continue;
+      for (var i=0;i<arr.length;i++){ var s=arr[i]; var d=ptSegM(lat,lng,s[0],s[1],s[2],s[3]); if(d<best) best=d; }
+    }
+    var res = isFinite(best) ? best : null;
+    _nearCache[ck] = res; return res;
+  }
+  // Min distance (m) from a point to one specific line's coordinate array ([[lng,lat],…]).
+  function distToCoords(lat,lng,coords){
+    var best=Infinity;
+    for (var j=0;j<coords.length-1;j++){ var a=coords[j],b=coords[j+1];
+      var d=ptSegM(lat,lng,a[1],a[0],b[1],b[0]); if(d<best) best=d; }
+    return isFinite(best)?best:null;
+  }
+
+  function ensureLoaded() {
+    if (gjData) return Promise.resolve(gjData);
+    if (loadP) return loadP;
+    loadP = fetch(PL_FILE).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(gj){ gjData = gj; buildGrid(gj); console.info('[AuraGold v29] powerlines loaded: ' + gj.features.length); return gj; })
+      .catch(function(e){ loadP=null; console.warn('[AuraGold v29] powerline load failed:', e); return null; });
+    return loadP;
+  }
+
+  // --- colour-coded line layer (lazy) ---
+  var lineLayer = L.geoJSON(null, {
+    pane:'p-power', renderer: L.canvas({ padding:0.5, pane:'p-power' }),
+    style: function(f){ var s=TIER_STYLE[tierOf(f.properties)]; return { color:s.color, weight:s.weight, opacity:1, lineCap:'round' }; },
+    onEachFeature: function(f, l){
+      l.bindPopup(function(){ return powerPopup(f.properties, l); }, { maxWidth:290, className:'pl-pop' });
+      var p=f.properties||{}, v=p.voltage_kv!=null?p.voltage_kv+' kV':'voltage unknown';
+      l.bindTooltip(v + ' ' + TIER_STYLE[tierOf(p)].label + (p.operator?' · '+p.operator:''), { sticky:true });
+    }
+  });
+  lineLayer._loaded=false;
+  lineLayer.on('add', function(){ if(lineLayer._loaded) return; ensureLoaded().then(function(gj){ if(gj && !lineLayer._loaded){ lineLayer.addData(gj); lineLayer._loaded=true; } }); });
+
+  // --- buffer halos (separate toggle): same geometry, 3 canvas layers whose pixel weight
+  //     is recomputed on zoom to track real metres. Populated lazily, freed when toggled off. ---
+  function mPerPx(){ var c=map.getCenter(); return 40075016.686*Math.cos(c.lat*Math.PI/180)/Math.pow(2, map.getZoom()+8); }
+  var bufferLayer = L.layerGroup([], { pane:'p-power-buf' });
+  var bufSub = null;          // [{m,color,op,layer}]
+  function restyleBuffers(){
+    if(!bufSub) return; var mpp=mPerPx();
+    bufSub.forEach(function(b){ var w=Math.max(0.6, Math.min(140, (b.m/mpp))); b.layer.setStyle({ weight:w*2, opacity:b.op, color:b.color, lineCap:'round' }); });
+  }
+  bufferLayer.on('add', function(){
+    ensureLoaded().then(function(gj){
+      if(!gj || bufSub) return;
+      bufSub = BANDS.map(function(b){
+        var lyr=L.geoJSON(gj, { pane:'p-power-buf', renderer:L.canvas({ padding:0.5, pane:'p-power-buf' }),
+          interactive:false, style:function(){ return { color:b.color, weight:1, opacity:b.op, lineCap:'round' }; } });
+        return { m:b.m, color:b.color, op:b.op, layer:lyr };
+      });
+      bufSub.forEach(function(b){ bufferLayer.addLayer(b.layer); });   // 200 added first (bottom) → 50 on top
+      restyleBuffers();
+    });
+  });
+  bufferLayer.on('remove', function(){ if(bufSub){ bufSub.forEach(function(b){ bufferLayer.removeLayer(b.layer); }); bufSub=null; } });
+  map.on('zoomend', restyleBuffers);
+
+  // --- popup ---
+  function plEsc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function powerPopup(p, lyr){
+    p=p||{}; var kind = (p.tier==='transmission'||p.tier==='subtransmission') ? 'transmission' : 'distribution';
+    var v = p.voltage_kv!=null ? p.voltage_kv+' kV' : 'Unknown-voltage';
+    var op = p.operator ? plEsc(p.operator) : 'operator unknown';
+    var html='<div class="pl-popbody"><h3>⚡ '+v+' '+kind+' line</h3>'+
+      '<div class="pl-op">'+op+(p.name?' · '+plEsc(p.name):'')+'</div>'+
+      '<div class="pl-emi">Within ~200 m, expect <b>elevated EMI</b> on PI detectors — raise discrimination or work further off the easement.</div>';
+    var f=(window.AuraGold||{}).lastFix;
+    if(f && lyr && lyr.feature && lyr.feature.geometry){
+      var d=distToCoords(f.lat,f.lng,lyr.feature.geometry.coordinates);
+      if(d!=null) html+='<div class="pl-dist">📍 '+(d<1000?Math.round(d)+' m':(d/1000).toFixed(1)+' km')+' from your location'+(d<200?' — <b>you are inside the EMI zone</b>':'')+'</div>';
+    } else html+='<div class="pl-dist pl-muted">Tap 📍 Locate me to see distance from here.</div>';
+    return html+'</div>';
+  }
+
+  AG.powerlines = { ensureLoaded:ensureLoaded, nearestDistance:nearestDistance, _grid:function(){return grid;} };
+  return { lines:lineLayer, buffers:bufferLayer };
+})();
 
 </script>
 
@@ -2449,7 +2699,10 @@ setTimeout(fitToSpots, 400);
     { k:'camppaid',  pane:'p-camp-paid',  lyr:campLayers.camppaid,  name:'💰 Paid campgrounds (OSM)',  sw:'#d6831e', on:false, op:100 },
     { k:'camprest',  pane:'p-camp-rest',  lyr:campLayers.camprest,  name:'🅿️ Rest areas',             sw:'#6b7280', on:false, op:100 },
     { k:'campparks', pane:'p-camp-parks', lyr:campLayers.campparks, name:'🏞️ Parks Vic campsites',    sw:'#14532d', on:false, op:100 },
-    { k:'camp',      pane:'p-camp',       lyr:campGroup,            name:'📍 Your trip camps',         sw:'#f59e0b', on:true,  op:100 }
+    { k:'camp',      pane:'p-camp',       lyr:campGroup,            name:'📍 Your trip camps',         sw:'#f59e0b', on:true,  op:100 },
+    { grp:'⚡ Powerlines (EMI)' },
+    { k:'power',    pane:'p-power',     lyr:powerLayers.lines,   name:'⚡ Power lines (by voltage)', sw:'#8b0000', on:false, op:90 },
+    { k:'powerbuf', pane:'p-power-buf', lyr:powerLayers.buffers, name:'🔆 EMI buffer zones (50/100/200 m)', sw:'#e8730c', on:false, op:80 }
   ];
   // Optional user-data layers (created by later scripts) — toggle-only, resolved lazily.
   var LP_DYN = [
@@ -3332,7 +3585,10 @@ setTimeout(fitToSpots, 400);
     var ev = { id: uid(), timestamp: ts, lat: fx ? fx.lat : null, lng: fx ? fx.lng : null, acc: fx ? fx.acc : null,
       durationMs: dur, sr: sampleRate, type: type, source: opts.source || 'field',
       label: opts.label || null, confirmed: opts.label === 'gold' ? true : null,
-      features: null, mlConfidence: null, mlTop: null, notes: '', photoIds: [] };
+      features: null, mlConfidence: null, mlTop: null, notes: '', photoIds: [], detScore: null };
+    // v29: stamp the detection-window score at capture, so post-trip you can correlate
+    // "did the score predict where the gold was?" (the feedback loop that personalises the model).
+    try { if (fx && window.AuraGold && window.AuraGold.detection) ev.detScore = window.AuraGold.detection.scoreAt(fx.lat, fx.lng, ts); } catch (e) {}
     ev.audioBlob = samples ? encodeWAV(samples, sampleRate, guanoFor(ev)) : null;
     dailyCount[dk] = (dailyCount[dk] || 0) + 1;
     events.push(ev); addMarker(ev); refreshCounts(); renderListIfOpen();
@@ -3394,9 +3650,11 @@ setTimeout(fitToSpots, 400);
       if (ev.source === 'calibration') tag += ' <span class="tag cal">🏠</span>';
       var mlb = mlBadgeHTML(ev);
       var coords = ev.lat != null ? ev.lat.toFixed(4) + ', ' + ev.lng.toFixed(4) : 'no GPS';
+      // v29: detection-window score at the moment of capture (for post-trip correlation).
+      var detChip = (ev.detScore != null) ? ' <span class="au-det" title="Detection-window score when this was captured">🌙 ' + ev.detScore + '</span>' : '';
       var row = document.createElement('div'); row.className = 'au-ev';
       row.innerHTML = '<span class="e">' + (lab ? LABEL_META[lab].e : '🎵') + '</span>' +
-        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
+        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + detChip + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
       if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'none'; au.src = blobURL(ev); row.appendChild(au); }
       row.querySelector('.m').addEventListener('click', function () { if (ev.lat != null) { aOpen(false); map.setView([ev.lat, ev.lng], Math.max(map.getZoom(), 15)); if (ev._marker) ev._marker.openPopup(); } });
       el.appendChild(row);
@@ -3408,7 +3666,7 @@ setTimeout(fitToSpots, 400);
     var list = events.slice().sort(function (a, b) { return a.timestamp - b.timestamp; });
     if (!list.length) { toast('No audio events to export'); return; }
     toast('Building export…');
-    var rows = ['id,timestamp_iso,lat,lng,accuracy_m,type,source,label,duration_ms,sample_rate,audio_file,ml_top_class,ml_top_confidence,ml_all_confidences,model_version,notes'];
+    var rows = ['id,timestamp_iso,lat,lng,accuracy_m,type,source,label,duration_ms,sample_rate,audio_file,ml_top_class,ml_top_confidence,ml_all_confidences,model_version,detection_score,notes'];
     var featureExport = { v: 1, modelVersion: modelMeta ? modelMeta.modelVersion : null, events: [] };
     var jobs = list.map(function (ev, i) {
       var fname = 'clip_' + String(i + 1) + '_' + ev.id + '.wav';
@@ -3417,7 +3675,7 @@ setTimeout(fitToSpots, 400);
       var allConf = ev.mlConfidence ? LABELS.map(function (k) { return k + ':' + (ev.mlConfidence[k] != null ? ev.mlConfidence[k].toFixed(3) : '0'); }).join(' ') : '';
       rows.push([ev.id, isoTs(ev.timestamp), ev.lat != null ? ev.lat : '', ev.lng != null ? ev.lng : '', ev.acc != null ? Math.round(ev.acc) : '',
         ev.type, ev.source || 'field', lab, ev.durationMs, ev.sr || sampleRate, ev.audioBlob ? fname : '',
-        ml ? ml.cls : '', ml ? ml.conf.toFixed(3) : '', csvCell(allConf), ev.mlModelVersion || '', csvCell(ev.notes)].join(','));
+        ml ? ml.cls : '', ml ? ml.conf.toFixed(3) : '', csvCell(allConf), ev.mlModelVersion || '', ev.detScore != null ? ev.detScore : '', csvCell(ev.notes)].join(','));
       if (ev.features && ev.features.vec) featureExport.events.push({ id: ev.id, label: lab || null, source: ev.source || 'field', features: ev.features });
       return ev.audioBlob ? ev.audioBlob.arrayBuffer().then(function (ab) { return { name: fname, data: new Uint8Array(ab) }; }) : Promise.resolve(null);
     });
@@ -4058,6 +4316,406 @@ setTimeout(fitToSpots, 400);
       setTimeout(function () { if (typed) elIn.focus(); else btnNo.focus(); }, 30);   // typed -> input, else Cancel (Enter cancels)
     });
   };
+})();
+</script>
+
+<!-- v29: Detection Window forecaster — per-hour detector-efficiency for the next 24 h.
+     Industry-first: solar/geomagnetic + grid EMI, atmosphere, ground coupling, moonlight and
+     powerline proximity, scored hourly from your location. Astronomy is computed on-device
+     (NOAA solar + Schlyter lunar); live inputs (NOAA Kp, weather, AEMO demand) are cached for
+     offline. All scores are HEURISTIC ESTIMATES — labelled as such in the UI. -->
+<script>
+(function () {
+  'use strict';
+  var AG = window.AuraGold = window.AuraGold || {};
+  if (AG.detection) return;
+
+  /* ===================== pure math core (Node-verified, det_core.js) ===================== */
+  var D2R = Math.PI/180, R2D = 180/Math.PI;
+  function rev(x){ x = x % 360; return x < 0 ? x+360 : x; }
+  function clamp(x,lo,hi){ return x<lo?lo:(x>hi?hi:x); }
+  function sind(d){ return Math.sin(d*D2R); } function cosd(d){ return Math.cos(d*D2R); }
+  function tand(d){ return Math.tan(d*D2R); }
+  function asind(x){ return R2D*Math.asin(clamp(x,-1,1)); } function acosd(x){ return R2D*Math.acos(clamp(x,-1,1)); }
+  function julian(date){ return date.getTime()/86400000 + 2440587.5; }
+  function solarDeclEoT(jd){
+    var T=(jd-2451545.0)/36525.0;
+    var L0=rev(280.46646+T*(36000.76983+T*0.0003032));
+    var M=357.52911+T*(35999.05029-0.0001537*T);
+    var e=0.016708634-T*(0.000042037+0.0000001267*T);
+    var C=sind(M)*(1.914602-T*(0.004817+0.000014*T))+sind(2*M)*(0.019993-0.000101*T)+sind(3*M)*0.000289;
+    var trueLong=L0+C, omega=125.04-1934.136*T, appLong=trueLong-0.00569-0.00478*sind(omega);
+    var e0=23+(26+(21.448-T*(46.815+T*(0.00059-T*0.001813)))/60)/60, ecorr=e0+0.00256*cosd(omega);
+    var decl=asind(sind(ecorr)*sind(appLong)), y=tand(ecorr/2)*tand(ecorr/2);
+    var EoT=4*R2D*(y*sind(2*L0)-2*e*sind(M)+4*e*y*sind(M)*cosd(2*L0)-0.5*y*y*sind(4*L0)-1.25*e*e*sind(2*M));
+    return { decl:decl, EoT:EoT };
+  }
+  function solarElevation(date,lat,lng){
+    var de=solarDeclEoT(julian(date));
+    var utcMin=date.getUTCHours()*60+date.getUTCMinutes()+date.getUTCSeconds()/60;
+    var tst=(utcMin+de.EoT+4*lng)%1440; if(tst<0) tst+=1440;
+    var ha=tst/4-180; if(ha<-180) ha+=360;
+    return 90-acosd(sind(lat)*sind(de.decl)+cosd(lat)*cosd(de.decl)*cosd(ha));
+  }
+  function sunTimes(noonUTC,lat,lng,tzOffH){
+    var de=solarDeclEoT(julian(noonUTC));
+    var solarNoon=720-4*lng-de.EoT+60*tzOffH;
+    var cosH=cosd(90.833)/(cosd(lat)*cosd(de.decl))-tand(lat)*tand(de.decl);
+    if(cosH>1) return { sunrise:null,sunset:null,solarNoon:solarNoon,polar:'night' };
+    if(cosH<-1) return { sunrise:null,sunset:null,solarNoon:solarNoon,polar:'day' };
+    var H=acosd(cosH);
+    return { sunrise:solarNoon-H*4, sunset:solarNoon+H*4, solarNoon:solarNoon, polar:null };
+  }
+  function moonState(date,lat,lng){
+    var d=julian(date)-2451543.5;
+    var ws=282.9404+4.70935e-5*d, Ms=rev(356.0470+0.9856002585*d), Ls=rev(ws+Ms);
+    var N=rev(125.1228-0.0529538083*d), i=5.1454, w=rev(318.0634+0.1643573223*d), a=60.2666, ecc=0.054900;
+    var M=rev(115.3654+13.0649929509*d);
+    var E=M+R2D*ecc*sind(M)*(1+ecc*cosd(M)); E=E-(E-R2D*ecc*sind(E)-M)/(1-ecc*cosd(E));
+    var xv=a*(cosd(E)-ecc), yv=a*(Math.sqrt(1-ecc*ecc)*sind(E));
+    var v=rev(R2D*Math.atan2(yv,xv)), r=Math.sqrt(xv*xv+yv*yv);
+    var xh=r*(cosd(N)*cosd(v+w)-sind(N)*sind(v+w)*cosd(i)), yh=r*(sind(N)*cosd(v+w)+cosd(N)*sind(v+w)*cosd(i)), zh=r*(sind(v+w)*sind(i));
+    var lonecl=rev(R2D*Math.atan2(yh,xh)), latecl=R2D*Math.atan2(zh,Math.sqrt(xh*xh+yh*yh));
+    var Lm=rev(N+w+M), Dm=rev(Lm-Ls), F=rev(Lm-N);
+    lonecl+=-1.274*sind(M-2*Dm)+0.658*sind(2*Dm)-0.186*sind(Ms)-0.059*sind(2*M-2*Dm)-0.057*sind(M-2*Dm+Ms)
+            +0.053*sind(M+2*Dm)+0.046*sind(2*Dm-Ms)+0.041*sind(M-Ms)-0.035*sind(Dm)-0.031*sind(M+Ms);
+    latecl+=-0.173*sind(F-2*Dm)-0.055*sind(M-F-2*Dm)-0.046*sind(M+F-2*Dm)+0.033*sind(F+2*Dm)+0.017*sind(2*M+F);
+    var elong=acosd(cosd(Ls-lonecl)*cosd(latecl)), illum=(1-cosd(elong))/2;
+    var ecl=23.4393-3.563e-7*d;
+    var xe=cosd(lonecl)*cosd(latecl), ye=sind(lonecl)*cosd(latecl)*cosd(ecl)-sind(latecl)*sind(ecl), ze=sind(lonecl)*cosd(latecl)*sind(ecl)+sind(latecl)*cosd(ecl);
+    var RA=rev(R2D*Math.atan2(ye,xe)), Dec=R2D*Math.atan2(ze,Math.sqrt(xe*xe+ye*ye));
+    var GMST0=rev(Ls+180), utH=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600;
+    var LST=rev(GMST0+15.04107*utH+lng), HA=rev(LST-RA);
+    var alt=asind(sind(lat)*sind(Dec)+cosd(lat)*cosd(Dec)*cosd(HA));
+    return { illum:illum, altitude:alt };
+  }
+  var DEFAULT_WEIGHTS = { emi:0.35, atmosphere:0.20, ground:0.20, visibility:0.10, powerline:0.15 };
+  var LOAD_CURVE = [0.30,0.22,0.16,0.12,0.13,0.20,0.38,0.58,0.66,0.68,0.66,0.64,0.62,0.60,0.60,0.63,0.70,0.82,0.95,1.00,0.92,0.78,0.60,0.42];
+  function gaussBump(t,c,s){ if(c==null) return 0; var dt=t-c; return Math.exp(-(dt*dt)/(2*s*s)); }
+  function powerlineScore(distM){ if(distM==null||!isFinite(distM)) return 100; return clamp(100-(200/Math.max(distM,10))*50,0,100); }
+  function scoreHour(hourFrac,ctx){
+    var W=ctx.weights||DEFAULT_WEIGHTS, lh=((hourFrac%24)+24)%24, hIdx=Math.floor(lh);
+    var load=LOAD_CURVE[hIdx]; if(ctx.demandScale!=null) load=clamp(load*ctx.demandScale,0,1);
+    var elev=ctx.elevAt(hourFrac);
+    var kNorm=clamp((ctx.kIndexAt?ctx.kIndexAt(hourFrac):(ctx.kIndex||2))/9,0,1);
+    var sunUp=Math.max(0,sind(elev)), solarEmi=clamp(sunUp*(0.45+0.55*kNorm),0,1);
+    var emiScore=100*(1-load)*(1-solarEmi);
+    var inst=Math.max(gaussBump(lh,ctx.sunriseH,1.4),gaussBump(lh,ctx.sunsetH,1.4));
+    var atmoScore=100*(1-0.6*inst);
+    var rainF=ctx.rainFactor!=null?ctx.rainFactor:0.85;
+    var temp=ctx.tempAt?ctx.tempAt(hourFrac):(ctx.temp!=null?ctx.temp:18);
+    var minF=clamp((temp-5)/35,0,1)*0.5, groundScore=100*rainF*(1-minF);
+    var visScore;
+    if(elev>-0.833) visScore=100;
+    else { var m=ctx.moonAt?ctx.moonAt(hourFrac):{illum:0,altitude:-10};
+      var cloudless=ctx.cloudAt?ctx.cloudAt(hourFrac):(ctx.cloudFactor!=null?ctx.cloudFactor:0.8);
+      visScore=Math.max(25,100*m.illum*(m.altitude>0?1:0)*cloudless); }
+    var plScore=powerlineScore(ctx.powerlineDistM);
+    var eff=W.emi*emiScore+W.atmosphere*atmoScore+W.ground*groundScore+W.visibility*visScore+W.powerline*plScore;
+    return { eff:Math.round(clamp(eff,0,100)),
+      parts:{ emi:Math.round(emiScore), atmosphere:Math.round(atmoScore), ground:Math.round(groundScore), visibility:Math.round(visScore), powerline:Math.round(plScore) },
+      why:{ gridLoadPct:Math.round(load*100), solarElevDeg:Math.round(elev), kIndex:+(kNorm*9).toFixed(1), tempC:Math.round(temp), rainFactor:+rainF.toFixed(2),
+        moonIllum:ctx.moonAt?Math.round(ctx.moonAt(hourFrac).illum*100):null, moonUp:ctx.moonAt?(ctx.moonAt(hourFrac).altitude>0):null,
+        powerlineDistM:(ctx.powerlineDistM==null?null:Math.round(ctx.powerlineDistM)), liveDemandMW:(ctx.liveDemandMW==null?null:Math.round(ctx.liveDemandMW)), daylight:elev>-0.833 } };
+  }
+  function forecast24(start,inputs){
+    var lat=inputs.lat,lng=inputs.lng,tz=inputs.tzOffH,startMs=start.getTime();
+    var st=sunTimes(new Date(startMs),lat,lng,tz);
+    var sunriseH=st.sunrise!=null?st.sunrise/60:null, sunsetH=st.sunset!=null?st.sunset/60:null;
+    var startLocalHour=start.getHours()+start.getMinutes()/60;
+    var base={ weights:inputs.weights, sunriseH:sunriseH, sunsetH:sunsetH, demandScale:inputs.demandScale,
+      rainFactor:inputs.weather?inputs.weather.rainFactor:null, cloudFactor:inputs.weather?inputs.weather.cloudFactor:null,
+      powerlineDistM:inputs.powerlineDistM, liveDemandMW:inputs.liveDemandMW, kIndex:inputs.kIndex };
+    var out=[];
+    for(var i=0;i<24;i++){
+      (function(i){
+        var dt=new Date(startMs+i*3600000), localH=startLocalHour+i, c=Object.create(base);
+        c.elevAt=function(){ return solarElevation(dt,lat,lng); };
+        c.moonAt=function(){ return moonState(dt,lat,lng); };
+        c.tempAt=function(){ return inputs.weather&&inputs.weather.tempAtHour?inputs.weather.tempAtHour(i):18; };
+        c.cloudAt=function(){ return inputs.weather&&inputs.weather.cloudAtHour?inputs.weather.cloudAtHour(i):(inputs.weather?inputs.weather.cloudFactor:0.8); };
+        c.kIndexAt=function(){ return inputs.kForecast?inputs.kForecast(dt):(inputs.kIndex||2); };
+        var s=scoreHour(localH,c);
+        out.push({ i:i, ts:dt.getTime(), localHour:((localH%24)+24)%24, score:s.eff, parts:s.parts, why:s.why });
+      })(i);
+    }
+    return { hours:out, sunriseH:sunriseH, sunsetH:sunsetH, avg:Math.round(out.reduce(function(a,b){return a+b.score;},0)/out.length) };
+  }
+  function bestWindow(hours,n){ n=n||3; var best=null,worst=null;
+    for(var i=0;i<=hours.length-n;i++){ var s=0; for(var j=0;j<n;j++) s+=hours[i+j].score; var m=s/n;
+      if(!best||m>best.mean) best={start:i,mean:m}; if(!worst||m<worst.mean) worst={start:i,mean:m}; }
+    return { best:best, worst:worst }; }
+
+  /* ===================== live data: fetch + offline cache ===================== */
+  var CK = { kp:'ag_det_kp_v1', wx:'ag_det_wx_v1', dem:'ag_det_dem_v1' };
+  function cacheGet(key){ try { var o=JSON.parse(localStorage.getItem(key)); return o&&o.t?o:null; } catch(e){ return null; } }
+  function cacheSet(key,data){ try { localStorage.setItem(key,JSON.stringify({ t:Date.now(), d:data })); } catch(e){} }
+  function fresh(o,ttlMs){ return o && (Date.now()-o.t) < ttlMs; }
+  function fetchTO(url,ms){ // fetch with timeout; resolves null on any failure
+    return new Promise(function(res){
+      var done=false, t=setTimeout(function(){ if(!done){ done=true; res(null); } }, ms||9000);
+      fetch(url,{ cache:'no-store' }).then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){ if(!done){ done=true; clearTimeout(t); res(j); } })
+        .catch(function(){ if(!done){ done=true; clearTimeout(t); res(null); } });
+    });
+  }
+
+  // NOAA Kp: current estimated_kp + 3-hourly forecast → store {current, fc:[{ts,kp}]}.
+  function loadKp(force){
+    var c=cacheGet(CK.kp); if(!force && fresh(c,3*3600e3)) return Promise.resolve(c.d);
+    return Promise.all([
+      fetchTO('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json'),
+      fetchTO('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
+    ]).then(function(r){
+      var cur=null, fc=[];
+      try { var a=r[0]; if(a&&a.length){ var last=a[a.length-1]; cur=last.estimated_kp!=null?last.estimated_kp:last.kp_index; } } catch(e){}
+      try { var b=r[1]; if(b&&b.length){ for(var i=0;i<b.length;i++){ var row=b[i]; if(row&&row.time_tag&&row.kp!=null) fc.push({ ts:Date.parse(row.time_tag.replace(' ','T')+'Z'), kp:+row.kp }); } } } catch(e){}
+      if(cur==null && !fc.length){ return c?c.d:null; }   // total failure → keep stale
+      var data={ current:cur!=null?cur:2, fc:fc }; cacheSet(CK.kp,data); return data;
+    });
+  }
+  // Open-Meteo hourly: temp, precip, cloud, pressure (past 3 + next 2 days), local time.
+  function loadWeather(lat,lng,force){
+    var key=CK.wx; var c=cacheGet(key);
+    var near = c && c.d && Math.abs(c.d.lat-lat)<0.4 && Math.abs(c.d.lng-lng)<0.4;
+    if(!force && near && fresh(c,6*3600e3)) return Promise.resolve(c.d);
+    var u='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)+
+      '&hourly=temperature_2m,precipitation,cloud_cover,surface_pressure&past_days=2&forecast_days=2&timezone=auto';
+    return fetchTO(u,10000).then(function(j){
+      if(!j||!j.hourly){ return (near?c.d:null); }
+      var H=j.hourly, byKey={};
+      for(var i=0;i<H.time.length;i++){ byKey[H.time[i].slice(0,13)]={ temp:H.temperature_2m[i], precip:H.precipitation[i], cloud:H.cloud_cover[i], press:H.surface_pressure[i] }; }
+      var data={ lat:lat, lng:lng, byKey:byKey, utcOff:j.utc_offset_seconds }; cacheSet(key,data); return data;
+    });
+  }
+  // AEMO live VIC1 demand (MW) for the grid-load anchor.
+  function loadDemand(force){
+    var c=cacheGet(CK.dem); if(!force && fresh(c,3600e3)) return Promise.resolve(c.d);
+    return fetchTO('https://visualisations.aemo.com.au/aemo/apps/api/report/ELEC_NEM_SUMMARY',9000).then(function(j){
+      var mw=null; try { var arr=(j&&(j.ELEC_NEM_SUMMARY||j))||[]; for(var i=0;i<arr.length;i++){ if(arr[i].REGIONID==='VIC1'){ mw=arr[i].TOTALDEMAND; break; } } } catch(e){}
+      if(mw==null) return c?c.d:null;
+      var data={ vicMW:mw }; cacheSet(CK.dem,data); return data;
+    });
+  }
+
+  /* ===================== inputs assembly ===================== */
+  function hourKeyLocal(ms){ var d=new Date(ms); function p(n){ return (n<10?'0':'')+n; }
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours()); }
+  var WKEY='ag_det_weights_v1';
+  function rawW(){ try { var w=JSON.parse(localStorage.getItem(WKEY)); if(w&&w.emi!=null) return w; } catch(e){} return Object.assign({},DEFAULT_WEIGHTS); }
+  function getWeights(){
+    var w=rawW(); var sum=w.emi+w.atmosphere+w.ground+w.visibility+w.powerline; if(!(sum>0)) return Object.assign({},DEFAULT_WEIGHTS);
+    return { emi:w.emi/sum, atmosphere:w.atmosphere/sum, ground:w.ground/sum, visibility:w.visibility/sum, powerline:w.powerline/sum };
+  }
+  function buildInputs(lat,lng,start){
+    var tzOffH=-new Date().getTimezoneOffset()/60;
+    var inp={ lat:lat, lng:lng, tzOffH:tzOffH, weights:getWeights() };
+    // K-index + forecast:
+    if(state.kp){ inp.kIndex=state.kp.current;
+      var fc=state.kp.fc||[];
+      inp.kForecast=function(dt){ var t=dt.getTime(), best=inp.kIndex;
+        for(var i=0;i<fc.length;i++){ if(fc[i].ts<=t) best=fc[i].kp; else break; } return best; };
+    } else inp.kIndex=2;
+    // Weather → rainFactor (last 24h precip), per-hour temp/cloud:
+    if(state.wx){ var bk=state.wx.byKey;
+      var rain24=0, k=start.getTime(); for(var h=1;h<=24;h++){ var e=bk[hourKeyLocal(k-h*3600e3)]; if(e&&e.precip!=null) rain24+=e.precip; }
+      var rainF=clamp(0.70+0.30*clamp(rain24/15,0,1),0.70,1.0);
+      var cloudVals=[]; for(var hh=0;hh<24;hh++){ var ee=bk[hourKeyLocal(start.getTime()+hh*3600e3)]; if(ee&&ee.cloud!=null) cloudVals.push(ee.cloud); }
+      var cloudAvg=cloudVals.length?cloudVals.reduce(function(a,b){return a+b;},0)/cloudVals.length:50;
+      inp.weather={ rainFactor:rainF, cloudFactor:clamp(1-cloudAvg/100,0,1), rain24:rain24,
+        tempAtHour:function(i){ var e=bk[hourKeyLocal(start.getTime()+i*3600e3)]; return e&&e.temp!=null?e.temp:18; },
+        cloudAtHour:function(i){ var e=bk[hourKeyLocal(start.getTime()+i*3600e3)]; return e&&e.cloud!=null?clamp(1-e.cloud/100,0,1):0.6; } };
+    }
+    // Grid-load anchor from live VIC demand:
+    if(state.dem&&state.dem.vicMW!=null){ inp.liveDemandMW=state.dem.vicMW;
+      var norm=clamp((state.dem.vicMW-4000)/(9500-4000),0,1), cur=LOAD_CURVE[start.getHours()];
+      inp.demandScale=cur>0.12?norm/cur:null;
+    }
+    // Powerline EMI distance:
+    if(AG.powerlines&&AG.powerlines.nearestDistance){ var d=AG.powerlines.nearestDistance(lat,lng); if(d!=null) inp.powerlineDistM=d; }
+    return inp;
+  }
+
+  /* ===================== state + compute ===================== */
+  var state = { kp:null, wx:null, dem:null, fc:null, loc:null, lastData:0, fetching:false };
+  function curLoc(){ var f=AG.lastFix; if(f&&f.lat!=null) return { lat:f.lat, lng:f.lng, gps:true };
+    // Fall back to the map centre — but only if the view has actually fitted (guards against a
+    // not-yet-laid-out / world-view container giving a degenerate centre like lng 0).
+    try { var c=map.getCenter(); if(isFinite(c.lat)&&isFinite(c.lng)&&map.getZoom()>=4&&!(c.lng===0&&Math.abs(c.lat)>1)) return { lat:c.lat, lng:c.lng, gps:false }; } catch(e){}
+    return { lat:-37.0, lng:144.0, gps:false };   // central Victorian goldfields default
+  }
+  function compute(){
+    var loc=curLoc(); var start=new Date(); start.setMinutes(0,0,0);
+    var inp=buildInputs(loc.lat,loc.lng,start);
+    state.fc=forecast24(start,inp); state.fc.loc=loc; state.fc.inputs=inp; state.loc=loc;
+    return state.fc;
+  }
+  function refreshData(force){
+    if(state.fetching) return Promise.resolve();
+    state.fetching=true; var loc=curLoc();
+    return Promise.all([ loadKp(force), loadWeather(loc.lat,loc.lng,force), loadDemand(force) ]).then(function(r){
+      if(r[0]) state.kp=r[0]; if(r[1]) state.wx=r[1]; if(r[2]) state.dem=r[2];
+      state.lastData=Date.now(); state.fetching=false; compute(); renderBadge(); if(panelOpen()) renderPanel();
+    }, function(){ state.fetching=false; });
+  }
+  // Seed from cache instantly (offline-friendly), so the badge shows up before any network.
+  (function seed(){ var k=cacheGet(CK.kp), w=cacheGet(CK.wx), d=cacheGet(CK.dem);
+    if(k) state.kp=k.d; if(w) state.wx=w.d; if(d) state.dem=d.d; })();
+
+  /* ===================== formatting helpers ===================== */
+  function fmtHour(h){ h=Math.round(((h%24)+24)%24); var ap=h<12?'am':'pm'; var hh=h%12; if(hh===0) hh=12; return hh+ap; }
+  function scoreColor(s){ return s>=78?'#2e9e44':(s>=66?'#7fae28':(s>=54?'#d9a31a':(s>=42?'#e07b1a':'#d64a44'))); }
+  function dotFor(s){ return s>=72?'🟢':(s>=54?'🟡':'🔴'); }
+  function winLabel(w,hours){ if(!w) return ''; var a=hours[w.start].localHour, b=hours[Math.min(w.start+2,hours.length-1)].localHour;
+    return fmtHour(a)+'–'+fmtHour(b+1); }
+
+  /* ===================== badge ===================== */
+  var badge=document.createElement('button'); badge.className='det-badge'; badge.type='button';
+  badge.setAttribute('aria-label','Detection window — tap for the 24-hour forecast');
+  badge.innerHTML='<span class="db-dot">🟡</span><span class="db-now">–</span><span class="db-sep">·</span><span class="db-best"></span>';
+  document.body.appendChild(badge);
+  badge.addEventListener('click', openPanel);
+  // Sit just below the floating header, whatever its height/breakpoint (avoids overlap).
+  var _hdr=document.querySelector('.header');
+  function positionBadge(){ try { if(_hdr){ var r=_hdr.getBoundingClientRect(); badge.style.top=Math.round(r.bottom+8)+'px'; } } catch(e){} }
+  window.addEventListener('resize', positionBadge);
+  // The header reflows late (emoji fonts, subtitle wrap) — reposition whenever its size changes.
+  try { if(_hdr && window.ResizeObserver){ new ResizeObserver(positionBadge).observe(_hdr); } } catch(e){}
+  function renderBadge(){
+    if(!state.fc) return; var hours=state.fc.hours, now=hours[0].score;
+    var win=bestWindow(hours,3).best, uplift=win?Math.round(win.mean-state.fc.avg):0;
+    badge.querySelector('.db-dot').textContent=dotFor(now);
+    var nEl=badge.querySelector('.db-now'); nEl.textContent=now; nEl.style.color=scoreColor(now);
+    var bw=win?(' '+fmtHour(hours[win.start].localHour)):'';
+    badge.querySelector('.db-best').innerHTML='<small>Best</small> '+(bw.trim())+' '+(uplift>=0?'+':'')+uplift+'%';
+    badge.classList.add('show'); positionBadge();
+  }
+
+  /* ===================== panel ===================== */
+  var panel=document.getElementById('detPanel');
+  function panelOpen(){ return panel&&panel.classList.contains('open'); }
+  var selIdx=0;
+  function openPanel(){ if(!panel) return;
+    // close any sibling ag-panel
+    var sibs=document.querySelectorAll('.ag-panel.open'); for(var i=0;i<sibs.length;i++) if(sibs[i]!==panel){ sibs[i].classList.remove('open'); sibs[i].setAttribute('aria-hidden','true'); }
+    panel.classList.add('open'); panel.setAttribute('aria-hidden','false');
+    selIdx=0; compute(); renderPanel();
+    var c=cacheGet(CK.wx); if(!state.fetching && (Date.now()-state.lastData>6*3600e3 || !state.wx)) refreshData(false);
+  }
+  function closePanel(){ if(panel){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true'); } }
+  var dClose=document.getElementById('detClose'); if(dClose) dClose.addEventListener('click', closePanel);
+  var dRefresh=document.getElementById('dwRefresh');
+  if(dRefresh) dRefresh.addEventListener('click', function(){ dRefresh.textContent='↻ Refreshing…'; refreshData(true).then(function(){ dRefresh.textContent='↻ Refresh live data'; }); });
+
+  function renderPanel(){
+    if(!state.fc) compute(); if(!state.fc) return;
+    var fc=state.fc, hours=fc.hours;
+    // header
+    var now=hours[0].score, nowEl=document.getElementById('dwNow');
+    nowEl.innerHTML=now+'<small>/100 now</small>'; nowEl.style.color=scoreColor(now);
+    var loc=fc.loc; document.getElementById('dwLoc').textContent=(loc.gps?'📍 your GPS location':'🗺 map centre')+
+      ' · '+loc.lat.toFixed(3)+', '+loc.lng.toFixed(3)+' · day avg '+fc.avg;
+    // windows
+    var w=bestWindow(hours,3); var bestUp=Math.round(w.best.mean-fc.avg), worstUp=Math.round(w.worst.mean-fc.avg);
+    document.getElementById('dwWindows').innerHTML=
+      '<div class="dw-win best"><div class="dw-wl">▲ Best window</div><div class="dw-wt">'+winLabel(w.best,hours)+'</div><div class="dw-wd">'+(bestUp>=0?'+':'')+bestUp+'% vs avg · '+Math.round(w.best.mean)+'/100</div></div>'+
+      '<div class="dw-win worst"><div class="dw-wl">▼ Avoid</div><div class="dw-wt">'+winLabel(w.worst,hours)+'</div><div class="dw-wd">'+worstUp+'% vs avg · '+Math.round(w.worst.mean)+'/100</div></div>';
+    document.getElementById('dwWindowsLine').innerHTML='';
+    // chart
+    var chart=document.getElementById('dwChart'); chart.innerHTML='';
+    hours.forEach(function(h,idx){
+      var bar=document.createElement('div'); bar.className='dw-bar'+(idx===selIdx?' sel':'')+(idx===0?' now':'');
+      bar.setAttribute('data-i',idx);
+      var night=!h.why.daylight;
+      var lab=(idx%3===0)?('<span class="dw-hr">'+fmtHour(h.localHour)+'</span>'):'<span class="dw-hr">&nbsp;</span>';
+      bar.innerHTML=(night?'<span class="dw-night"></span>':'')+'<span class="dw-fill" style="height:'+Math.max(3,h.score)+'%;background:'+scoreColor(h.score)+'"></span>'+lab;
+      bar.addEventListener('click', function(){ selIdx=idx; renderPanel(); });
+      chart.appendChild(bar);
+    });
+    document.getElementById('dwAxisL').textContent='now '+fmtHour(hours[0].localHour);
+    renderWhy(hours[selIdx]);
+    // source line
+    var src=document.getElementById('dwSrc'); var bits=[];
+    bits.push('Kp '+(state.kp?(+state.kp.current).toFixed(1):'—'));
+    if(state.wx&&fc.inputs.weather) bits.push(Math.round(fc.inputs.weather.rain24)+'mm/24h');
+    if(state.dem&&state.dem.vicMW!=null) bits.push('VIC '+Math.round(state.dem.vicMW)+'MW');
+    var ago=state.lastData?Math.round((Date.now()-state.lastData)/60000):null;
+    var online=navigator.onLine;
+    src.textContent='Sources: NOAA · Open-Meteo · AEMO — '+bits.join(' · ')+(ago!=null?(' · updated '+(ago<1?'just now':ago+' min ago')):' · cached')+(online?'':' · 📴 offline (cached)');
+  }
+  function renderWhy(h){
+    var el=document.getElementById('dwWhy'); if(!h){ el.classList.remove('show'); return; }
+    var P=h.parts, W=h.why, w=getWeights();
+    function prow(lbl,val,wt){ var col=scoreColor(val);
+      return '<div class="dw-prow"><span class="dw-pl">'+lbl+' <small style="color:#aaa">'+Math.round(wt*100)+'%</small></span><span class="dw-pbar"><i style="width:'+val+'%;background:'+col+'"></i></span><span class="dw-pv">'+val+'</span></div>'; }
+    var facts=[];
+    facts.push('<div>☀️ Sun: <b>'+W.solarElevDeg+'°</b> elevation'+(W.daylight?'':' (below horizon)')+'</div>');
+    facts.push('<div>🧲 Geomagnetic Kp: <b>'+W.kIndex+'</b>'+(W.kIndex>=4?' (elevated — more solar EMI)':' (quiet)')+'</div>');
+    facts.push('<div>🔌 Grid load: <b>'+W.gridLoadPct+'%</b> of peak'+(W.liveDemandMW!=null?' · VIC '+W.liveDemandMW+' MW live':'')+'</div>');
+    facts.push('<div>🌡️ Temp: <b>'+W.tempC+'°C</b> · ground coupling '+(W.rainFactor>=0.9?'good (recent rain)':(W.rainFactor>=0.78?'fair':'dry'))+'</div>');
+    if(!W.daylight) facts.push('<div>🌙 Moon: <b>'+(W.moonIllum!=null?W.moonIllum+'%':'—')+'</b> lit'+(W.moonUp?', up':', below horizon')+'</div>');
+    facts.push('<div>⚡ Nearest powerline: <b>'+(W.powerlineDistM==null?'none mapped near':(W.powerlineDistM<1000?W.powerlineDistM+' m':(W.powerlineDistM/1000).toFixed(1)+' km'))+'</b>'+(W.powerlineDistM!=null&&W.powerlineDistM<200?' — EMI zone':'')+'</div>');
+    el.innerHTML='<h4>'+fmtHour(h.localHour)+' <span class="dw-score" style="color:'+scoreColor(h.score)+'">'+h.score+'/100</span></h4>'+
+      prow('EMI',P.emi,w.emi)+prow('Atmosphere',P.atmosphere,w.atmosphere)+prow('Ground',P.ground,w.ground)+prow('Visibility',P.visibility,w.visibility)+prow('Powerline',P.powerline,w.powerline)+
+      '<div class="dw-facts">'+facts.join('')+'</div>';
+    el.classList.add('show');
+  }
+
+  /* ===================== Settings: weight tuning ===================== */
+  var WLABELS=[['emi','Grid/solar EMI'],['atmosphere','Atmosphere'],['ground','Ground coupling'],['visibility','Visibility'],['powerline','Powerline']];
+  function curW(){ return rawW(); }
+  function saveW(w){ try { localStorage.setItem(WKEY, JSON.stringify(w)); } catch(e){} }
+  function buildWeightUI(){
+    var box=document.getElementById('dwWeights'); if(!box) return; var w=curW();
+    box.innerHTML=''; WLABELS.forEach(function(p){
+      var row=document.createElement('div'); row.className='dw-wrow';
+      row.innerHTML='<span class="dw-wn">'+p[1]+'</span><input type="range" min="0" max="60" step="1" value="'+Math.round(w[p[0]]*100)+'" data-k="'+p[0]+'"><span class="dw-wv">'+Math.round(w[p[0]]*100)+'</span>';
+      var sl=row.querySelector('input'), vv=row.querySelector('.dw-wv');
+      sl.addEventListener('input', function(){ w[p[0]]=(+sl.value)/100; vv.textContent=sl.value; saveW(w); updateWsum(w); });
+      box.appendChild(row);
+    });
+    updateWsum(w);
+  }
+  function updateWsum(w){ var el=document.getElementById('dwWsum'); if(!el) return;
+    var sum=w.emi+w.atmosphere+w.ground+w.visibility+w.powerline;
+    el.innerHTML='Raw total '+Math.round(sum*100)+'% → normalised to 100% when scoring. '+(state.fc?'<span style="color:#caa53a">Re-open the chart to apply.</span>':'');
+    el.style.color=Math.abs(sum-1)<0.001?'#2c8b3c':'#8a8262';
+  }
+  var wreset=document.getElementById('dwWreset');
+  if(wreset) wreset.addEventListener('click', function(){ saveW(Object.assign({},DEFAULT_WEIGHTS)); buildWeightUI(); });
+  var detOpen=document.getElementById('detOpenBtn'); if(detOpen) detOpen.addEventListener('click', function(){ var sp=document.getElementById('settingsPanel'); if(sp){ sp.classList.remove('open'); sp.setAttribute('aria-hidden','true'); } openPanel(); });
+  var detBtn=document.getElementById('detBtn'); if(detBtn) detBtn.addEventListener('click', function(){ var mp=document.getElementById('menuPanel'); if(mp){ mp.classList.remove('open'); mp.setAttribute('aria-hidden','true'); } openPanel(); });
+  // build weight UI when settings opens (lazy) + once now
+  buildWeightUI();
+  var detAdv=document.getElementById('detAdvanced'); if(detAdv) detAdv.addEventListener('toggle', function(){ if(detAdv.open) buildWeightUI(); });
+
+  /* ===================== public API + lifecycle ===================== */
+  AG.detection = {
+    forecast:function(){ return state.fc||compute(); },
+    scoreNow:function(){ var f=state.fc||compute(); return f.hours[0].score; },
+    bestWindow:function(){ var f=state.fc||compute(); return bestWindow(f.hours,3); },
+    refresh:refreshData, open:openPanel, compute:compute,
+    // Single-hour score at an arbitrary location+time (used to stamp audio events). Null if no fc yet.
+    scoreAt:function(lat,lng,ts){
+      try { var start=new Date(ts||Date.now()); start.setMinutes(0,0,0);
+        var inp=buildInputs(lat,lng,start); var f=forecast24(start,inp); return f.hours[0].score;
+      } catch(e){ return null; }
+    },
+    _core:{ solarElevation:solarElevation, sunTimes:sunTimes, moonState:moonState, scoreHour:scoreHour, forecast24:forecast24, DEFAULT_WEIGHTS:DEFAULT_WEIGHTS }
+  };
+
+  // First paint: compute from on-device astronomy + any cached data, show badge, then fetch live.
+  function boot(){ compute(); renderBadge();
+    if(AG.powerlines&&AG.powerlines.ensureLoaded) AG.powerlines.ensureLoaded().then(function(){ compute(); renderBadge(); if(panelOpen()) renderPanel(); });
+    refreshData(false);
+    // Re-place the badge once late layout (emoji fonts, map tiles) settles the header height.
+    [400,900,1800].forEach(function(t){ setTimeout(positionBadge,t); });
+  }
+  if(document.readyState==='complete') setTimeout(boot,300); else window.addEventListener('load', function(){ setTimeout(boot,300); });
+  // Track location/time: recompute on map move (debounced) + every 5 min.
+  var mvT=null; try { map.on('moveend', function(){ clearTimeout(mvT); mvT=setTimeout(function(){ compute(); renderBadge(); if(panelOpen()) renderPanel(); },700); }); } catch(e){}
+  setInterval(function(){ compute(); renderBadge(); if(panelOpen()) renderPanel(); }, 5*60000);
+  window.addEventListener('online', function(){ refreshData(false); });
 })();
 </script>
 </body>

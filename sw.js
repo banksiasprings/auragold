@@ -13,8 +13,12 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v28.0.1';
+const SHELL_VERSION = 'v29';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
+// v29: Detection Window forecaster + Powerline EMI overlay. Powerline GeoJSON (8,367 Vic lines,
+// 2.56 MB / ~0.37 MB gzip) precached below so the overlay AND the forecaster's nearest-powerline
+// EMI term work offline. Live forecast inputs — NOAA Kp, Open-Meteo weather, AEMO VIC demand — are
+// served NETWORK-FIRST (fresh when online) with cache fallback (last fetch survives offline 6–12 h).
 // v28.0.1: EL/ML tenement popups now use correct, lease-type-specific fossicking guidance.
 // Active ELs no longer falsely say "NO PROSPECTING" — a Miner's Right still covers Crown/SF
 // fossicking within an EL (the holder's exclusivity is for drilling/major workings, not detector
@@ -27,7 +31,7 @@ const SHELL_VERSION = 'v28.0.1';
 // in every WAV, and ML-enriched ZIP export (events.csv + features_v1.json + model_v1.json). tf.js
 // (~1MB) + meyda (~40KB) precached below for offline training/inference. IndexedDB bumped to v4
 // (adds the `auragold_models` store + per-event features / label / source / mlConfidence fields).
-const SHELL_REV = 'v28.0.1';
+const SHELL_REV = 'v29';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -45,6 +49,9 @@ const SHELL_ASSETS = [
   './data/camping_paid.geojson',
   './data/rest_areas_vic.geojson',
   './data/parks_vic_campsites.geojson',
+  // v29: Victoria powerline EMI overlay — 8,367 lines, 2.56 MB but ~0.37 MB gzipped. Precached so
+  // both the ⚡ Powerlines layer and the Detection Window's nearest-powerline term work offline.
+  './data/powerlines_vic.geojson',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
@@ -106,6 +113,23 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
+
+  // v29: live forecast inputs — fresh when online, last-good when offline (network-first).
+  const LIVE_API_HOSTS = ['services.swpc.noaa.gov', 'api.open-meteo.com', 'visualisations.aemo.com.au'];
+  if (!sameOrigin && LIVE_API_HOSTS.indexOf(url.hostname) !== -1) {
+    event.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        if (res && res.ok) { const cache = await caches.open(TILE_CACHE); cache.put(req, res.clone()); }
+        return res;
+      } catch (err) {
+        const cached = await caches.match(req);
+        if (cached) return cached;
+        return Response.error();
+      }
+    })());
+    return;
+  }
 
   if (sameOrigin) {
     // App shell: cache-first, network fallback, index.html fallback for navigations.
