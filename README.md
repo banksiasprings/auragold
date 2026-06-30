@@ -5,11 +5,20 @@
 AuraGold is a vanilla-JS Progressive Web App you install to your phone's home
 screen and run like a native app — no signal required in the field. It bundles a
 Leaflet map of 12 candidate prospecting spots, camping waypoints, sub-spots, an
-editable **trip planner**, and seven geological data overlays (gold
+editable **trip planner**, and geological data overlays (gold
 occurrences, 1+ Moz endowment zones, goldfield boundaries, active tenements,
-bushfire scars, fossicking-permitted State Forest, restricted Crown land). Tap
+bushfire scars, fossicking-permitted State Forest, restricted Crown land, and a
+**⚡ powerline EMI overlay**). Tap
 **Save maps offline** once on wi-fi and the region's base imagery is cached for
 use where there's no reception.
+
+It also forecasts **when** to detect. The **🌙 Detection Window** scores every
+hour of the next 24 h for detector efficiency — combining solar/geomagnetic and
+grid EMI, atmosphere, ground coupling, moonlight and powerline proximity — and
+highlights the best and worst 3-hour windows (yes, that can mean a night shift).
+Astronomy is computed on-device so it works with no signal; live space-weather,
+weather and grid-demand inputs are cached for offline use. Scores are honest
+heuristic estimates, with tunable weights in Settings.
 
 You run the whole trip from inside the app — reorder days, add your own waypoints
 by GPS or by pasting a Google/Apple Maps link, share a place straight from Google
