@@ -849,6 +849,12 @@
         <div id="mlCounts" class="ml-counts"></div>
         <p id="mlNeed" class="ag-note" style="margin:6px 2px">Need <b>≥10 examples per class</b> to train. Label events (calibration or in the field) until each class turns green.</p>
         <div id="mlBackfill" class="ml-backfill" style="display:none"></div>
+        <div class="st-pack" style="margin:6px 0 10px;padding:8px 10px;border:1px dashed #c9b27a;border-radius:10px;background:rgba(202,165,58,.06)">
+          <p class="ag-note" style="margin:2px 2px 8px;font-style:italic">Pipeline smoke-test: load 48 <b>synthetic</b> clips (12 per class) to verify feature&nbsp;extraction → train → infer → export end-to-end before your trip. Not real detector audio — clear them when done.</p>
+          <button id="stLoadBtn" class="ag-act" type="button">📦 Load smoke-test clips<span class="sub">48 synthetic GUANO-tagged clips, tagged source: smoke-test</span></button>
+          <button id="stClearBtn" class="ag-act" type="button" style="color:#b3261e" disabled>🗑 Clear smoke-test clips<span class="sub" style="color:#c98">Removes only source: smoke-test events — your own clips are untouched</span></button>
+          <div id="stProg" class="ag-note" style="display:none;margin:6px 2px"></div>
+        </div>
         <button id="mlTrainBtn" class="ag-act" type="button" disabled>🧠 Train classifier<span class="sub">Trains a small neural net on your labelled clips · 80/20 validation split</span></button>
         <div id="mlProg" class="ml-prog" style="display:none"><div class="ml-prog-bar-wrap"><div id="mlProgBar"></div></div><div id="mlProgTxt" class="ag-note"></div></div>
         <div id="mlTrained" style="display:none">
@@ -1079,7 +1085,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v30';
+var APP_VERSION = 'v31';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -3814,6 +3820,119 @@ var powerLayers = (function () {
   }
 
   // ============================================================================
+  // v31: smoke-test clip pack — import a small synthetic labelled set to verify the
+  // whole ML pipeline (decode -> meyda features -> train -> infer -> export) end-to-end
+  // before a field trip. The clips are physically-modelled synthetic detector tones,
+  // tagged source:'smoke-test' so they clear cleanly without touching real field/cal data.
+  // The pack is a STORE-only ZIP, so we read it with a tiny inline reader (no JSZip dep).
+  // ============================================================================
+  var ST_SOURCE = 'smoke-test', ST_URL = './data/smoke-test-clips-v31.zip';
+
+  // Minimal store-only (uncompressed) ZIP reader — walks the End-of-Central-Directory.
+  function unzipStored(ab) {
+    var dv = new DataView(ab), u8 = new Uint8Array(ab), n = ab.byteLength, eocd = -1;
+    for (var i = n - 22; i >= 0 && i >= n - 22 - 65536; i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+    if (eocd < 0) throw new Error('no EOCD');
+    var count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true), out = [], p = cdOff;
+    for (var c = 0; c < count; c++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var method = dv.getUint16(p + 10, true), compSize = dv.getUint32(p + 20, true);
+      var nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), cmtLen = dv.getUint16(p + 32, true);
+      var lho = dv.getUint32(p + 42, true), name = '';
+      for (var k = 0; k < nameLen; k++) name += String.fromCharCode(u8[p + 46 + k]);
+      var lNameLen = dv.getUint16(lho + 26, true), lExtra = dv.getUint16(lho + 28, true);
+      var dataStart = lho + 30 + lNameLen + lExtra;
+      if (method === 0) out.push({ name: name, bytes: u8.subarray(dataStart, dataStart + compSize) });
+      p += 46 + nameLen + extraLen + cmtLen;
+    }
+    return out;
+  }
+
+  // Read the GUANO 'guan' text chunk back out of a WAV (the inverse of buildGuanoText).
+  function parseGuanoChunk(ab) {
+    var dv = new DataView(ab), u8 = new Uint8Array(ab), o = 12, n = ab.byteLength;
+    while (o + 8 <= n) {
+      var id = String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]), sz = dv.getUint32(o + 4, true);
+      if (id === 'guan') {
+        var txt = new TextDecoder().decode(u8.subarray(o + 8, o + 8 + sz)), meta = {};
+        txt.split('\n').forEach(function (line) { var i = line.indexOf(':'); if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim(); });
+        return meta;
+      }
+      o += 8 + sz + (sz & 1);
+    }
+    return null;
+  }
+  // Map any spelling of the label back to the canonical internal key.
+  function labelFromMeta(meta) {
+    var raw = ((meta && (meta['AuraGold|Label'] || meta['Label'])) || '').trim();
+    var map = { gold: 'gold', junk: 'junk', nothing: 'nothing', hotrock: 'hotRock', 'hot-rock': 'hotRock', hot_rock: 'hotRock', hotrock_: 'hotRock' };
+    return map[raw] || map[raw.toLowerCase()] || (raw === 'hotRock' ? 'hotRock' : null);
+  }
+
+  function smokeCount() { return events.filter(function (e) { return e.source === ST_SOURCE; }).length; }
+  function setStProg(txt) { var el = document.getElementById('stProg'); if (el) { el.textContent = txt; el.style.display = txt ? 'block' : 'none'; } }
+
+  // Fetch the pack -> unzip -> per clip: GUANO label, decode PCM, write an event,
+  // extract features (worker), score if a model exists. Idempotent (event id = ClipId).
+  function loadSmokeTest() {
+    var btn = document.getElementById('stLoadBtn'); if (btn) btn.disabled = true;
+    setStProg('Fetching test clips…');
+    return fetch(ST_URL).then(function (r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.arrayBuffer(); })
+      .then(function (ab) {
+        var wavs = unzipStored(ab).filter(function (f) { return /\.wav$/i.test(f.name); });
+        if (!wavs.length) throw new Error('no clips in archive');
+        var total = wavs.length, done = 0, added = 0, skipped = 0;
+        setStProg('Loaded 0 of ' + total + '…');
+        return wavs.reduce(function (p, f) {
+          return p.then(function () {
+            var wavAb = f.bytes.slice().buffer;
+            var meta = parseGuanoChunk(wavAb), label = labelFromMeta(meta);
+            var dec = label ? decodeWAV(wavAb) : null;
+            if (!label || !dec) { skipped++; done++; setStProg('Loaded ' + done + ' of ' + total + '…'); return; }
+            var clipId = ((meta['AuraGold|ClipId']) || ('smoke_' + f.name.replace(/\.wav$/i, ''))).trim();
+            var ev = { id: clipId, timestamp: Date.now() - added * 1000, lat: null, lng: null, acc: null,
+              durationMs: Math.round(dec.samples.length / dec.sr * 1000), sr: dec.sr, type: 'manual', source: ST_SOURCE,
+              label: label, confirmed: label === 'gold' ? true : null,
+              features: null, mlConfidence: null, mlTop: null, notes: (meta['AuraGold|SourceTitle'] || meta['Note'] || '').trim(),
+              photoIds: [], detScore: null, audioBlob: new Blob([f.bytes.slice()], { type: 'audio/wav' }) };
+            var old = events.filter(function (e) { return e.id === ev.id; })[0]; if (old) revoke(old);
+            events = events.filter(function (e) { return e.id !== ev.id; });
+            events.push(ev); added++;
+            return extractAndStore(ev, dec.samples).then(function () { return scoreAndStore(ev); }).then(function () { return evPut(ev); })
+              .then(function () { done++; setStProg('Loaded ' + done + ' of ' + total + '…'); });
+          });
+        }, Promise.resolve()).then(function () {
+          refreshCounts(); renderListIfOpen(); refreshClassifierUI(); setStProg('');
+          if (btn) btn.disabled = false;
+          toast('✅ Loaded ' + added + ' smoke-test clips' + (skipped ? ' (' + skipped + ' skipped)' : '') + ' — tap Train to test the pipeline.');
+          return added;
+        });
+      }).catch(function (e) {
+        setStProg(''); if (btn) btn.disabled = false;
+        try { console.warn('[v31] smoke-test load failed', e); } catch (x) {}
+        toast('Smoke-test load failed: ' + (e.message || e));
+        return 0;
+      });
+  }
+
+  function clearSmokeTest() {
+    var n = smokeCount();
+    if (!n) { toast('No smoke-test clips loaded'); return; }
+    window.AuraGold.confirmDelete({
+      title: 'Clear ' + n + ' smoke-test clip' + (n === 1 ? '' : 's') + '?',
+      message: 'Removes only events tagged source: smoke-test. Your own field + calibration clips are untouched.',
+      count: n,
+      onConfirm: function () {
+        var rm = events.filter(function (e) { return e.source === ST_SOURCE; });
+        rm.forEach(function (ev) { revoke(ev); if (ev._marker) audioLayer.removeLayer(ev._marker); evDel(ev.id); });
+        events = events.filter(function (e) { return e.source !== ST_SOURCE; });
+        refreshCounts(); renderListIfOpen(); refreshClassifierUI();
+        toast('🗑 Cleared ' + rm.length + ' smoke-test clips');
+      }
+    });
+  }
+
+  // ============================================================================
   // v26: on-device ML classifier — feature extraction (meyda worker) + tf.js model
   // Engineering note: we deliberately use a tf.js dense classifier over our OWN
   // meyda features rather than @tensorflow-models/speech-commands. speech-commands
@@ -4007,6 +4126,10 @@ var powerLayers = (function () {
       var valSet = idx.slice(0, nVal), trSet = idx.slice(nVal);
       function toXY(ids) { var X = ids.map(function (i) { return applyNorm(labeled[i].vec, norm); }); var Y = ids.map(function (i) { return LABELS.map(function (c) { return c === labeled[i].label ? 1 : 0; }); }); return { xs: tf.tensor2d(X), ys: tf.tensor2d(Y) }; }
       var tr = toXY(trSet), val = toXY(valSet), dim = labeled[0].vec.length, epochs = 40;
+      // v31: free the OLD model's layer-variable names before rebuilding. Without this, retraining
+      // after the app reopens (boot's loadSavedModel restored a model with saved names like
+      // dense_Dense1) throws "Variable ... already registered" when the fresh model reuses them.
+      if (model) { try { model.dispose(); } catch (e) {} model = null; }
       var m = buildModel(tf, dim);
       return m.fit(tr.xs, tr.ys, { epochs: epochs, batchSize: Math.min(16, trSet.length) || 1, shuffle: true, validationData: [val.xs, val.ys], callbacks: { onEpochEnd: function (e, logs) { if (onProgress) onProgress(e + 1, epochs, logs); } } }).then(function () {
         var predT = m.predict(val.xs), predsP = predT.argMax(1), truthsP = val.ys.argMax(1);
@@ -4086,6 +4209,7 @@ var powerLayers = (function () {
       } else trained.style.display = 'none';
     }
     var rescore = document.getElementById('mlRescoreBtn'); if (rescore) rescore.disabled = !model;
+    var stClr = document.getElementById('stClearBtn'); if (stClr) stClr.disabled = smokeCount() === 0;
     // auto-flag ML radio only available with a model
     var afMl = document.getElementById('afMl'); if (afMl) { afMl.disabled = !model; var lbl = afMl.closest('label'); if (lbl) lbl.style.opacity = model ? '1' : '0.5'; }
   }
@@ -4142,6 +4266,8 @@ var powerLayers = (function () {
     var tb = document.getElementById('mlTrainBtn'); if (tb) tb.addEventListener('click', doTrain);
     var rs = document.getElementById('mlRescoreBtn'); if (rs) rs.addEventListener('click', function () { rescoreAll(); });
     var del = document.getElementById('mlDeleteBtn'); if (del) del.addEventListener('click', function () { window.AuraGold.confirmDelete({ title: 'Delete the trained model?', message: 'Your labelled events are kept — you can retrain anytime.', onConfirm: function () { deleteModelNow().then(function () { events.forEach(function (ev) { ev.mlConfidence = null; ev.mlTop = null; evPut(ev); }); rerenderAllMarkers(); renderListIfOpen(); refreshClassifierUI(); toast('Model deleted'); }); } }); });
+    var stl = document.getElementById('stLoadBtn'); if (stl) stl.addEventListener('click', function () { if (window.confirm('Load 48 synthetic smoke-test clips (12 per class)? They are tagged source: smoke-test so you can clear them later. This is a pipeline wiring-check — not real detector audio.')) loadSmokeTest(); });
+    var stc = document.getElementById('stClearBtn'); if (stc) stc.addEventListener('click', clearSmokeTest);
     var cs = document.getElementById('calStartBtn'); if (cs) cs.addEventListener('click', startCalibration);
     var ce = document.getElementById('calEndBtn'); if (ce) ce.addEventListener('click', endCalibration);
     var cl = document.getElementById('calLabels'); if (cl) cl.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.getAttribute('data-l')) calLabel(b.getAttribute('data-l')); });
@@ -4386,6 +4512,8 @@ var powerLayers = (function () {
     _rescore: function () { return rescoreAll(); },
     _deleteModel: deleteModelNow,
     _scoreVec: function (vec) { return model ? inferVec(vec) : null; },
+    // ---- v31 smoke-test pack hooks ----
+    _loadSmokeTest: loadSmokeTest, _clearSmokeTest: clearSmokeTest, _smokeCount: smokeCount,
     // Seed N synthetic labelled events per class with SEPARABLE feature vectors (no audio) —
     // exercises train/persist/infer/UI deterministically in-browser without a mic.
     _seedSynthetic: function (perClass) {

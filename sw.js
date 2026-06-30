@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v30';
+const SHELL_VERSION = 'v31';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -40,7 +40,7 @@ const SHELL_VERSION = 'v30';
 // in every WAV, and ML-enriched ZIP export (events.csv + features_v1.json + model_v1.json). tf.js
 // (~1MB) + meyda (~40KB) precached below for offline training/inference. IndexedDB bumped to v4
 // (adds the `auragold_models` store + per-event features / label / source / mlConfidence fields).
-const SHELL_REV = 'v30';
+const SHELL_REV = 'v31';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -61,6 +61,9 @@ const SHELL_ASSETS = [
   // v29: Victoria powerline EMI overlay — 8,367 lines, 2.56 MB but ~0.37 MB gzipped. Precached so
   // both the ⚡ Powerlines layer and the Detection Window's nearest-powerline term work offline.
   './data/powerlines_vic.geojson',
+  // v31: smoke-test clip pack (48 synthetic GUANO-tagged WAVs, ~14.7 MB store-only ZIP).
+  // Precached so the ML-pipeline wiring-check ("📦 Load smoke-test clips") works offline.
+  './data/smoke-test-clips-v31.zip',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
