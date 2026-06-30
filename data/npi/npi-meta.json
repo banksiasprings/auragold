@@ -1,0 +1,99 @@
+{
+"version": "v32",
+"built": "2026-07-01",
+"dem": "AWS terrarium z12 (~30 m, SRTM-derived)",
+"lidar": false,
+"weights": {
+"dist_reef": 0.35,
+"workings": 0.25,
+"drainage": 0.15,
+"slope": 0.15,
+"bedrock": 0.1
+},
+"npiFloor": 6,
+"regions": [
+{
+"name": "Western goldfields",
+"bbox": [
+142.95,
+-37.6,
+145.15,
+-36.05
+]
+},
+{
+"name": "Chiltern-Eldorado",
+"bbox": [
+146.3,
+-36.42,
+146.72,
+-36.08
+]
+}
+],
+"minNativeZoom": 10,
+"maxNativeZoom": 12,
+"grid": {
+"zoom": 8,
+"x0": 58791,
+"y0": 39812,
+"cols": 687,
+"rows": 353,
+"planes": "top RGBA=[npi0-100, distReefScore*255, workingsCount, mask255]; bottom RGBA=[drainageScore*255, slopeDeg, bedrockScore*255, mask255]"
+},
+"limitations": [
+"NPI is a heuristic, not a prediction. Real-world success depends on terrain, ground conditions, equipment and technique.",
+"Elevation is SRTM-derived ~30 m terrain (no Victorian public LiDAR tile service exists yet) \u2014 slope, drainage and bedrock terms are coarse.",
+"Future versions will retrain on your confirmed gold events for personal calibration."
+],
+"spots": {
+"1": [
+"Mount Cole / Bayindeen",
+18.2
+],
+"2": [
+"Avoca / Pyrenees",
+47.3
+],
+"3": [
+"Tarnagulla / Waanyarra",
+38.1
+],
+"4": [
+"Talbot / Daisy Hill",
+10.0
+],
+"5": [
+"Heathcote / McIvor",
+48.9
+],
+"6": [
+"Whroo / Rushworth",
+18.2
+],
+"7": [
+"Inglewood / Kingower",
+50.3
+],
+"8": [
+"Hepburn / Sailors Ck",
+70.4
+],
+"9": [
+"Maldon / Muckleford",
+76.0
+],
+"10": [
+"WEDDERBURN (HEADLINE)",
+69.2
+],
+"11": [
+"Wombat / Bullarook",
+51.8
+],
+"12": [
+"Chiltern / Eldorado",
+19.9
+]
+}
+}

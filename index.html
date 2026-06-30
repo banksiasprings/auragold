@@ -446,6 +446,7 @@
   .au-ev .tag { font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; background:#eef; color:#447; }
   .au-ev .tag.gold { background:#fdf0c8; color:#7a5e0e; } .au-ev .tag.no { background:#fbe4e2; color:#8d2c22; }
   .au-ev .tag.auto { background:#fde9d6; color:#9a5a1e; } .au-ev .tag.cal { background:#eef3ff; color:#3a5; }
+  .au-det-badge { font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; background:#eaf1f7; color:#2f5a82; white-space:nowrap; }
   .au-ev audio { height:30px; flex:0 0 132px; max-width:132px; }
 
   /* ===== v26: ML classifier + calibration UI ===== */
@@ -456,6 +457,18 @@
   .ml-b { display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:10px; }
   .ml-b.good { background:#e3f6e3; color:#1f7a32; } .ml-b.warn { background:#fdeede; color:#9a5a1e; }
   .ml-b.mute { background:#eef0f2; color:#666; } .ml-b.unclear { background:#fff4cc; color:#8a6d12; }
+  .ml-b.xd { background:#fde7e7; color:#9a2c22; }
+  /* v32 NPI tap-to-explain popup */
+  .npi-tiles { image-rendering:auto; }
+  .npi-pop .leaflet-popup-content { margin:11px 13px; }
+  .npi-pop-in h3 { font-size:17px; }
+  .npi-bars { display:flex; flex-direction:column; gap:2px; margin:2px 0 4px; }
+  .npi-bar { display:flex; align-items:center; gap:6px; font-size:10.5px; color:#777; }
+  .npi-bar-l { flex:0 0 50px; }
+  .npi-bar-t { flex:1 1 auto; height:6px; background:#eee; border-radius:4px; overflow:hidden; }
+  .npi-bar-t i { display:block; height:100%; background:linear-gradient(90deg,#1a9850,#fdae61,#d73027); }
+  .npi-bar-v { flex:0 0 18px; text-align:right; font-variant-numeric:tabular-nums; color:#555; }
+  .npi-caveat { font-size:10px; color:#9a8; margin-top:7px; line-height:1.35; border-top:1px solid #eee; padding-top:5px; }
   .ag-audio-pop .ev-lbl-h { font-size:11px; font-weight:700; color:#555; margin:6px 0 4px; }
   .ag-audio-pop .ev-lbls { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
   .ag-audio-pop .ev-lbl { border:1.5px solid var(--lc); background:#fff; color:var(--lc); cursor:pointer; border-radius:7px;
@@ -493,7 +506,17 @@
   .ml-backfill { font-size:12px; color:#7a6a3a; background:#fbf6e6; border-radius:8px; padding:6px 10px; margin:4px 2px; }
   .ml-prog { margin:8px 2px; }
   .ml-prog-bar-wrap { height:10px; background:#eee; border-radius:6px; overflow:hidden; }
-  .ml-prog #mlProgBar { height:100%; width:0%; background:linear-gradient(90deg,#5b7,#caa53a); transition:width .2s; }
+  .ml-prog-bar-wrap > div { height:100%; width:0%; background:linear-gradient(90deg,#5b7,#caa53a); transition:width .2s; }
+  /* v32 per-combo classifier cards */
+  .ml-combos { display:flex; flex-direction:column; gap:8px; }
+  .ml-combo { border:1px solid #e7e0cf; border-radius:10px; padding:8px 10px; background:#fcfaf4; }
+  .ml-combo.trained { border-color:#bfe6bf; background:#f4fbf4; }
+  .ml-combo-h { font-size:13px; font-weight:700; color:#5a4f33; margin:0 0 2px; }
+  .ml-combo.trained .ml-combo-h { color:#1f7a32; }
+  .ml-combo-ok { color:#1f9a3a; }
+  .ml-combo .ml-counts { margin:2px 0; }
+  .ml-combo .ml-counts .mlc { font-size:11px; padding:2px 7px; }
+  .ml-combo .ag-act { margin-top:4px; }
   .ml-cm-wrap { margin:6px 2px 10px; overflow-x:auto; }
   .ml-cm { border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; margin:0 auto; }
   .ml-cm th, .ml-cm td { border:1px solid #e7e0cf; padding:5px 9px; text-align:center; min-width:30px; }
@@ -780,6 +803,31 @@
         <label class="au-row" style="display:block"><span style="display:block;margin-bottom:2px">Audio input device</span>
           <select id="auDevice" class="ag-select"><option value="">Default input</option></select></label>
         <p class="ag-note" style="margin:0 2px 6px">Pick your <b>USB-C audio adapter</b> — not the built-in phone mic. Names appear after you grant the mic once (Test capture).</p>
+        <div class="ml-sub">Detector setup</div>
+        <label class="au-row" style="display:block"><span style="display:block;margin-bottom:2px">Default detector</span>
+          <select id="auDetector" class="ag-select">
+            <option value="gold-monster-1000">Gold Monster 1000 — VLF 45 kHz (small / surface gold)</option>
+            <option value="gpx-6000">GPX 6000 — PI (deep / big nuggets, mineralised ground)</option>
+          </select></label>
+        <label class="au-row" id="auCoilRow" style="display:none"><span>GPX 6000 coil</span>
+          <select id="auCoil" class="ag-select" style="flex:1 1 auto">
+            <option value="11in-mono">11&Prime; Mono — default prospecting</option>
+            <option value="14in-dd">14&Prime; DD — deep / general</option>
+            <option value="17in">17&Prime; — very deep</option>
+          </select></label>
+        <p class="ag-note" style="margin:0 2px 6px">Every hit is tagged with this detector + coil so the Smart classifier can learn each one separately (their audio &amp; coverage differ).</p>
+        <label class="af-check"><input type="checkbox" id="auAskCapture"><span>Ask before starting capture <small>(confirm detector + coil each time you arm REC)</small></span></label>
+        <div id="auBacklog" class="st-pack" style="display:none;margin:6px 0 8px;padding:8px 10px;border:1px dashed #9bb3c9;border-radius:10px;background:rgba(37,99,235,.05)">
+          <p class="ag-note" style="margin:2px 2px 6px"><b id="auUntagged">0</b> earlier event(s) have no detector tag. Bulk-tag them once:</p>
+          <div class="au-row" style="margin-bottom:4px"><span>Tag all as</span>
+            <select id="auBulkDet" class="ag-select" style="flex:1 1 auto">
+              <option value="gold-monster-1000">Gold Monster 1000</option>
+              <option value="gpx-6000__11in-mono">GPX 6000 · 11&Prime; Mono</option>
+              <option value="gpx-6000__14in-dd">GPX 6000 · 14&Prime; DD</option>
+              <option value="gpx-6000__17in">GPX 6000 · 17&Prime;</option>
+            </select></div>
+          <button id="auBulkTagBtn" class="ag-act" type="button">🏷 Tag untagged events<span class="sub">One-time migration — sets the detector on every event missing one</span></button>
+        </div>
         <div class="ml-sub">Capture controls</div>
         <label class="af-check"><input type="checkbox" id="auAutoStart"><span>Start audio capture on app open <small>(default off — otherwise you tap REC to begin)</small></span></label>
         <label class="af-check"><input type="checkbox" id="auAutoResume"><span>Auto-resume audio on foreground after pause <small>(advanced · may clash with Dispatch)</small></span></label>
@@ -845,24 +893,16 @@
     <div class="ag-sec">
       <h3>🧠 Smart classifier</h3>
       <div class="ag-card">
-        <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">On-device classifier learns from your labels. Run Home Calibration with known gold + junk samples before the trip. All data stays on this device — nothing uploads.</p>
-        <div id="mlCounts" class="ml-counts"></div>
-        <p id="mlNeed" class="ag-note" style="margin:6px 2px">Need <b>≥10 examples per class</b> to train. Label events (calibration or in the field) until each class turns green.</p>
+        <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">On-device classifier learns from your labels. A <b>separate model is trained per detector + coil</b> (their audio &amp; ground coverage differ). Run Home Calibration with known gold + junk before the trip. All data stays on this device — nothing uploads.</p>
         <div id="mlBackfill" class="ml-backfill" style="display:none"></div>
         <div class="st-pack" style="margin:6px 0 10px;padding:8px 10px;border:1px dashed #c9b27a;border-radius:10px;background:rgba(202,165,58,.06)">
-          <p class="ag-note" style="margin:2px 2px 8px;font-style:italic">Pipeline smoke-test: load 48 <b>synthetic</b> clips (12 per class) to verify feature&nbsp;extraction → train → infer → export end-to-end before your trip. Not real detector audio — clear them when done.</p>
+          <p class="ag-note" style="margin:2px 2px 8px;font-style:italic">Pipeline smoke-test: load 48 <b>synthetic</b> clips (12 per class) to verify feature&nbsp;extraction → train → infer → export end-to-end before your trip. Not real detector audio — clear them when done. (They train the Gold Monster model.)</p>
           <button id="stLoadBtn" class="ag-act" type="button">📦 Load smoke-test clips<span class="sub">48 synthetic GUANO-tagged clips, tagged source: smoke-test</span></button>
           <button id="stClearBtn" class="ag-act" type="button" style="color:#b3261e" disabled>🗑 Clear smoke-test clips<span class="sub" style="color:#c98">Removes only source: smoke-test events — your own clips are untouched</span></button>
           <div id="stProg" class="ag-note" style="display:none;margin:6px 2px"></div>
         </div>
-        <button id="mlTrainBtn" class="ag-act" type="button" disabled>🧠 Train classifier<span class="sub">Trains a small neural net on your labelled clips · 80/20 validation split</span></button>
-        <div id="mlProg" class="ml-prog" style="display:none"><div class="ml-prog-bar-wrap"><div id="mlProgBar"></div></div><div id="mlProgTxt" class="ag-note"></div></div>
-        <div id="mlTrained" style="display:none">
-          <p id="mlTrainedTxt" class="ag-note" style="margin:8px 2px"></p>
-          <div id="mlConfusion" class="ml-cm-wrap"></div>
-          <button id="mlRescoreBtn" class="ag-act" type="button">🔁 Re-score all events<span class="sub">Run the current model over every saved clip</span></button>
-          <button id="mlDeleteBtn" class="ag-act" type="button" style="color:#b3261e">🗑 Delete model<span class="sub" style="color:#c98">Keeps your labelled clips — you can retrain anytime</span></button>
-        </div>
+        <div id="mlCombos" class="ml-combos"></div>
+        <button id="mlRescoreBtn" class="ag-act" type="button" style="margin-top:8px" disabled>🔁 Re-score all events<span class="sub">Run each event through its detector's model (cross-detector fallback when needed)</span></button>
       </div>
     </div>
 
@@ -1085,7 +1125,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v31';
+var APP_VERSION = 'v32';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1209,6 +1249,9 @@ const map = L.map("map", {
 // intrinsic fill/stroke ratios because CSS opacity multiplies).
 const PANE_Z = {
   "p-sat": 200, "p-osm": 201, "p-topo": 202, "p-mag": 203, "p-hill": 204,
+  // v32: NPI heatmap — above base maps, below the gold-data polygons/markers so reef
+  // outlines + occurrence nuggets read on top of the tint.
+  "p-npi": 290,
   "p-endow": 300, "p-minocc": 305, "p-gf": 310, "p-el": 315, "p-ml": 320,
   "p-fire": 325, "p-sf": 330, "p-rcl": 335,
   // v29: powerline EMI overlay — buffer halos directly beneath the colour-coded lines.
@@ -1350,6 +1393,128 @@ const layerEndowment = L.geoJSON(dataEndowment, {
                   { sticky: true, className: 'endowment-tt' });
   }
 });
+
+// --- 2b. 🎯 Nugget Potential Index (NPI) heatmap (v32) ---
+// Precomputed RdYlGn heatmap tiles (data/npi/{z}/{x}/{y}.png, z10-12 native, browser
+// upsamples 13-14) ranking nugget-prone micro-sites: distance-to-reef + workings density
+// + drainage convergence + favourable slope + bedrock-exposure proxy, from SRTM terrain.
+const NPI_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+const layerNPI = L.tileLayer('data/npi/{z}/{x}/{y}.png', {
+  pane: 'p-npi',
+  minNativeZoom: 10, maxNativeZoom: 12,
+  bounds: L.latLngBounds([[-37.62, 142.93], [-36.05, 146.74]]),  // union of the two NPI regions
+  errorTileUrl: NPI_BLANK,            // far/empty tiles 404 → render transparent, no broken icons
+  attribution: 'NPI heuristic — AuraGold (SRTM terrain + VicMine + GSV)',
+  className: 'npi-tiles'
+});
+
+// --- NPI tap-to-explain: load the meta + packed component grid, sample on map click ---
+(function npiExplain() {
+  var META = null, GRID = null, gridLoading = false;
+  function loadGrid() {
+    if (GRID || gridLoading) return;
+    gridLoading = true;
+    fetch('data/npi/npi-meta.json').then(function (r) { return r.json(); }).then(function (m) {
+      META = m;
+      return new Promise(function (res, rej) {
+        var img = new Image();
+        img.onload = function () {
+          var cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+          var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+          GRID = { w: img.width, h: img.height, data: cx.getImageData(0, 0, img.width, img.height).data };
+          res();
+        };
+        img.onerror = rej; img.src = 'data/npi/npi-grid.png';
+      });
+    }).catch(function (e) { gridLoading = false; try { console.warn('[v32] NPI grid load failed', e); } catch (x) {} });
+  }
+  // web-mercator pixel of a lng/lat at the grid's zoom
+  function lon2gp(lng, z) { return Math.floor((lng + 180) / 360 * 256 * Math.pow(2, z)); }
+  function lat2gp(lat, z) { var s = Math.sin(lat * Math.PI / 180); s = Math.min(Math.max(s, -0.9999), 0.9999); return Math.floor((0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 256 * Math.pow(2, z)); }
+  // nearest goldfield/endowment polygon name + whether the point is inside one
+  function nearestReef(lat, lng) {
+    var best = null, bestD = Infinity, inside = false, insideName = null;
+    function scan(fc) {
+      (fc.features || []).forEach(function (ft) {
+        var g = ft.geometry; if (!g) return;
+        var nm = (ft.properties && (ft.properties.name || ft.properties.key)) || 'reef';
+        var polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+        polys.forEach(function (poly) {
+          var ring = poly[0]; if (!ring) return;
+          if (pointInRing(lng, lat, ring)) { inside = true; insideName = nm; }
+          for (var i = 0; i < ring.length; i++) {
+            var dx = (ring[i][0] - lng) * Math.cos(lat * Math.PI / 180), dy = ring[i][1] - lat;
+            var d = dx * dx + dy * dy; if (d < bestD) { bestD = d; best = nm; }
+          }
+        });
+      });
+    }
+    if (typeof dataGoldfields !== 'undefined') scan(dataGoldfields);
+    if (typeof dataEndowment !== 'undefined') scan(dataEndowment);
+    return inside ? insideName : best;
+  }
+  function pointInRing(x, y, ring) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function band(npi) { return npi >= 66 ? ['high', '#d73027'] : npi >= 33 ? ['moderate', '#fdae61'] : ['low', '#1a9850']; }
+  function row(label, val) { return '<tr><td style="color:#666;padding:1px 8px 1px 0">' + label + '</td><td style="font-weight:600">' + val + '</td></tr>'; }
+  function showAt(latlng) {
+    if (!GRID || !META) { loadGrid(); return; }
+    var z = META.grid.zoom;
+    var col = lon2gp(latlng.lng, z) - META.grid.x0, r = lat2gp(latlng.lat, z) - META.grid.y0;
+    var inGrid = col >= 0 && col < META.grid.cols && r >= 0 && r < META.grid.rows;
+    var i = (r * GRID.w + col) * 4, j = ((META.grid.rows + r) * GRID.w + col) * 4, d = GRID.data;
+    var mask = inGrid ? d[i + 3] : 0;   // top-plane alpha = validity mask
+    if (!inGrid || mask === 0) {
+      L.popup({ maxWidth: 250, className: 'npi-pop' }).setLatLng(latlng)
+        .setContent('<div class="popup-spot"><div class="day" style="color:#777">🎯 Nugget Potential</div><div class="desc">No NPI coverage here — outside the Victorian Goldfields tile region (or negligible potential).</div></div>').openOn(map);
+      return;
+    }
+    var npi = d[i], distScore = d[i + 1] / 255, workings = d[i + 2];
+    var drainScore = d[j] / 255, slopeDeg = d[j + 1], bedScore = d[j + 2] / 255;
+    var slopeScore = Math.max(0, 1 - Math.abs((slopeDeg - 17.5) / 17.5));
+    var distM = Math.round((1 - distScore) * 1000);
+    var bd = band(npi), reef = nearestReef(latlng.lat, latlng.lng);
+    var w = META.weights;
+    var breakdown =
+      row('Distance to reef', (distScore > 0 ? '~' + distM + ' m' : '> 1 km') + (reef ? ' <span style="color:#999">(' + reef.replace(/ GOLDFIELD| ZONE/i, '') + ')</span>' : '')) +
+      row('Workings density', workings + ' shaft' + (workings === 1 ? '' : 's') + ' / 500 m') +
+      row('Drainage', drainScore >= 0.55 ? 'gully confluence' : drainScore >= 0.3 ? 'minor channel' : 'ridge / divide') +
+      row('Slope', slopeDeg + '° ' + (slopeScore >= 0.6 ? '<span style="color:#1a9850">(favourable)</span>' : slopeScore >= 0.3 ? '(fair)' : '<span style="color:#999">(poor)</span>')) +
+      row('Bedrock exposure', bedScore >= 0.55 ? 'high' : bedScore >= 0.3 ? 'moderate' : 'low');
+    var contrib =
+      '<div style="font-size:10.5px;color:#888;margin:6px 0 2px">Weighted contribution to score</div>' +
+      '<div class="npi-bars">' +
+      npiBar('Reef', w.dist_reef * distScore) + npiBar('Workings', w.workings * Math.min(1, workings / 5)) +
+      npiBar('Drainage', w.drainage * drainScore) + npiBar('Slope', w.slope * slopeScore) + npiBar('Bedrock', w.bedrock * bedScore) +
+      '</div>';
+    var html = '<div class="popup-spot npi-pop-in">' +
+      '<div class="day" style="color:#a06600">🎯 Nugget Potential' + (reef ? ' — ' + reef.replace(/ GOLDFIELD| ZONE/i, '').replace(/^(\w)(.*)/, function (_, a, b) { return a + b.toLowerCase(); }) : '') + '</div>' +
+      '<h3 style="margin:2px 0 4px"><span style="color:' + bd[1] + '">NPI ' + npi + '</span> <span style="font-size:12px;color:#777">(' + bd[0] + ')</span></h3>' +
+      '<table style="font-size:12px;border-collapse:collapse">' + breakdown + '</table>' + contrib +
+      '<div class="npi-caveat">Heuristic, not a prediction — depends on terrain, ground, gear &amp; technique. Elevation is SRTM ~30 m (no public Vic LiDAR tiles yet).</div>' +
+      '</div>';
+    L.popup({ maxWidth: 268, minWidth: 230, className: 'npi-pop' }).setLatLng(latlng).setContent(html).openOn(map);
+  }
+  function npiBar(label, frac) {
+    var pct = Math.round(frac / 0.35 * 100);  // scale vs the largest single weight for visual range
+    return '<div class="npi-bar"><span class="npi-bar-l">' + label + '</span><span class="npi-bar-t"><i style="width:' + Math.min(100, pct) + '%"></i></span><span class="npi-bar-v">' + Math.round(frac * 100) + '</span></div>';
+  }
+  // Load the grid as soon as the layer is turned on; sample on map click while it's on.
+  layerNPI.on('add', loadGrid);
+  map.on('click', function (e) {
+    if (!map.hasLayer(layerNPI)) return;
+    var tg = e.originalEvent && e.originalEvent.target;        // let reef-polygon clicks open their own popup
+    if (tg && tg.tagName && tg.tagName.toLowerCase() === 'path') return;
+    showAt(e.latlng);
+  });
+  window.AuraGold = window.AuraGold || {}; window.AuraGold.npi = { _showAt: showAt, _load: loadGrid, _meta: function () { return META; } };
+})();
 
 // --- 3. Active Exploration Licences (EL) - red dashed outline ---
 const layerEL = L.geoJSON(dataEL, {
@@ -2768,6 +2933,7 @@ var powerLayers = (function () {
     { k:'mag',  pane:'p-mag',  lyr:layerMag,         name:'Magnetic-RTP (GA)',         sw:'linear-gradient(90deg,#222,#bbb,#fff)', on:false, op:60 },
     { k:'hill', pane:'p-hill', lyr:layerHill,        name:'Hillshade',                 sw:'linear-gradient(135deg,#6b6b6b,#e8e8e8)', on:false, op:60 },
     { grp:'Gold data' },
+    { k:'npi',  pane:'p-npi',  lyr:layerNPI,        name:'🎯 Nugget Potential (heatmap)', sw:'linear-gradient(90deg,#1a9850,#fee08b,#d73027)', on:false, op:60 },
     { k:'endow', pane:'p-endow', lyr:layerEndowment, name:'1+ Moz Au endowment zones', sw:'#ffd54a', on:true,  op:35 },
     { k:'minocc',pane:'p-minocc',lyr:layerMinOcc,    name:'Mineral occurrences (gold)', sw:'icons/nugget-marker.png', img:true, on:true, op:100 },
     { k:'gf',   pane:'p-gf',   lyr:layerGoldfields,  name:'Goldfield boundaries',      sw:'#b91c1c', on:false, op:60 },
@@ -3360,7 +3526,40 @@ var powerLayers = (function () {
   if (typeof acfg.autoResume !== 'boolean') acfg.autoResume = false; // re-arm when app returns to foreground
   if (acfg.recPos !== 'tl' && acfg.recPos !== 'br' && acfg.recPos !== 'menu') acfg.recPos = 'br';
   if (typeof acfg.volToggle !== 'boolean') acfg.volToggle = false;   // volume-down long-press toggles REC
+  // v32 dual-detector tagging — every event records which detector + coil swung it, so the
+  // classifier can train per (detector, coil) combo (their audio + ground coverage differ).
+  if (acfg.detector !== 'gold-monster-1000' && acfg.detector !== 'gpx-6000') acfg.detector = 'gold-monster-1000'; // Steven swings the Monster more
+  if (['11in-mono', '14in-dd', '17in'].indexOf(acfg.coil) < 0) acfg.coil = '11in-mono';  // GPX 6000 default coil
+  if (typeof acfg.askBeforeCapture !== 'boolean') acfg.askBeforeCapture = false;  // confirm detector+coil when arming
   function saveCfg() { try { localStorage.setItem(AKEY, JSON.stringify(acfg)); } catch (e) {} }
+
+  // ---- v32 detector + coil model ----
+  var DETECTORS = {
+    'gold-monster-1000': { label: 'Gold Monster 1000', short: 'Monster', fixedCoil: true },
+    'gpx-6000':          { label: 'GPX 6000',          short: 'GPX',     fixedCoil: false }
+  };
+  var COILS = { '11in-mono': '11" Mono', '14in-dd': '14" DD', '17in': '17"' };
+  // The (detector,coil) combos a classifier can be trained for. Gold Monster is fixed-coil.
+  var COMBOS = [
+    { key: 'gold-monster-1000',   det: 'gold-monster-1000', coil: null,         label: 'Gold Monster 1000' },
+    { key: 'gpx-6000__11in-mono', det: 'gpx-6000',          coil: '11in-mono',  label: 'GPX 6000 · 11" Mono' },
+    { key: 'gpx-6000__14in-dd',   det: 'gpx-6000',          coil: '14in-dd',    label: 'GPX 6000 · 14" DD' },
+    { key: 'gpx-6000__17in',      det: 'gpx-6000',          coil: '17in',       label: 'GPX 6000 · 17"' }
+  ];
+  var DEFAULT_COMBO = 'gold-monster-1000';
+  // Untagged (legacy v24+) events fold into the default Monster combo until bulk-tagged.
+  function comboKeyFor(ev) {
+    var det = (ev && ev.detector) || 'gold-monster-1000';
+    if (det === 'gpx-6000') return 'gpx-6000__' + ((ev && ev.coil) || '11in-mono');
+    return 'gold-monster-1000';
+  }
+  function comboLabel(key) { for (var i = 0; i < COMBOS.length; i++) if (COMBOS[i].key === key) return COMBOS[i].label; return key; }
+  function detBadge(ev) {
+    var det = (ev && ev.detector) || null; if (!det) return '';
+    var d = DETECTORS[det]; if (!d) return '';
+    var txt = d.short + (det === 'gpx-6000' && ev.coil ? ' ' + (COILS[ev.coil] || ev.coil) : '');
+    return '<span class="au-det-badge" title="' + d.label + (ev.coil ? ' · ' + (COILS[ev.coil] || ev.coil) : '') + '">🛰 ' + txt + '</span>';
+  }
 
   // ---- IndexedDB store helpers (reuse the shared connection) ----
   function db() { return AG.openDB ? AG.openDB() : Promise.reject(new Error('no-db')); }
@@ -3405,6 +3604,8 @@ var powerLayers = (function () {
     if (meta.label) lines.push('AuraGold|Label: ' + meta.label);
     if (meta.source) lines.push('AuraGold|Source: ' + meta.source);
     if (meta.type) lines.push('AuraGold|HitType: ' + meta.type);
+    if (meta.detector) lines.push('AuraGold|Detector: ' + meta.detector);   // v32
+    if (meta.coil) lines.push('AuraGold|Coil: ' + meta.coil);               // v32
     return lines.join('\n');
   }
 
@@ -3599,7 +3800,7 @@ var powerLayers = (function () {
     if (!fresh) return;
     saveEvent('auto');
     // ml + combined: tag the just-saved event so scoreAndStore discards it if gold confidence is low
-    if (mode === 'ml' && model && acfg.mlCombined) { var ev = events[events.length - 1]; if (ev) ev._autoMlGate = acfg.mlThreshold; }
+    if (mode === 'ml' && hasAnyModel() && acfg.mlCombined) { var ev = events[events.length - 1]; if (ev) ev._autoMlGate = acfg.mlThreshold; }
   }
 
   // ---- events model ----
@@ -3638,9 +3839,11 @@ var powerLayers = (function () {
   function mlBadgeHTML(ev) {
     var ml = mlTopOf(ev); if (!ml) return '';
     var pct = Math.round(ml.conf * 100), m = LABEL_META[ml.cls];
-    if (ml.conf < 0.6) return '<span class="ml-b unclear">❓ ' + pct + '% UNCLEAR</span>';
+    // v32: warn when a different detector's model scored this (no model for its own combo yet).
+    var xd = ev.mlCrossDetector ? ' <span class="ml-b xd" title="Scored with the ' + comboLabel(ev.mlModelCombo) + ' model — no model trained for this event\'s detector yet">⚠ cross-detector</span>' : '';
+    if (ml.conf < 0.6) return '<span class="ml-b unclear">❓ ' + pct + '% UNCLEAR</span>' + xd;
     var tone = ml.cls === 'gold' ? 'good' : ml.cls === 'nothing' ? 'mute' : 'warn';
-    return '<span class="ml-b ' + tone + '">' + m.e + ' ' + pct + '% ' + m.t + '</span>';
+    return '<span class="ml-b ' + tone + '">' + m.e + ' ' + pct + '% ' + m.t + '</span>' + xd;
   }
   function addMarker(ev) {
     if (ev.lat == null || ev.lng == null) return;
@@ -3695,7 +3898,8 @@ var powerLayers = (function () {
   // GUANO metadata block for an event's WAV (embeds GPS + label + source for portability).
   function guanoFor(ev) {
     return { timestamp: ev.timestamp, lat: ev.lat, lng: ev.lng, durationMs: ev.durationMs, sr: ev.sr,
-      filename: 'clip_' + ev.id + '.wav', note: ev.notes || '', label: ev.label || '', source: ev.source || 'field', type: ev.type };
+      filename: 'clip_' + ev.id + '.wav', note: ev.notes || '', label: ev.label || '', source: ev.source || 'field', type: ev.type,
+      detector: ev.detector || '', coil: ev.coil || '' };
   }
 
   function saveEvent(type, opts) {
@@ -3708,10 +3912,13 @@ var powerLayers = (function () {
     var samples = snapshot(snapSec);
     var dur = samples ? Math.round(samples.length / sampleRate * 1000) : 0;
     var fx = fixAt(ts - Math.floor(dur / 2));
+    var det = opts.detector || acfg.detector;
+    var coil = det === 'gpx-6000' ? (opts.coil || acfg.coil) : null;
     var ev = { id: uid(), timestamp: ts, lat: fx ? fx.lat : null, lng: fx ? fx.lng : null, acc: fx ? fx.acc : null,
       durationMs: dur, sr: sampleRate, type: type, source: opts.source || 'field',
       label: opts.label || null, confirmed: opts.label === 'gold' ? true : null,
-      features: null, mlConfidence: null, mlTop: null, notes: '', photoIds: [], detScore: null };
+      detector: det, coil: coil,   // v32: which detector + coil swung this hit
+      features: null, mlConfidence: null, mlTop: null, mlModelCombo: null, notes: '', photoIds: [], detScore: null };
     // v29: stamp the detection-window score at capture, so post-trip you can correlate
     // "did the score predict where the gold was?" (the feedback loop that personalises the model).
     try { if (fx && window.AuraGold && window.AuraGold.detection) ev.detScore = window.AuraGold.detection.scoreAt(fx.lat, fx.lng, ts); } catch (e) {}
@@ -3780,7 +3987,7 @@ var powerLayers = (function () {
       var detChip = (ev.detScore != null) ? ' <span class="au-det" title="Detection-window score when this was captured">🌙 ' + ev.detScore + '</span>' : '';
       var row = document.createElement('div'); row.className = 'au-ev';
       row.innerHTML = '<span class="e">' + (lab ? LABEL_META[lab].e : '🎵') + '</span>' +
-        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + detChip + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
+        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + ' ' + detBadge(ev) + detChip + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
       if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'none'; au.src = blobURL(ev); row.appendChild(au); }
       row.querySelector('.m').addEventListener('click', function () { if (ev.lat != null) { aOpen(false); map.setView([ev.lat, ev.lng], Math.max(map.getZoom(), 15)); if (ev._marker) ev._marker.openPopup(); } });
       el.appendChild(row);
@@ -3792,16 +3999,16 @@ var powerLayers = (function () {
     var list = events.slice().sort(function (a, b) { return a.timestamp - b.timestamp; });
     if (!list.length) { toast('No audio events to export'); return; }
     toast('Building export…');
-    var rows = ['id,timestamp_iso,lat,lng,accuracy_m,type,source,label,duration_ms,sample_rate,audio_file,ml_top_class,ml_top_confidence,ml_all_confidences,model_version,detection_score,notes'];
-    var featureExport = { v: 1, modelVersion: modelMeta ? modelMeta.modelVersion : null, events: [] };
+    var rows = ['id,timestamp_iso,lat,lng,accuracy_m,type,source,label,detector,coil,duration_ms,sample_rate,audio_file,ml_top_class,ml_top_confidence,ml_all_confidences,model_combo,detection_score,notes'];
+    var featureExport = { v: 1, modelVersion: MODEL_VERSION, events: [] };
     var jobs = list.map(function (ev, i) {
       var fname = 'clip_' + String(i + 1) + '_' + ev.id + '.wav';
       var lab = effLabel(ev) || '';
       var ml = mlTopOf(ev);
       var allConf = ev.mlConfidence ? LABELS.map(function (k) { return k + ':' + (ev.mlConfidence[k] != null ? ev.mlConfidence[k].toFixed(3) : '0'); }).join(' ') : '';
       rows.push([ev.id, isoTs(ev.timestamp), ev.lat != null ? ev.lat : '', ev.lng != null ? ev.lng : '', ev.acc != null ? Math.round(ev.acc) : '',
-        ev.type, ev.source || 'field', lab, ev.durationMs, ev.sr || sampleRate, ev.audioBlob ? fname : '',
-        ml ? ml.cls : '', ml ? ml.conf.toFixed(3) : '', csvCell(allConf), ev.mlModelVersion || '', ev.detScore != null ? ev.detScore : '', csvCell(ev.notes)].join(','));
+        ev.type, ev.source || 'field', lab, ev.detector || '', ev.coil || '', ev.durationMs, ev.sr || sampleRate, ev.audioBlob ? fname : '',
+        ml ? ml.cls : '', ml ? ml.conf.toFixed(3) : '', csvCell(allConf), ev.mlModelCombo || ev.mlModelVersion || '', ev.detScore != null ? ev.detScore : '', csvCell(ev.notes)].join(','));
       if (ev.features && ev.features.vec) featureExport.events.push({ id: ev.id, label: lab || null, source: ev.source || 'field', features: ev.features });
       return ev.audioBlob ? ev.audioBlob.arrayBuffer().then(function (ab) { return { name: fname, data: new Uint8Array(ab) }; }) : Promise.resolve(null);
     });
@@ -3810,11 +4017,11 @@ var powerLayers = (function () {
       files.push({ name: 'events.csv', data: new TextEncoder().encode(rows.join('\n')) });
       featureExport.featureNames = FEAT_NAMES;
       files.push({ name: 'features_v1.json', data: new TextEncoder().encode(JSON.stringify(featureExport)) });
-      return exportModelJSON().then(function (mj) {
-        if (mj) files.push({ name: 'model_v1.json', data: new TextEncoder().encode(mj) });
+      return exportModelsJSON().then(function (mj) {
+        if (mj) files.push({ name: 'models_v2.json', data: new TextEncoder().encode(mj) });
         downloadBlob('auragold-audio-' + Date.now() + '.zip', buildZip(files));
         var nClips = files.filter(function (f) { return /\.wav$/.test(f.name); }).length;
-        toast('⤓ Exported ' + nClips + ' clips' + (mj ? ' + model' : ''));
+        toast('⤓ Exported ' + nClips + ' clips' + (mj ? ' + model(s)' : ''));
       });
     }).catch(function (e) { try { console.warn('[v26] export failed', e); } catch (x) {} toast('Export failed'); });
   }
@@ -4046,10 +4253,12 @@ var powerLayers = (function () {
       .catch(function (e) { try { console.warn('[v26] feature extract failed', e); } catch (x) {} });
   }
   function scoreAndStore(ev) {
-    if (!model || !ev.features || !ev.features.vec) return Promise.resolve();
-    var r; try { r = inferVec(ev.features.vec); } catch (e) { return Promise.resolve(); }
+    if (!ev.features || !ev.features.vec) return Promise.resolve();
+    var pick = modelForEvent(ev); if (!pick) return Promise.resolve();
+    var r; try { r = inferVec(ev.features.vec, pick.rec); } catch (e) { return Promise.resolve(); }
     if (ev._autoMlGate != null && (r.all.gold || 0) < ev._autoMlGate) { removeEvent(ev); return Promise.resolve(); }
-    ev.mlConfidence = r.all; ev.mlTop = { cls: r.topClass, conf: r.topConf }; ev.mlModelVersion = MODEL_VERSION;
+    ev.mlConfidence = r.all; ev.mlTop = { cls: r.topClass, conf: r.topConf };
+    ev.mlModelCombo = pick.combo; ev.mlCrossDetector = pick.cross; ev.mlModelVersion = MODEL_VERSION;
     rerenderMarker(ev); renderListIfOpen(); refreshClassifierUI();
     return evPut(ev);
   }
@@ -4078,8 +4287,22 @@ var powerLayers = (function () {
   var tfP = null;
   function ensureTF() { if (window.tf) return Promise.resolve(window.tf); if (tfP) return tfP; tfP = loadScript(TF_URL).then(function () { return window.tf; }); return tfP; }
 
-  // ---- classifier core ----
-  var model = null, modelMeta = null, modelNorm = null, mlTraining = false;
+  // ---- classifier core (v32: one model per (detector, coil) combo) ----
+  // models[comboKey] = { model, meta, norm }. The default Monster combo keeps the
+  // legacy single-model storage id so any model trained pre-v32 loads unchanged.
+  var models = {}, mlTraining = false, mlTrainingCombo = null;
+  function modelStorageId(combo) { return combo === DEFAULT_COMBO ? MODEL_ID : MODEL_ID + '__' + combo; }
+  function hasAnyModel() { for (var k in models) if (models[k] && models[k].model) return true; return false; }
+  function currentCombo() { return comboKeyFor({ detector: acfg.detector, coil: acfg.coil }); }
+  // Pick the model to score an event with: exact combo, else cross-detector fallback to the
+  // default Monster model (flagged), else any trained model (flagged).
+  function modelForEvent(ev) {
+    var ck = comboKeyFor(ev);
+    if (models[ck] && models[ck].model) return { combo: ck, rec: models[ck], cross: false };
+    if (models[DEFAULT_COMBO] && models[DEFAULT_COMBO].model) return { combo: DEFAULT_COMBO, rec: models[DEFAULT_COMBO], cross: ck !== DEFAULT_COMBO };
+    for (var k in models) if (models[k] && models[k].model) return { combo: k, rec: models[k], cross: true };
+    return null;
+  }
   function computeNorm(vectors) {
     var dim = vectors[0].length, n = vectors.length, mean = [], std = [], i;
     for (i = 0; i < dim; i++) { mean[i] = 0; std[i] = 0; }
@@ -4099,11 +4322,11 @@ var powerLayers = (function () {
     m.compile({ optimizer: tf.train.adam(0.01), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
     return m;
   }
-  function inferVec(vec) {
+  function inferVec(vec, rec) {
     var tf = window.tf;
     return tf.tidy(function () {
-      var x = tf.tensor2d([applyNorm(vec, modelNorm)]);
-      var arr = model.predict(x).dataSync();
+      var x = tf.tensor2d([applyNorm(vec, rec.norm)]);
+      var arr = rec.model.predict(x).dataSync();
       var all = {}, top = 0;
       for (var i = 0; i < LABELS.length; i++) { all[LABELS[i]] = arr[i]; if (arr[i] > arr[top]) top = i; }
       return { all: all, topClass: LABELS[top], topConf: arr[top] };
@@ -4112,11 +4335,12 @@ var powerLayers = (function () {
   function ab2b64(buf) { var b = new Uint8Array(buf), s = '', ch = 0x8000; for (var i = 0; i < b.length; i += ch) s += String.fromCharCode.apply(null, b.subarray(i, i + ch)); return btoa(s); }
   function b642ab(b64) { var bin = atob(b64), n = bin.length, b = new Uint8Array(n); for (var i = 0; i < n; i++) b[i] = bin.charCodeAt(i); return b.buffer; }
 
-  function trainNow(onProgress) {
-    var labeled = events.filter(function (ev) { return effLabel(ev) && ev.features && ev.features.vec; }).map(function (ev) { return { vec: ev.features.vec, label: effLabel(ev) }; });
+  function trainNow(combo, onProgress) {
+    combo = combo || DEFAULT_COMBO;
+    var labeled = events.filter(function (ev) { return effLabel(ev) && ev.features && ev.features.vec && comboKeyFor(ev) === combo; }).map(function (ev) { return { vec: ev.features.vec, label: effLabel(ev) }; });
     var counts = { gold: 0, junk: 0, hotRock: 0, nothing: 0 }; labeled.forEach(function (s) { counts[s.label]++; });
     var lacking = LABELS.filter(function (k) { return counts[k] < MIN_PER_CLASS; });
-    if (lacking.length) return Promise.reject(new Error('Need ≥' + MIN_PER_CLASS + ' per class. Short on: ' + lacking.map(function (k) { return LABEL_META[k].t; }).join(', ')));
+    if (lacking.length) return Promise.reject(new Error('Need ≥' + MIN_PER_CLASS + ' per class for ' + comboLabel(combo) + '. Short on: ' + lacking.map(function (k) { return LABEL_META[k].t; }).join(', ')));
     return ensureTF().then(function (tf) {
       var norm = computeNorm(labeled.map(function (s) { return s.vec; }));
       var seed = 12345; function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
@@ -4127,9 +4351,10 @@ var powerLayers = (function () {
       function toXY(ids) { var X = ids.map(function (i) { return applyNorm(labeled[i].vec, norm); }); var Y = ids.map(function (i) { return LABELS.map(function (c) { return c === labeled[i].label ? 1 : 0; }); }); return { xs: tf.tensor2d(X), ys: tf.tensor2d(Y) }; }
       var tr = toXY(trSet), val = toXY(valSet), dim = labeled[0].vec.length, epochs = 40;
       // v31: free the OLD model's layer-variable names before rebuilding. Without this, retraining
-      // after the app reopens (boot's loadSavedModel restored a model with saved names like
+      // after the app reopens (boot's loadSavedModels restored a model with saved names like
       // dense_Dense1) throws "Variable ... already registered" when the fresh model reuses them.
-      if (model) { try { model.dispose(); } catch (e) {} model = null; }
+      var prev = models[combo];
+      if (prev && prev.model) { try { prev.model.dispose(); } catch (e) {} models[combo] = null; }
       var m = buildModel(tf, dim);
       return m.fit(tr.xs, tr.ys, { epochs: epochs, batchSize: Math.min(16, trSet.length) || 1, shuffle: true, validationData: [val.xs, val.ys], callbacks: { onEpochEnd: function (e, logs) { if (onProgress) onProgress(e + 1, epochs, logs); } } }).then(function () {
         var predT = m.predict(val.xs), predsP = predT.argMax(1), truthsP = val.ys.argMax(1);
@@ -4139,36 +4364,47 @@ var powerLayers = (function () {
           var correct = 0; for (var k = 0; k < preds.length; k++) { conf[truths[k]][preds[k]]++; if (preds[k] === truths[k]) correct++; }
           var valAcc = preds.length ? correct / preds.length : 0;
           tf.dispose([tr.xs, tr.ys, val.xs, val.ys, predT, predsP, truthsP]);
-          if (model) { try { model.dispose(); } catch (e) {} }
-          model = m; modelNorm = norm;
-          modelMeta = { modelVersion: MODEL_VERSION, trainedAt: Date.now(), valAcc: valAcc, confusion: conf, nTrain: trSet.length, nVal: valSet.length, dim: dim, perClass: counts };
-          return persistModel(modelMeta, m, norm).then(function () { return modelMeta; });
+          var meta = { modelVersion: MODEL_VERSION, combo: combo, trainedAt: Date.now(), valAcc: valAcc, confusion: conf, nTrain: trSet.length, nVal: valSet.length, dim: dim, perClass: counts };
+          models[combo] = { model: m, meta: meta, norm: norm };
+          return persistModel(combo, meta, m, norm).then(function () { return meta; });
         });
       });
     });
   }
-  function persistModel(meta, m, norm) {
+  function persistModel(combo, meta, m, norm) {
     return ensureTF().then(function (tf) {
       var art = null;
       return m.save(tf.io.withSaveHandler(function (a) { art = a; return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } }; })).then(function () {
-        return modelPut({ id: MODEL_ID, modelVersion: MODEL_VERSION, topology: art.modelTopology, weightSpecs: art.weightSpecs, weightDataB64: ab2b64(art.weightData), norm: { mean: norm.mean, std: norm.std }, classes: LABELS, featureNames: FEAT_NAMES, meta: meta });
+        return modelPut({ id: modelStorageId(combo), combo: combo, modelVersion: MODEL_VERSION, topology: art.modelTopology, weightSpecs: art.weightSpecs, weightDataB64: ab2b64(art.weightData), norm: { mean: norm.mean, std: norm.std }, classes: LABELS, featureNames: FEAT_NAMES, meta: meta });
       });
     });
   }
-  function loadSavedModel() {
-    return modelGet(MODEL_ID).then(function (rec) {
-      if (!rec) return null;
-      return ensureTF().then(function (tf) {
-        return tf.loadLayersModel(tf.io.fromMemory({ modelTopology: rec.topology, weightSpecs: rec.weightSpecs, weightData: b642ab(rec.weightDataB64) })).then(function (m) {
-          model = m; modelMeta = rec.meta; modelNorm = { mean: rec.norm.mean, std: rec.norm.std }; return rec;
-        });
-      });
-    }).catch(function (e) { try { console.warn('[v26] model load failed', e); } catch (x) {} return null; });
+  function loadSavedModels() {
+    return ensureTF().then(function (tf) {
+      return Promise.all(COMBOS.map(function (c) {
+        return modelGet(modelStorageId(c.key)).then(function (rec) {
+          if (!rec) return null;
+          return tf.loadLayersModel(tf.io.fromMemory({ modelTopology: rec.topology, weightSpecs: rec.weightSpecs, weightData: b642ab(rec.weightDataB64) })).then(function (m) {
+            models[c.key] = { model: m, meta: rec.meta, norm: { mean: rec.norm.mean, std: rec.norm.std } };
+          }).catch(function () {});
+        }).catch(function () { return null; });
+      }));
+    }).catch(function (e) { try { console.warn('[v32] model load failed', e); } catch (x) {} return null; });
   }
-  function exportModelJSON() { return modelGet(MODEL_ID).then(function (rec) { return rec ? JSON.stringify(rec) : null; }).catch(function () { return null; }); }
-  function deleteModelNow() { if (model) { try { model.dispose(); } catch (e) {} } model = null; modelMeta = null; modelNorm = null; return modelDel(MODEL_ID); }
+  function exportModelsJSON() {
+    return Promise.all(COMBOS.map(function (c) { return modelGet(modelStorageId(c.key)).catch(function () { return null; }); })).then(function (recs) {
+      var out = {}; recs.forEach(function (rec, i) { if (rec) out[COMBOS[i].key] = rec; });
+      return Object.keys(out).length ? JSON.stringify({ v: 2, models: out }) : null;
+    }).catch(function () { return null; });
+  }
+  function deleteModelNow(combo) {
+    combo = combo || DEFAULT_COMBO;
+    if (models[combo] && models[combo].model) { try { models[combo].model.dispose(); } catch (e) {} }
+    delete models[combo];
+    return modelDel(modelStorageId(combo));
+  }
   function rescoreAll() {
-    if (!model) { toast('No trained model yet'); return Promise.resolve(0); }
+    if (!hasAnyModel()) { toast('No trained model yet'); return Promise.resolve(0); }
     var todo = events.filter(function (ev) { return ev.features && ev.features.vec; });
     if (!todo.length) { toast('No events with features to score'); return Promise.resolve(0); }
     return todo.reduce(function (p, ev) { return p.then(function () { return scoreAndStore(ev); }); }, Promise.resolve())
@@ -4180,9 +4416,9 @@ var powerLayers = (function () {
   function modelGet(id) { return db().then(function (d) { return new Promise(function (res, rej) { var tx = d.transaction(S_MODELS, 'readonly'); var rq = tx.objectStore(S_MODELS).get(id); rq.onsuccess = function () { res(rq.result || null); }; rq.onerror = function () { rej(rq.error); }; }); }); }
   function modelDel(id) { return db().then(function (d) { return new Promise(function (res, rej) { var tx = d.transaction(S_MODELS, 'readwrite'); tx.objectStore(S_MODELS).delete(id); tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); }; }); }); }
 
-  // ---- Smart classifier UI ----
-  function renderConfusion(conf) {
-    var el = document.getElementById('mlConfusion'); if (!el || !conf) return;
+  // ---- Smart classifier UI (v32: one card per detector+coil combo) ----
+  function renderConfusionInto(elId, conf) {
+    var el = document.getElementById(elId); if (!el || !conf) return;
     var h = '<table class="ml-cm"><tr><th></th>' + LABELS.map(function (k) { return '<th title="predicted ' + LABEL_META[k].t + '">' + LABEL_META[k].e + '</th>'; }).join('') + '</tr>';
     conf.forEach(function (row, i) {
       h += '<tr><th title="actual ' + LABEL_META[LABELS[i]].t + '">' + LABEL_META[LABELS[i]].e + '</th>' + row.map(function (v, j) { return '<td class="' + (i === j ? 'diag' : (v ? 'off' : '')) + '">' + v + '</td>'; }).join('') + '</tr>';
@@ -4190,42 +4426,49 @@ var powerLayers = (function () {
     h += '</table><div class="ml-cm-key">rows = actual · cols = predicted · diagonal = correct</div>';
     el.innerHTML = h;
   }
+  function comboCounts(combo) {
+    var o = { gold: 0, junk: 0, hotRock: 0, nothing: 0, total: 0 };
+    events.forEach(function (ev) { if (comboKeyFor(ev) !== combo) return; var l = effLabel(ev); if (l && o[l] != null) { o[l]++; o.total++; } });
+    return o;
+  }
   function refreshClassifierUI() {
-    var c = labelCounts();
-    var cntEl = document.getElementById('mlCounts');
-    if (cntEl) cntEl.innerHTML = LABELS.map(function (k) { var ok = c[k] >= MIN_PER_CLASS; return '<span class="mlc' + (ok ? ' ok' : '') + '">' + LABEL_META[k].e + ' ' + LABEL_META[k].t + ': <b>' + c[k] + '</b></span>'; }).join('');
-    var ready = LABELS.every(function (k) { return c[k] >= MIN_PER_CLASS; });
-    var trainBtn = document.getElementById('mlTrainBtn');
-    if (trainBtn) { trainBtn.disabled = !ready || mlTraining; trainBtn.textContent = (model ? '🧠 Retrain classifier' : '🧠 Train classifier'); }
-    var need = document.getElementById('mlNeed'); if (need) need.style.display = ready ? 'none' : 'block';
-    var trained = document.getElementById('mlTrained');
-    if (trained) {
-      if (model && modelMeta) {
-        trained.style.display = 'block';
-        var d = new Date(modelMeta.trainedAt);
-        var t = document.getElementById('mlTrainedTxt');
-        if (t) t.innerHTML = 'Model trained ' + d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) + '. Validation accuracy: <b>' + Math.round(modelMeta.valAcc * 100) + '%</b> (' + modelMeta.nTrain + ' train / ' + modelMeta.nVal + ' val).';
-        renderConfusion(modelMeta.confusion);
-      } else trained.style.display = 'none';
+    var wrap = document.getElementById('mlCombos');
+    if (wrap) {
+      wrap.innerHTML = COMBOS.map(function (cc) {
+        var cnt = comboCounts(cc.key), mrec = models[cc.key], trained = !!(mrec && mrec.model && mrec.meta);
+        var ready = LABELS.every(function (k) { return cnt[k] >= MIN_PER_CLASS; });
+        var counts = LABELS.map(function (k) { var ok = cnt[k] >= MIN_PER_CLASS; return '<span class="mlc' + (ok ? ' ok' : '') + '">' + LABEL_META[k].e + ' ' + cnt[k] + '</span>'; }).join('');
+        var status;
+        if (trained) { var d = new Date(mrec.meta.trainedAt); status = 'Trained ' + d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · <b>' + Math.round(mrec.meta.valAcc * 100) + '%</b> val · ' + cnt.total + ' examples' + (ready ? '' : ' <i>(below min — retrain when you have more)</i>'); }
+        else if (ready) status = 'Ready to train · ' + cnt.total + ' labelled';
+        else { var lack = LABELS.filter(function (k) { return cnt[k] < MIN_PER_CLASS; }).map(function (k) { return (MIN_PER_CLASS - cnt[k]) + ' ' + LABEL_META[k].t; }); status = 'Need ' + lack.join(', ') + ' more to train'; }
+        var btn = '<button class="ag-act mlTrainCombo" type="button" data-combo="' + cc.key + '"' + ((!ready || mlTraining) ? ' disabled' : '') + '>' + (trained ? '🧠 Retrain' : '🧠 Train') + '</button>';
+        var prog = '<div class="ml-prog" id="mlProg__' + cc.key + '" style="display:none"><div class="ml-prog-bar-wrap"><div id="mlProgBar__' + cc.key + '"></div></div><div id="mlProgTxt__' + cc.key + '" class="ag-note"></div></div>';
+        var extra = trained ? ('<details class="ag-collap" style="margin-top:6px"><summary>Confusion matrix</summary><div class="ml-cm-wrap" id="mlCm__' + cc.key + '"></div></details>' +
+          '<button class="ag-act mlDelCombo" type="button" data-combo="' + cc.key + '" style="color:#b3261e">🗑 Delete this model<span class="sub" style="color:#c98">Keeps the labelled clips</span></button>') : '';
+        return '<div class="ml-combo' + (trained ? ' trained' : '') + '"><div class="ml-combo-h">' + cc.label + (trained ? ' <span class="ml-combo-ok">✓</span>' : '') + '</div>' +
+          '<div class="ml-counts">' + counts + '</div><div class="ag-note" style="margin:3px 2px">' + status + '</div>' + btn + prog + extra + '</div>';
+      }).join('');
+      COMBOS.forEach(function (cc) { var m = models[cc.key]; if (m && m.meta && m.meta.confusion) renderConfusionInto('mlCm__' + cc.key, m.meta.confusion); });
     }
-    var rescore = document.getElementById('mlRescoreBtn'); if (rescore) rescore.disabled = !model;
+    var rescore = document.getElementById('mlRescoreBtn'); if (rescore) rescore.disabled = !hasAnyModel();
     var stClr = document.getElementById('stClearBtn'); if (stClr) stClr.disabled = smokeCount() === 0;
-    // auto-flag ML radio only available with a model
-    var afMl = document.getElementById('afMl'); if (afMl) { afMl.disabled = !model; var lbl = afMl.closest('label'); if (lbl) lbl.style.opacity = model ? '1' : '0.5'; }
+    var afMl = document.getElementById('afMl'); if (afMl) { afMl.disabled = !hasAnyModel(); var lbl = afMl.closest('label'); if (lbl) lbl.style.opacity = hasAnyModel() ? '1' : '0.5'; }
   }
-  function setTrainProgress(epoch, total, logs) {
-    var wrap = document.getElementById('mlProg'); if (wrap) wrap.style.display = epoch ? 'block' : 'none';
-    var bar = document.getElementById('mlProgBar'); if (bar) bar.style.width = Math.round(epoch / total * 100) + '%';
-    var txt = document.getElementById('mlProgTxt'); if (txt) txt.textContent = 'Training… epoch ' + epoch + '/' + total + (logs && logs.acc != null ? ' · acc ' + Math.round(logs.acc * 100) + '%' : '') + ' — keep the app open';
+  function setTrainProgress(combo, epoch, total, logs) {
+    var wrap = document.getElementById('mlProg__' + combo); if (wrap) wrap.style.display = epoch ? 'block' : 'none';
+    var bar = document.getElementById('mlProgBar__' + combo); if (bar) bar.style.width = Math.round(epoch / total * 100) + '%';
+    var txt = document.getElementById('mlProgTxt__' + combo); if (txt) txt.textContent = 'Training… epoch ' + epoch + '/' + total + (logs && logs.acc != null ? ' · acc ' + Math.round(logs.acc * 100) + '%' : '') + ' — keep the app open';
   }
-  function doTrain() {
+  function doTrain(combo) {
     if (mlTraining) return;
-    mlTraining = true; refreshClassifierUI(); setTrainProgress(1, 40, null);
-    trainNow(setTrainProgress).then(function (meta) {
-      mlTraining = false; setTrainProgress(0, 40, null);
+    combo = combo || DEFAULT_COMBO;
+    mlTraining = true; mlTrainingCombo = combo; refreshClassifierUI(); setTrainProgress(combo, 1, 40, null);
+    trainNow(combo, function (e, t, l) { setTrainProgress(combo, e, t, l); }).then(function (meta) {
+      mlTraining = false; mlTrainingCombo = null; setTrainProgress(combo, 0, 40, null);
       refreshClassifierUI(); rescoreAll();
-      toast('🧠 Trained · ' + Math.round(meta.valAcc * 100) + '% val accuracy');
-    }).catch(function (e) { mlTraining = false; setTrainProgress(0, 40, null); refreshClassifierUI(); toast(String(e.message || e)); });
+      toast('🧠 ' + comboLabel(combo) + ' trained · ' + Math.round(meta.valAcc * 100) + '% val');
+    }).catch(function (e) { mlTraining = false; mlTrainingCombo = null; setTrainProgress(combo, 0, 40, null); refreshClassifierUI(); toast(String(e.message || e)); });
   }
 
   // ---- Home calibration mode ----
@@ -4250,8 +4493,10 @@ var powerLayers = (function () {
     var s = document.getElementById('calStartBtn'); if (s) s.style.display = 'block';
     var cc = labelCounts('calibration');
     refreshClassifierUI();
-    var ready = LABELS.every(function (k) { return labelCounts()[k] >= MIN_PER_CLASS; });
-    if (ready && confirm('Calibration set saved (' + cc.total + ' labelled). Train the classifier now?')) doTrain();
+    // Calibration clips carry the current detector tag, so train that combo.
+    var combo = currentCombo(), cnt = comboCounts(combo);
+    var ready = LABELS.every(function (k) { return cnt[k] >= MIN_PER_CLASS; });
+    if (ready && confirm('Calibration set saved (' + cc.total + ' labelled). Train the ' + comboLabel(combo) + ' model now?')) doTrain(combo);
     else toast('🏠 Calibration ended · ' + cc.total + ' labelled');
   }
   function calLabel(k) {
@@ -4263,9 +4508,20 @@ var powerLayers = (function () {
 
   // ---- wire Smart classifier + calibration + auto-flag controls ----
   (function wireML() {
-    var tb = document.getElementById('mlTrainBtn'); if (tb) tb.addEventListener('click', doTrain);
+    // Per-combo train + delete via event delegation (cards are rebuilt dynamically).
+    var mc = document.getElementById('mlCombos');
+    if (mc) mc.addEventListener('click', function (e) {
+      var tb = e.target.closest('.mlTrainCombo');
+      if (tb && !tb.disabled) { doTrain(tb.getAttribute('data-combo')); return; }
+      var db = e.target.closest('.mlDelCombo');
+      if (db) {
+        var combo = db.getAttribute('data-combo');
+        window.AuraGold.confirmDelete({ title: 'Delete the ' + comboLabel(combo) + ' model?', message: 'Your labelled events are kept — you can retrain anytime.', onConfirm: function () {
+          deleteModelNow(combo).then(function () { events.forEach(function (ev) { if (ev.mlModelCombo === combo) { ev.mlConfidence = null; ev.mlTop = null; ev.mlModelCombo = null; ev.mlCrossDetector = null; evPut(ev); } }); rerenderAllMarkers(); renderListIfOpen(); refreshClassifierUI(); toast('Model deleted'); });
+        } });
+      }
+    });
     var rs = document.getElementById('mlRescoreBtn'); if (rs) rs.addEventListener('click', function () { rescoreAll(); });
-    var del = document.getElementById('mlDeleteBtn'); if (del) del.addEventListener('click', function () { window.AuraGold.confirmDelete({ title: 'Delete the trained model?', message: 'Your labelled events are kept — you can retrain anytime.', onConfirm: function () { deleteModelNow().then(function () { events.forEach(function (ev) { ev.mlConfidence = null; ev.mlTop = null; evPut(ev); }); rerenderAllMarkers(); renderListIfOpen(); refreshClassifierUI(); toast('Model deleted'); }); } }); });
     var stl = document.getElementById('stLoadBtn'); if (stl) stl.addEventListener('click', function () { if (window.confirm('Load 48 synthetic smoke-test clips (12 per class)? They are tagged source: smoke-test so you can clear them later. This is a pipeline wiring-check — not real detector audio.')) loadSmokeTest(); });
     var stc = document.getElementById('stClearBtn'); if (stc) stc.addEventListener('click', clearSmokeTest);
     var cs = document.getElementById('calStartBtn'); if (cs) cs.addEventListener('click', startCalibration);
@@ -4334,7 +4590,7 @@ var powerLayers = (function () {
   // arm capture (if already permitted) when Settings opens, so the meter is live
   if (sPanelEl) {
     var mo = new MutationObserver(function () {
-      if (sPanelEl.classList.contains('open')) { populateDevices(); if (!running && !denied) tryAutoStart(); }
+      if (sPanelEl.classList.contains('open')) { populateDevices(); refreshDetectorUI(); if (!running && !denied) tryAutoStart(); }
     });
     mo.observe(sPanelEl, { attributes: true, attributeFilter: ['class'] });
   }
@@ -4403,12 +4659,16 @@ var powerLayers = (function () {
   if (auExport) auExport.addEventListener('click', exportZip);
 
   // ---- REC toggle: the single explicit on/off control (button + ☰ menu + volume key) ----
-  function toggleRec() {
-    if (running) { stop(); toast('🎙 Audio capture OFF — mic released'); }
-    else start().then(function (ok) {
-      if (ok) toast('🎙 Audio capture ON — your next hit will save a clip');
+  function doStartCapture() {
+    start().then(function (ok) {
+      if (ok) toast('🎙 Audio capture ON · ' + (DETECTORS[acfg.detector] ? DETECTORS[acfg.detector].short : '') + (acfg.detector === 'gpx-6000' ? ' ' + (COILS[acfg.coil] || '') : '') + ' — next hit saves a clip');
       else toast('🎙 Microphone unavailable — grant the mic (Test capture in Settings) first');
     });
+  }
+  function toggleRec() {
+    if (running) { stop(); toast('🎙 Audio capture OFF — mic released'); }
+    else if (acfg.askBeforeCapture) askDetectorThenStart(function (go) { if (go) doStartCapture(); });
+    else doStartCapture();
   }
   var recBtn = document.getElementById('audioRec');
   if (recBtn) recBtn.addEventListener('click', toggleRec);
@@ -4457,6 +4717,69 @@ var powerLayers = (function () {
     window.addEventListener('blur', clear);
   })();
 
+  // ---- v32: detector + coil setup, bulk-tag backfill, ask-before-capture ----
+  function untaggedCount() { var n = 0; events.forEach(function (ev) { if (!ev.detector) n++; }); return n; }
+  function refreshDetectorUI() {
+    var ds = document.getElementById('auDetector'); if (ds) ds.value = acfg.detector;
+    var cs = document.getElementById('auCoil'); if (cs) cs.value = acfg.coil;
+    var cr = document.getElementById('auCoilRow'); if (cr) cr.style.display = acfg.detector === 'gpx-6000' ? '' : 'none';
+    var ac = document.getElementById('auAskCapture'); if (ac) ac.checked = acfg.askBeforeCapture;
+    var n = untaggedCount();
+    var bl = document.getElementById('auBacklog'); if (bl) bl.style.display = n > 0 ? 'block' : 'none';
+    var ut = document.getElementById('auUntagged'); if (ut) ut.textContent = n;
+  }
+  (function wireDetectorSetup() {
+    var ds = document.getElementById('auDetector');
+    if (ds) ds.addEventListener('change', function () { acfg.detector = ds.value; if (acfg.detector !== 'gpx-6000') {} saveCfg(); refreshDetectorUI(); });
+    var cs = document.getElementById('auCoil');
+    if (cs) cs.addEventListener('change', function () { acfg.coil = cs.value; saveCfg(); });
+    var ac = document.getElementById('auAskCapture');
+    if (ac) ac.addEventListener('change', function () { acfg.askBeforeCapture = ac.checked; saveCfg(); });
+    var bt = document.getElementById('auBulkTagBtn');
+    if (bt) bt.addEventListener('click', function () {
+      var n = untaggedCount(); if (!n) { toast('No untagged events'); refreshDetectorUI(); return; }
+      var sel = document.getElementById('auBulkDet'), key = sel ? sel.value : DEFAULT_COMBO;
+      var combo = null; for (var i = 0; i < COMBOS.length; i++) if (COMBOS[i].key === key) combo = COMBOS[i];
+      if (!combo) return;
+      window.AuraGold.confirmDelete({
+        title: 'Tag ' + n + ' event' + (n === 1 ? '' : 's') + ' as ' + combo.label + '?',
+        message: 'Sets the detector' + (combo.coil ? ' + coil' : '') + ' on every event that has none. This only affects the classifier grouping — clips and labels are untouched.',
+        confirmLabel: 'TAG', typed: false,
+        onConfirm: function () {
+          var tagged = 0;
+          events.forEach(function (ev) { if (!ev.detector) { ev.detector = combo.det; ev.coil = combo.coil; ev.mlModelCombo = null; evPut(ev); tagged++; } });
+          refreshDetectorUI(); renderListIfOpen(); if (typeof refreshClassifierUI === 'function') refreshClassifierUI();
+          toast('🏷 Tagged ' + tagged + ' event' + (tagged === 1 ? '' : 's') + ' as ' + combo.label);
+        }
+      });
+    });
+    refreshDetectorUI();
+  })();
+
+  // Lightweight "confirm detector before arming" modal (only when acfg.askBeforeCapture).
+  function askDetectorThenStart(after) {
+    var ov = document.createElement('div'); ov.className = 'cd-ov show'; ov.setAttribute('role', 'dialog');
+    ov.innerHTML =
+      '<div class="cd-card" role="alertdialog" aria-modal="true">' +
+        '<h3 class="cd-title">Confirm detector</h3>' +
+        '<p class="cd-msg" style="margin-bottom:8px">Which detector + coil are you swinging this session?</p>' +
+        '<select id="askDet" class="ag-select" style="margin-bottom:6px;width:100%">' +
+          '<option value="gold-monster-1000">Gold Monster 1000</option>' +
+          '<option value="gpx-6000">GPX 6000</option></select>' +
+        '<select id="askCoil" class="ag-select" style="margin-bottom:8px;width:100%;display:none">' +
+          '<option value="11in-mono">11&Prime; Mono</option><option value="14in-dd">14&Prime; DD</option><option value="17in">17&Prime;</option></select>' +
+        '<div class="cd-btns"><button type="button" class="cd-cancel">Cancel</button><button type="button" class="cd-ok" style="background:#1a7f37">Start capture</button></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var dsel = ov.querySelector('#askDet'), csel = ov.querySelector('#askCoil');
+    dsel.value = acfg.detector; csel.value = acfg.coil; csel.style.display = acfg.detector === 'gpx-6000' ? 'block' : 'none';
+    dsel.addEventListener('change', function () { csel.style.display = dsel.value === 'gpx-6000' ? 'block' : 'none'; });
+    function done(go) { document.body.removeChild(ov); if (go) { acfg.detector = dsel.value; acfg.coil = csel.value; saveCfg(); refreshDetectorUI(); } after(go); }
+    ov.querySelector('.cd-cancel').addEventListener('click', function () { done(false); });
+    ov.querySelector('.cd-ok').addEventListener('click', function () { done(true); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) done(false); });
+  }
+
   // ---- v30: wire the capture-control settings + render the REC button in its initial OFF state ----
   (function wireCaptureControls() {
     var as = document.getElementById('auAutoStart'); if (as) { as.checked = acfg.autoStart; as.addEventListener('change', function () { acfg.autoStart = as.checked; saveCfg(); }); }
@@ -4476,8 +4799,8 @@ var powerLayers = (function () {
     events.forEach(function (ev) { var dk = dayKey(ev.timestamp); dailyCount[dk] = (dailyCount[dk] || 0) + 1; });
     renderAll(); refreshCounts(); renderListIfOpen();
     tryAutoStart();
-    // If a model was trained earlier, load it (so new + backfilled events get scored), then backfill features.
-    loadSavedModel().then(function () { refreshClassifierUI(); rerenderAllMarkers(); renderListIfOpen(); return backfillFeatures(); });
+    // Load every per-combo model trained earlier (so new + backfilled events get scored), then backfill features.
+    loadSavedModels().then(function () { refreshClassifierUI(); rerenderAllMarkers(); renderListIfOpen(); return backfillFeatures(); });
   }).catch(function (e) { try { console.warn('[v26] load events failed', e); } catch (x) {} });
 
   // poll GPS into the fix history while capturing
@@ -4506,12 +4829,14 @@ var powerLayers = (function () {
     _extract: function (samples, sr) { return extractAsync(samples || snapshot(SNAP_SECONDS), sr || sampleRate); },     // raw audio -> features (drives the worker)
     _featureNames: function () { return FEAT_NAMES; },
     _labelCounts: function (src) { return labelCounts(src); },
-    _hasModel: function () { return !!model; },
-    _modelInfo: function () { return modelMeta ? JSON.parse(JSON.stringify(modelMeta)) : null; },
-    _train: function () { return trainNow(); },
+    _hasModel: function (combo) { return combo ? !!(models[combo] && models[combo].model) : hasAnyModel(); },
+    _modelInfo: function (combo) { var m = models[combo || DEFAULT_COMBO]; return m && m.meta ? JSON.parse(JSON.stringify(m.meta)) : null; },
+    _modelCombos: function () { var o = {}; for (var k in models) if (models[k] && models[k].meta) o[k] = { valAcc: models[k].meta.valAcc, nTrain: models[k].meta.nTrain, nVal: models[k].meta.nVal }; return o; },
+    _train: function (combo) { return trainNow(combo || DEFAULT_COMBO); },
     _rescore: function () { return rescoreAll(); },
-    _deleteModel: deleteModelNow,
-    _scoreVec: function (vec) { return model ? inferVec(vec) : null; },
+    _deleteModel: function (combo) { return deleteModelNow(combo || DEFAULT_COMBO); },
+    _scoreVec: function (vec, combo) { var m = models[combo || DEFAULT_COMBO]; return m && m.model ? inferVec(vec, m) : null; },
+    _comboFor: function (ev) { return comboKeyFor(ev || {}); },
     // ---- v31 smoke-test pack hooks ----
     _loadSmokeTest: loadSmokeTest, _clearSmokeTest: clearSmokeTest, _smokeCount: smokeCount,
     // Seed N synthetic labelled events per class with SEPARABLE feature vectors (no audio) —

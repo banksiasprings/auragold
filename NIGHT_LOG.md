@@ -537,3 +537,43 @@ A wiring-check before the Victoria trip: prove the v26 classifier works end-to-e
 - **New DOM ids:** `stLoadBtn`, `stClearBtn`, `stProg` (in the 🧠 Smart classifier card).
 - **`trainNow`** now disposes the existing model before rebuilding (retrain-after-reload fix).
 - Bumped APP_VERSION / SHELL_VERSION / SHELL_REV → **v31**; SW precache gained the zip.
+
+---
+
+## v32 — 🎯 Nugget Potential Index heatmap + dual-detector tagging + per-(detector,coil) classifier (2026-07-01)
+
+Three coordinated features. Spec: rank/grid the highest-probability micro-sites instead of blanket-searching reef polygons; tag every hit with detector+coil; train a separate classifier per combo.
+
+### Feature A — NPI heatmap (the headline)
+- **Offline build pipeline** (`tools/npi/`, pure numpy/scipy/PIL — no GDAL/QGIS): DEM = AWS **terrarium z12** terrain tiles (~30 m, SRTM-derived, keyless); reef polygons = the app's goldfield + endowment GeoJSON; workings = the 13,287 VicMine gold occurrences (same WFS the app uses). Derives **D8 priority-flood flow accumulation**, slope, convex-curvature bedrock proxy, distance-to-reef, 500 m workings density → `NPI = 0.35·reef + 0.25·workings + 0.15·drainage + 0.15·slope + 0.10·bedrock` (0–100).
+- **Tiles:** 845 **palettised** RdYlGn PNGs z10–12 (browser upsamples 13–14), **9.5 MB** (RGBA was 73 MB → palette + NLEV=20 got it under the 15 MB budget). Two regions: Western goldfields + Chiltern/Eldorado.
+- **Tap-to-explain:** packed component grid `npi-grid.png` (z8 ~490 m cells). **Gotcha found + fixed:** canvas `getImageData` premultiplies alpha, so data in the alpha channel is corrupted — alpha is now a 0/255 validity **mask** only, all 6 values live in the two RGB triplets.
+- **UI:** new `🎯 Nugget Potential` row in the Gold-data group (default off, 60 % opacity slider, pane `p-npi` z290 — under reef outlines/nuggets). Map-click popup shows NPI + band, a 5-factor breakdown (distance-to-reef + nearest reef name, shafts/500 m, drainage, slope°, bedrock), weighted-contribution bars, and the honest "heuristic / SRTM ~30 m" caveat.
+- **SW:** grid + meta in SHELL_ASSETS; the 845 tiles precached from `tiles-manifest.json` (chunked, best-effort) so the heatmap works offline.
+
+### Feature B — dual-detector + coil tagging
+- `acfg.detector` (Gold Monster 1000 default / GPX 6000) + `acfg.coil` (11" Mono / 14" DD / 17"), Settings "Detector setup" with a coil row that shows only for the GPX. Every event gets `detector` + `coil`; GUANO WAV chunk + `events.csv` gain `Detector`/`Coil` columns; list shows a 🛰 detector badge.
+- **Bulk-tag backfill** ("N earlier event(s) have no detector tag → Tag all as …") via the typed-confirm modal. **Ask-before-capture** toggle pops a confirm-detector dialog when you arm REC.
+
+### Feature C — per-(detector,coil) classifier
+- One model per combo (`models[comboKey]`); the default Monster combo keeps the **legacy storage id** so any pre-v32 model loads unchanged. Settings shows a **card per combo** (per-combo class counts, train/retrain, confusion matrix, delete). Inference routes each event to its combo's model; if none, **cross-detector fallback** to the Monster model with a ⚠ "cross-detector" badge. Untagged/smoke-test events fold into the Monster combo. ZIP export → `models_v2.json` (all trained combos).
+
+### Verified ✓ (real Chrome via preview)
+- **Per-combo classifier:** seeded 56 synthetic events → trained Monster combo **100 % val**, perfect confusion, persisted under legacy id `auragold-classifier-v1`. Reload → auto-restored on boot. **Retrain-after-reload passes** (v31 dispose-before-rebuild fix carries forward per-combo — no "Variable already registered"). GPX-6000/14"DD event with real audio → scored by the Monster model with **cross=true** flagged. Per-combo gate rejects with a combo-specific message. UI renders 4 cards correctly.
+- **NPI:** Wedderburn (HEADLINE) **62** on its z8 cell / **69 max within 200 m** — high tier; Melbourne CBD off-grid; popup breakdown reconciles (Σ contributions ≈ NPI). Heatmap tile `/data/npi/11/1841/1246.png` loads + renders at Wedderburn z11; layer toggles on/off, opacity slider = 60 %.
+- **Detector:** combo routing (`_comboFor`) correct for legacy + GPX; detector setup UI + bulk-tag backlog (56 untagged) render; coil row hides for the Monster.
+- Clean boot, **zero console errors**; all three features initialise.
+
+### NPI at the 12 trip spots (max NPI within ~200 m)
+9 Maldon **76** · 8 Hepburn **70** · 10 **Wedderburn 69** (headline ✓) · 11 Wombat 52 · 7 Inglewood 50 · 5 Heathcote 49 · 2 Avoca 47 · 3 Tarnagulla 38 · 12 Chiltern 20 · 1 Mt Cole 18 · 6 Whroo 18 · 4 Talbot 10. Pattern matches prior: the richest fields top out; Wedderburn scores high. Town-centre coords (Talbot, Whroo) read low because the *field* sits off the point — the heatmap + tap-to-explain are for finding the high micro-sites around them.
+
+### Honest limits
+- **NPI is a heuristic, not a prediction** (surfaced in every popup). DEM is **SRTM-grade ~30 m everywhere** — no public Victorian LiDAR tile service exists, so slope/drainage/bedrock terms are coarse (the spec's LiDAR-preferred path wasn't feasible without interactive ELVIS ordering; SRTM is the documented fallback and is uniform). Weights are un-calibrated v0; "future versions retrain on your confirmed gold events."
+- **Live end-to-end popup** couldn't be confirmed in the dev preview — the local browser HTTP-cached a stale `npi-grid.png` mid-rebuild (no SW there to version it). Data + sampling math + render were each proven via cache-busted reads; production (SW precache + Pages ETags) has no such staleness. Confirm on the live URL.
+- Headless tfjs `fit()` still stalls under rAF/WebGL-compositor throttling (fine on a phone); training verified via the `yieldEvery:'never'` / CPU-backend path. Screenshots still render black (known since v29) — UI confirmed via DOM reads.
+
+### State for future sessions
+- **Globals/fns (top-level):** `layerNPI`, `AG.npi` ({`_showAt`,`_load`,`_meta`}), pane `p-npi` z290. **Audio IIFE:** `DETECTORS`/`COILS`/`COMBOS`/`DEFAULT_COMBO`, `comboKeyFor`/`comboLabel`/`detBadge`/`currentCombo`, `models` registry, `modelStorageId`/`hasAnyModel`/`modelForEvent`, `loadSavedModels`/`exportModelsJSON`, `refreshDetectorUI`/`askDetectorThenStart`. `inferVec(vec,rec)`/`trainNow(combo,cb)`/`persistModel(combo,…)`/`deleteModelNow(combo)` now combo-keyed. `AG.audio` hooks: `_comboFor`/`_modelCombos`; `_train`/`_modelInfo`/`_scoreVec`/`_deleteModel` take an optional combo.
+- **DOM ids:** `auDetector`/`auCoil`/`auCoilRow`/`auAskCapture`/`auBacklog`/`auUntagged`/`auBulkDet`/`auBulkTagBtn`; `mlCombos` (replaces `mlCounts`/`mlTrainBtn`/`mlTrained`/`mlConfusion`).
+- **Event schema:** `+detector`, `+coil`, `+mlModelCombo`, `+mlCrossDetector` (replaces single `mlModelVersion` framing). `events.csv` cols `detector,coil,…,model_combo`.
+- Bumped APP_VERSION / SHELL_VERSION / SHELL_REV → **v32**; SW precaches the NPI grid/meta/manifest + tile pyramid. NPI build pipeline committed under `tools/npi/`.
