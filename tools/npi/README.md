@@ -1,4 +1,4 @@
-# NPI build pipeline (v32 — Nugget Potential Index heatmap)
+# NPI build pipeline (v33 — per-detector Nugget Potential Index heatmaps)
 
 Offline, reproducible build of the `data/npi/` heatmap tiles + tap-to-explain grid.
 All inputs are free / Australia-licensed; no API keys.
@@ -9,6 +9,7 @@ All inputs are free / Australia-licensed; no API keys.
 pip install --user numpy scipy pillow      # only deps
 python3 fetch_dem.py            # AWS terrarium z12 terrain tiles (~30 m, SRTM-derived) -> terrain_z12/
 python3 fetch_workings.py       # VicMine gold occurrence points (same WFS the app uses) -> workings.json
+python3 fetch_magnetic.py       # GA TMI-RTP magnetics (WCS GeoTIFF, mineralization proxy) -> mag_*.npz
 python3 build_npi.py            # -> ../../data/npi/{z}/{x}/{y}.png + npi-grid.png + npi-meta.json + tiles-manifest.json
 ```
 
@@ -34,8 +35,8 @@ NPI = 0.35*dist_to_reef + 0.25*workings_density + 0.15*drainage_convergence
 
 | File | What |
 |------|------|
-| `data/npi/{z}/{x}/{y}.png` | palettised RdYlGn heatmap tiles, z10–12 native (browser upsamples 13–14) |
-| `data/npi/npi-grid.png` | packed component grid (z8 ~490 m cells) for tap-to-explain; alpha = validity mask only (canvas premultiplies alpha — never store data there) |
+| `data/npi/{vlf,pi,zvt}/{z}/{x}/{y}.png` | palettised RdYlGn tiles, **3 detector-class variants** (VLF=Gold Monster, PI=GPX 6000, ZVT=GPZ 7000), z10–12 native |
+| `data/npi/npi-grid.png` | packed grid (z8 ~490 m), **3 stacked planes**: A=[npiVLF,npiPI,npiZVT], B=[dist,workings,drain], C=[slope,bedrock,mineralization]; alpha = validity mask only (canvas premultiplies alpha) |
 | `data/npi/npi-meta.json` | bbox, grid geo-referencing, weights, limitations, sample spot scores |
 | `data/npi/tiles-manifest.json` | every tile path, so the service worker can precache the region for offline use |
 

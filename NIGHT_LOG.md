@@ -577,3 +577,35 @@ Three coordinated features. Spec: rank/grid the highest-probability micro-sites 
 - **DOM ids:** `auDetector`/`auCoil`/`auCoilRow`/`auAskCapture`/`auBacklog`/`auUntagged`/`auBulkDet`/`auBulkTagBtn`; `mlCombos` (replaces `mlCounts`/`mlTrainBtn`/`mlTrained`/`mlConfusion`).
 - **Event schema:** `+detector`, `+coil`, `+mlModelCombo`, `+mlCrossDetector` (replaces single `mlModelVersion` framing). `events.csv` cols `detector,coil,…,model_combo`.
 - Bumped APP_VERSION / SHELL_VERSION / SHELL_REV → **v32**; SW precaches the NPI grid/meta/manifest + tile pyramid. NPI build pipeline committed under `tools/npi/`.
+
+---
+
+## v33 — NPI heatmap split into THREE detector-class variants (2026-07-01)
+
+Steven's refinement to v32: one-size-fits-all NPI isn't useful in the field — different detectors want different ground. So the heatmap is now **three reweighted variants** off the same inputs, selectable per detector.
+
+- **NPI-VLF (Gold Monster)** — gentle 5-15° clean creek/alluvial ground, LOW mineralisation. `0.30 reef + 0.15 work + 0.30 drainage + 0.15 slope(peak 10°) + 0.10 bedrock + 0.10 (1−mineralisation)`.
+- **NPI-PI (GPX 6000)** — steeper 10-35° mass-wasted hot ground, deeper/historic workings. `0.35 reef + 0.30 work + 0.10 drainage + 0.15 slope(peak 22.5°) + 0.10 bedrock`.
+- **NPI-ZVT (GPZ 7000)** — hammered premium ground. `0.40 hammered + 0.20 work + 0.20 drainage + 0.10 slope(peak 17.5°) + 0.10 bedrock`.
+
+**New input — real mineralisation:** GA **TMI-RTP magnetics** (`magmap_v7_2019_RTP`) pulled per region via **WCS as a float GeoTIFF** (PIL reads mode 'F' — no GDAL), resampled onto the merc grid (`map_coordinates`), normalised 2-98th pct. High magnetic = ironstone/magnetite = hot ground (PI tolerates, VLF struggles). `hammered` = broad ~2 km smoothed working intensity (the ZVT premium). Both reuse the cached DEM/drainage compute — only weights changed.
+
+**Build (`tools/npi/`, +`fetch_magnetic.py`):** 3 tile sets `data/npi/{vlf,pi,zvt}/{z}/{x}/{y}.png` (2535 tiles, **26.2 MB** — vlf 10.9 / pi 5.6 / zvt 9.6) + a **3-plane** popup grid `npi-grid.png` (A=[npiVLF,npiPI,npiZVT], B=[dist,work,drain], C=[slope,bedrock,mineralisation]; alpha=mask). Replaced the single base NPI (845 base tiles deleted). Cache made the recompute near-instant.
+
+**Frontend:** 3 panes (`p-npi-vlf/pi/zvt` z288-290), 3 toggleable layers + own opacity in a **🎯 Nugget Potential (per detector)** Layers-panel group. The variant matching the selected detector is **default-visible** (`npiDetectorVariant()` reads localStorage); changing the detector live-switches the heatmap (`AG.npi.setActive` → `_lpSetLayer`). Detector dropdown gained **GPZ 7000 + Auto-best**; gpz-7000 added to DETECTORS + COMBOS (5th classifier combo). Tap popup shows **all three scores as chips** (active detector highlighted) + a "Best swung with the …" line + shared-signal breakdown incl. mineralisation.
+
+### Verified ✓ (real Chrome preview)
+- 3 layers + 3 panel rows; default = VLF (detector=Monster); VLF variant tile `/data/npi/vlf/11/1841/1246.png` renders @ Wedderburn z11, opacity 60%.
+- **Detector→variant live switch:** Monster→VLF, GPX→PI, GPZ→ZVT, back→VLF (others toggle off). gpz combo wired.
+- **3-plane grid samples** (cache-busted): Wedderburn **VLF 55 / PI 63 / ZVT 62** (PI-favoured ✓), Avoca **42/37/13** (VLF-favoured ✓), Inglewood **52/61/60** (PI/ZVT-favoured ✓), Melbourne off-grid. Mineralisation 0.24-0.41 — real GA magnetics feeding in.
+- Popup chips render with active highlight + interpretation. Clean boot, zero console errors.
+
+### NPI per variant at the 12 spots (max within ~200 m) — VLF / PI / ZVT
+9 Maldon 80/75/81 · 8 Hepburn 70/70/73 · **10 Wedderburn 64/69/69 (PI✓)** · 2 Avoca 64/50/38 · 11 Wombat 61/45/28 · 5 Heathcote 58/49/49 · 7 Inglewood 49/53/55 · 3 Tarnagulla 44/38/17 · 6 Whroo 38/10/22 · 12 Chiltern 34/12/17 · 4 Talbot 29/10/26 · 1 Mt Cole 24/18/19.
+
+### Honest verdict vs Steven's targets
+- **Wedderburn** → PI 69 > VLF 64 ✓ exactly as predicted (deep/hammered = GPX ground).
+- **Hepburn Sailors Ck** → VLF 70 high ✓ (PI also 70 — genuinely rich for both, not the "medium PI" predicted; both-good is defensible).
+- **Mount Cole fire scar** → low on all (24/18/19), NOT "high on both." The NPI has **no fire-scar / freshly-exposed-ground input** — it's reef + workings + terrain driven, so a speculative post-fire spot with little historic working scores low. Honest gap; a burn-severity layer would fix it.
+- The variant differentiation is real and mostly sensible (VLF dominates gentle alluvial Avoca/Whroo/Wombat; PI/ZVT lead hammered Inglewood/Wedderburn). Same dev-preview grid HTTP-cache flakiness as v32 (data/math proven via cache-busted reads; production SW+Pages unaffected).
+- Bumped APP/SHELL/REV → **v33**; SW precaches all 3 tile sets via the manifest. `fetch_magnetic.py` + the variant `build_npi.py` committed.

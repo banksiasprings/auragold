@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v32';
+const SHELL_VERSION = 'v33';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -46,7 +46,10 @@ const SHELL_VERSION = 'v32';
 // tile pyramid from data/npi/tiles-manifest.json — so the heatmap and tap-to-explain work
 // offline in the field. Audio events now carry a detector + coil tag (Gold Monster 1000 / GPX
 // 6000 + coil); a separate classifier model is trained per combo.
-const SHELL_REV = 'v32';
+// v33: the NPI heatmap is now THREE detector-class variants (VLF/PI/ZVT) — different detectors
+// favour different terrain. data/npi/{vlf,pi,zvt}/ tile pyramids (~26 MB total) + a 3-plane
+// packed grid + a real GA-magnetics mineralization input. All precached from the tile manifest.
+const SHELL_REV = 'v33';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 

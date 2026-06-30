@@ -30,7 +30,16 @@ Z = 12
 R_EARTH = 6378137.0
 WORLD = 2 * math.pi * R_EARTH  # 40075016.69
 
-WEIGHTS = dict(dist_reef=0.35, workings=0.25, drainage=0.15, slope=0.15, bedrock=0.10)
+# v33: THREE detector-class variants (different detectors favour different terrain).
+# slope = (peak_deg, half_width) triangular band; weights renormalised to 1.
+VARIANTS = {
+    "vlf": dict(label="VLF (Gold Monster)", slope=(10.0, 10.0),   # gentle 5-15 deg / clean creek terrain
+                w=dict(dist=0.30, work=0.15, drain=0.30, slope=0.15, bedrock=0.10, lowmin=0.10)),
+    "pi":  dict(label="PI (GPX 6000)",      slope=(22.5, 12.5),   # steeper 10-35 deg / mass-wasted hot ground
+                w=dict(dist=0.35, work=0.30, drain=0.10, slope=0.15, bedrock=0.10)),
+    "zvt": dict(label="ZVT (GPZ 7000)",     slope=(17.5, 15.0),   # broad 5-30 deg, premium hammered ground
+                w=dict(hammered=0.40, work=0.20, drain=0.20, slope=0.10, bedrock=0.10)),
+}
 NPI_FLOOR = 6           # below this -> transparent (negligible potential)
 REGIONS = [
     ("Western goldfields", 142.95, -37.60, 145.15, -36.05),
@@ -78,6 +87,43 @@ def load_mosaic(w, s, e, n):
 def px2lat(py, z):
     n = math.pi - 2 * math.pi * py / (256.0 * (1 << z))
     return math.degrees(math.atan(math.sinh(n)))
+def px2lon(px, z): return px / (256.0 * (1 << z)) * 360.0 - 180.0
+
+# ---------- v33: magnetic mineralization proxy (GA TMI-RTP), resampled onto the grid ----------
+# High magnetic = ironstone / magnetite / hot ground (PI tolerates, VLF struggles).
+def mineralization(name, xmin, ymin, H, W, F=8):
+    p = os.path.join(HERE, "mag_" + name + ".npz")
+    if not os.path.exists(p): return np.zeros((H, W), np.float32)
+    z = np.load(p); mag = z["mag"].astype(np.float32); mw, ms, me, mn = z["bbox"]
+    mh, mwid = mag.shape
+    finite = mag[np.isfinite(mag)]
+    p2, p98 = np.percentile(finite, 2), np.percentile(finite, 98)
+    mag = np.nan_to_num(mag, nan=float(np.nanmedian(finite)))
+    h, w = H // F, W // F
+    # cell-centre lon/lat of the down-sampled grid (lon depends on col, lat on row)
+    cols = np.arange(w); rows = np.arange(h)
+    lon = px2lon(xmin * 256 + cols * F + F / 2.0, Z)
+    lat = np.array([px2lat(ymin * 256 + r * F + F / 2.0, Z) for r in rows])
+    mc = (lon - mw) / (me - mw) * mwid - 0.5            # source magnetic col per grid col
+    mr = (mn - lat) / (mn - ms) * mh - 0.5             # source magnetic row per grid row (north-up)
+    MR, MC = np.broadcast_arrays(mr[:, None], mc[None, :])
+    samp = ndimage.map_coordinates(mag, [MR, MC], order=1, mode="nearest")
+    mineral = np.clip((samp - p2) / max(1.0, (p98 - p2)), 0, 1).astype(np.float32)
+    return np.kron(mineral, np.ones((F, F), np.float32))[:H, :W]
+
+# "Hammered ground" — broad district working intensity (the ZVT premium), distinct from the
+# local 500 m count. Smooth the count over ~2 km and normalise.
+def hammered_ground(work_cnt, gres, F=8):
+    H, W = work_cnt.shape; h, w = H // F, W // F
+    small = work_cnt[:h * F, :w * F].reshape(h, F, w, F).mean(axis=(1, 3))
+    sig = max(1.0, 2000.0 / (gres * F))
+    sm = ndimage.gaussian_filter(small, sig)
+    p97 = np.percentile(sm, 97) or 1.0
+    ham = np.clip(sm / p97, 0, 1).astype(np.float32)
+    return np.kron(ham, np.ones((F, F), np.float32))[:H, :W]
+
+def slope_band(slope_deg, peak, halfwidth):
+    return np.clip(1.0 - np.abs((slope_deg - peak) / halfwidth), 0, 1)
 
 # ---------- terrain derivatives ----------
 def slope_curv(elev, ymin):
@@ -216,131 +262,147 @@ def block_mean(a, f):
     return a[:h * f, :w * f].reshape(h, f, w, f).mean(axis=(1, 3))
 
 # ---------- main ----------
+VKEYS = ["vlf", "pi", "zvt"]
+
+def compute_variants(dist_score, work_score, work_cnt, drain, slope_deg, bedrock, mineral, ham):
+    out = {}
+    for vk, cfg in VARIANTS.items():
+        wt = cfg["w"]; pk, hw = cfg["slope"]; sb = slope_band(slope_deg, pk, hw)
+        if vk == "vlf":
+            raw = (wt["dist"] * dist_score + wt["work"] * work_score + wt["drain"] * drain +
+                   wt["slope"] * sb + wt["bedrock"] * bedrock + wt["lowmin"] * (1.0 - mineral))
+        elif vk == "pi":
+            raw = (wt["dist"] * dist_score + wt["work"] * work_score + wt["drain"] * drain +
+                   wt["slope"] * sb + wt["bedrock"] * bedrock)
+        else:  # zvt
+            raw = (wt["hammered"] * ham + wt["work"] * work_score + wt["drain"] * drain +
+                   wt["slope"] * sb + wt["bedrock"] * bedrock)
+        npi = (raw / sum(wt.values())) * 100.0
+        out[vk] = np.clip(ndimage.gaussian_filter(npi, 1.2), 0, 100).astype(np.float32)
+    return out
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     pts = json.load(open(os.path.join(HERE, "workings.json")))
-    # union z8 popup grid extent
     g8x0 = min(int(lon2px(r[1], 8)) for r in REGIONS); g8x1 = max(int(lon2px(r[3], 8)) for r in REGIONS)
     g8y0 = min(int(lat2px(r[4], 8)) for r in REGIONS); g8y1 = max(int(lat2px(r[2], 8)) for r in REGIONS)
     gcols, grows = g8x1 - g8x0 + 1, g8y1 - g8y0 + 1
-    # packed grid planes (top RGBA + bottom RGBA stacked)
-    grid = np.zeros((grows * 2, gcols, 4), np.uint8)
-    spot_vals = {}
-    region_npi = {}   # for sampling spots
-    tiles_written = 0; total_bytes = 0; tile_paths = []
+    grid = np.zeros((grows * 3, gcols, 4), np.uint8)        # 3 stacked planes
+    region_var = {}                                          # rname -> (npis, xmin, ymin, H, W)
+    tiles_written = 0; total_bytes = 0; tile_paths = []; var_bytes = {v: 0 for v in VKEYS}
 
     for (rname, w, s, e, n) in REGIONS:
         print(f"\n=== {rname} ===", flush=True)
         cache = os.path.join(HERE, "cache_" + rname.split()[0].lower() + ".npz")
-        if os.path.exists(cache):                       # fast retile path
-            z = np.load(cache)
-            npi = z["npi"]; xmin = int(z["xmin"]); ymin = int(z["ymin"]); H = int(z["H"]); W = int(z["W"])
-            dist_score = z["dist_score"]; work_cnt = z["work_cnt"]; drain = z["drain"]
-            slope_deg = z["slope_deg"]; bedrock = z["bedrock"]
-            print(f"  loaded cache {cache}", flush=True)
-        else:
-            elev, xmin, ymin, xmax, ymax = load_mosaic(w, s, e, n)
-            H, W = elev.shape; print(f"  mosaic {W}x{H}", flush=True)
-            slope_deg, convex, gres = slope_curv(elev, ymin)
-            print(f"  gres~{gres:.1f} m/px; slope computed", flush=True)
-            drain = flow_accum(elev); print("  flow accumulation done", flush=True)
-            dist_score, dist_m, nreef = reef_distance(xmin, ymin, H, W, gres)
-            print(f"  reef distance ({nreef} rings)", flush=True)
-            work_score, work_cnt = workings_density(pts, xmin, ymin, H, W, gres)
-            print("  workings density done", flush=True)
-            slope_score = np.clip(1.0 - np.abs((slope_deg - 17.5) / 17.5), 0, 1)
-            bedrock = (slope_score * convex).astype(np.float32)
-            npi = (WEIGHTS["dist_reef"] * dist_score + WEIGHTS["workings"] * work_score +
-                   WEIGHTS["drainage"] * drain + WEIGHTS["slope"] * slope_score +
-                   WEIGHTS["bedrock"] * bedrock) * 100.0
-            npi = np.clip(ndimage.gaussian_filter(npi, 1.2), 0, 100).astype(np.float32)
-            np.savez_compressed(cache, npi=npi, xmin=xmin, ymin=ymin, H=H, W=W,
-                                dist_score=dist_score, work_cnt=work_cnt, drain=drain,
-                                slope_deg=slope_deg, bedrock=bedrock)
-        region_npi[rname] = (npi, xmin, ymin, H, W)
+        z = np.load(cache)
+        xmin = int(z["xmin"]); ymin = int(z["ymin"]); H = int(z["H"]); W = int(z["W"])
+        dist_score = z["dist_score"]; work_cnt = z["work_cnt"]; drain = z["drain"]
+        slope_deg = z["slope_deg"]; bedrock = z["bedrock"]
+        name = rname.split()[0].lower()
+        gres = (WORLD / (256.0 * (1 << Z))) * math.cos(math.radians((s + n) / 2.0))
+        mineral = mineralization(name, xmin, ymin, H, W)
+        ham = hammered_ground(work_cnt, gres)
+        work_score = np.clip(work_cnt / 5.0, 0, 1).astype(np.float32)
+        print(f"  cache loaded; mineralization + hammered done (gres~{gres:.1f})", flush=True)
+        npis = compute_variants(dist_score, work_score, work_cnt, drain, slope_deg, bedrock, mineral, ham)
+        region_var[rname] = (npis, xmin, ymin, H, W)
 
-        # ---- render palettised tiles z10,11,12 ----
-        for z in (10, 11, 12):
-            tx0, tx1 = lon2tile(w, z), lon2tile(e, z)
-            ty0, ty1 = lat2tile(n, z), lat2tile(s, z)
-            f = 1 << (Z - z)             # z12 px per this-tile px
-            idxmap = quantize(block_mean(npi, f).astype(np.float32) if f > 1 else npi)
-            cH, cW = idxmap.shape        # this-zoom px dims of region
-            ox = (xmin * 256) // f; oy = (ymin * 256) // f   # region origin in this-zoom global px
-            for tx in range(tx0, tx1 + 1):
-                for ty in range(ty0, ty1 + 1):
-                    sx = tx * 256 - ox; sy = ty * 256 - oy
-                    tile = np.zeros((256, 256), np.uint8)
-                    ax0, ax1 = max(0, sx), min(cW, sx + 256)
-                    ay0, ay1 = max(0, sy), min(cH, sy + 256)
-                    if ax1 <= ax0 or ay1 <= ay0: continue
-                    tile[ay0 - sy:ay1 - sy, ax0 - sx:ax1 - sx] = idxmap[ay0:ay1, ax0:ax1]
-                    if tile.max() == 0: continue
-                    d = os.path.join(OUT, str(z), str(tx)); os.makedirs(d, exist_ok=True)
-                    p = os.path.join(d, f"{ty}.png")
-                    save_palette_tile(tile, p)
-                    tiles_written += 1; total_bytes += os.path.getsize(p)
-                    tile_paths.append(f"./data/npi/{z}/{tx}/{ty}.png")
+        for vk in VKEYS:
+            npi = npis[vk]
+            for zl in (10, 11, 12):
+                tx0, tx1 = lon2tile(w, zl), lon2tile(e, zl)
+                ty0, ty1 = lat2tile(n, zl), lat2tile(s, zl)
+                f = 1 << (Z - zl)
+                idxmap = quantize(block_mean(npi, f).astype(np.float32) if f > 1 else npi)
+                cH, cW = idxmap.shape
+                ox = (xmin * 256) // f; oy = (ymin * 256) // f
+                for tx in range(tx0, tx1 + 1):
+                    for ty in range(ty0, ty1 + 1):
+                        sx = tx * 256 - ox; sy = ty * 256 - oy
+                        tile = np.zeros((256, 256), np.uint8)
+                        ax0, ax1 = max(0, sx), min(cW, sx + 256)
+                        ay0, ay1 = max(0, sy), min(cH, sy + 256)
+                        if ax1 <= ax0 or ay1 <= ay0: continue
+                        tile[ay0 - sy:ay1 - sy, ax0 - sx:ax1 - sx] = idxmap[ay0:ay1, ax0:ax1]
+                        if tile.max() == 0: continue
+                        d = os.path.join(OUT, vk, str(zl), str(tx)); os.makedirs(d, exist_ok=True)
+                        p = os.path.join(d, f"{ty}.png")
+                        save_palette_tile(tile, p)
+                        b = os.path.getsize(p); tiles_written += 1; total_bytes += b; var_bytes[vk] += b
+                        tile_paths.append(f"./data/npi/{vk}/{zl}/{tx}/{ty}.png")
+            print(f"  tiles {vk} done", flush=True)
 
-        # ---- accumulate popup grid (z8) ----
+        # ---- 3-plane popup grid (z8) ----
         def to8(a): return block_mean(a.astype(np.float32), 16)
-        g_npi = to8(npi); g_dist = to8(dist_score); g_work = to8(work_cnt)
-        g_drain = to8(drain); g_slopeD = to8(slope_deg); g_bed = to8(bedrock)
-        gh, gw = g_npi.shape
+        gv = {vk: to8(npis[vk]) for vk in VKEYS}
+        g_dist = to8(dist_score); g_work = to8(work_cnt); g_drain = to8(drain)
+        g_slopeD = to8(slope_deg); g_bed = to8(bedrock); g_min = to8(mineral)
+        gh, gw = g_dist.shape
         rx0 = (xmin * 256) // 16 - g8x0; ry0 = (ymin * 256) // 16 - g8y0
         for r in range(gh):
             for c in range(gw):
                 gr, gc = ry0 + r, rx0 + c
                 if not (0 <= gr < grows and 0 <= gc < gcols): continue
-                # Alpha is the validity MASK only (0/255). Canvas premultiplies alpha, so any
-                # DATA in the alpha channel would corrupt the RGB on getImageData — keep data in RGB.
-                grid[gr, gc] = (min(255, int(g_npi[r, c])), int(np.clip(g_dist[r, c] * 255, 0, 255)),
-                                min(255, int(round(g_work[r, c]))), 255)
-                grid[grows + gr, gc] = (int(np.clip(g_drain[r, c] * 255, 0, 255)),
-                                        min(255, int(round(g_slopeD[r, c]))), int(np.clip(g_bed[r, c] * 255, 0, 255)), 255)
-        del slope_deg, drain, dist_score, work_cnt, bedrock, npi
+                # Alpha = validity MASK only (0/255) — canvas premultiplies alpha; keep data in RGB.
+                grid[gr, gc] = (min(255, int(gv["vlf"][r, c])), min(255, int(gv["pi"][r, c])),
+                                min(255, int(gv["zvt"][r, c])), 255)                                  # plane A: 3 NPI
+                grid[grows + gr, gc] = (int(np.clip(g_dist[r, c] * 255, 0, 255)),
+                                        min(255, int(round(g_work[r, c]))), int(np.clip(g_drain[r, c] * 255, 0, 255)), 255)  # plane B
+                grid[2 * grows + gr, gc] = (min(255, int(round(g_slopeD[r, c]))),
+                                            int(np.clip(g_bed[r, c] * 255, 0, 255)), int(np.clip(g_min[r, c] * 255, 0, 255)), 255)  # plane C
+        del dist_score, work_cnt, drain, slope_deg, bedrock, mineral, ham, npis
 
-    # ---- sample the 12 spots ----
-    for num, name, lat, lon in SPOTS:
-        v = None
-        for rname, (npi, xmin, ymin, H, W) in region_npi.items():
-            px = int(lon2px(lon, Z) - xmin * 256); py = int(lat2px(lat, Z) - ymin * 256)
-            if 0 <= px < W and 0 <= py < H:
-                v = float(npi[max(0, py-3):py+4, max(0, px-3):px+4].max()); break
-        spot_vals[num] = (name, round(v, 1) if v is not None else None)
+    # ---- sample the 12 spots, per variant (max within ~200 m) ----
+    spots = {}
+    for num, nm, lat, lon in SPOTS:
+        rec = {"name": nm}
+        for vk in VKEYS:
+            val = None
+            for rname, (npis, xmin, ymin, H, W) in region_var.items():
+                px = int(lon2px(lon, Z) - xmin * 256); py = int(lat2px(lat, Z) - ymin * 256)
+                if 0 <= px < W and 0 <= py < H:
+                    val = float(npis[vk][max(0, py - 6):py + 7, max(0, px - 6):px + 7].max()); break
+            rec[vk] = round(val, 1) if val is not None else None
+        spots[num] = rec
 
     Image.fromarray(grid, "RGBA").save(os.path.join(OUT, "npi-grid.png"), optimize=True)
     gsize = os.path.getsize(os.path.join(OUT, "npi-grid.png"))
-    # SW precache manifest — every tile path, so the service worker can cache the
-    # whole NPI region for offline field use in one install pass.
     json.dump(sorted(tile_paths), open(os.path.join(OUT, "tiles-manifest.json"), "w"))
 
     meta = {
-        "version": "v32", "built": os.environ.get("BUILD_DATE", "2026-07-01"),
+        "version": "v33", "built": os.environ.get("BUILD_DATE", "2026-07-01"),
         "dem": "AWS terrarium z12 (~30 m, SRTM-derived)", "lidar": False,
-        "weights": WEIGHTS, "npiFloor": NPI_FLOOR,
+        "mineralization": "GA magnetics TMI-RTP (magmap_v7_2019_RTP), WCS",
+        "variants": {vk: {"label": VARIANTS[vk]["label"], "weights": VARIANTS[vk]["w"], "slope": VARIANTS[vk]["slope"]} for vk in VKEYS},
+        "npiFloor": NPI_FLOOR,
         "regions": [{"name": r[0], "bbox": [r[1], r[2], r[3], r[4]]} for r in REGIONS],
         "minNativeZoom": 10, "maxNativeZoom": 12,
         "grid": {"zoom": 8, "x0": g8x0, "y0": g8y0, "cols": gcols, "rows": grows,
-                 "planes": "top RGBA=[npi0-100, distReefScore*255, workingsCount, mask255]; "
-                           "bottom RGBA=[drainageScore*255, slopeDeg, bedrockScore*255, mask255]"},
+                 "planes": "A RGBA=[npiVLF, npiPI, npiZVT, mask]; "
+                           "B RGBA=[distReefScore*255, workingsCount, drainScore*255, mask]; "
+                           "C RGBA=[slopeDeg, bedrockScore*255, mineralization*255, mask]"},
         "limitations": [
             "NPI is a heuristic, not a prediction. Real-world success depends on terrain, "
             "ground conditions, equipment and technique.",
             "Elevation is SRTM-derived ~30 m terrain (no Victorian public LiDAR tile service "
             "exists yet) — slope, drainage and bedrock terms are coarse.",
+            "Detector variants reweight the same inputs (VLF favours gentle clean creek ground, "
+            "PI favours steeper mineralised ground, ZVT favours hammered premium ground); "
+            "mineralization is GA TMI-RTP magnetics.",
             "Future versions will retrain on your confirmed gold events for personal calibration."],
-        "spots": spot_vals,
+        "spots": spots,
     }
     json.dump(meta, open(os.path.join(OUT, "npi-meta.json"), "w"), indent=0)
 
     print("\n========== SUMMARY ==========")
-    print(f"tiles: {tiles_written}  bytes: {total_bytes/1e6:.2f} MB  grid.png: {gsize/1024:.0f} KB")
-    print(f"grid: {gcols}x{grows} cells @ z8 (~490 m)")
-    print("NPI at the 12 trip spots (max within ~200 m):")
-    for num in sorted(spot_vals):
-        name, v = spot_vals[num]
-        print(f"  {num:2d}. {name:28s} {v}")
+    print(f"tiles: {tiles_written}  total: {total_bytes/1e6:.2f} MB  grid.png: {gsize/1024:.0f} KB")
+    for vk in VKEYS:
+        print(f"  {vk}: {var_bytes[vk]/1e6:.2f} MB")
+    print(f"grid: {gcols}x{grows} cells x3 planes @ z8 (~490 m)")
+    print("NPI per variant at the 12 trip spots (max within ~200 m):  VLF / PI / ZVT")
+    for num in sorted(spots):
+        r = spots[num]
+        print(f"  {num:2d}. {r['name']:26s} {r['vlf']:>5} / {r['pi']:>5} / {r['zvt']:>5}")
 
 if __name__ == "__main__":
     main()
