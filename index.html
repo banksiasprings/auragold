@@ -382,13 +382,28 @@
   .ag-audio-mk { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     box-shadow:0 1px 4px rgba(0,0,0,.45); border:2px solid #fff; }
   .ag-audio-mk span { font-size:13px; line-height:1; filter:drop-shadow(0 0 1px rgba(0,0,0,.3)); }
-  #audioRec { position:absolute; top:10px; left:10px; z-index:1100; display:none; align-items:center; gap:6px;
+  /* v30 — REC button: positionable (tl/br/menu), always visible as an OFF/ON toggle. */
+  #audioRec { position:absolute; z-index:1100; display:none; align-items:center; gap:6px;
     background:rgba(20,20,24,.82); color:#fff; font:600 12px/1 system-ui,sans-serif; padding:7px 11px 7px 9px;
-    border-radius:20px; cursor:pointer; border:none; -webkit-tap-highlight-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.35); }
-  #audioRec.on { display:inline-flex; }
-  #audioRec .dot { width:9px; height:9px; border-radius:50%; background:#ff3b30; box-shadow:0 0 0 0 rgba(255,59,48,.7);
-    animation:agRecPulse 1.4s infinite; }
-  @keyframes agRecPulse { 0%{ box-shadow:0 0 0 0 rgba(255,59,48,.6);} 70%{ box-shadow:0 0 0 7px rgba(255,59,48,0);} 100%{ box-shadow:0 0 0 0 rgba(255,59,48,0);} }
+    border-radius:20px; cursor:pointer; border:none; -webkit-tap-highlight-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.35);
+    transition:background .25s ease, color .25s ease; }
+  #audioRec.show { display:inline-flex; }
+  #audioRec.pos-tl   { top:10px; left:10px; }                 /* legacy spot (overlaps zoom) */
+  #audioRec.pos-br   { right:12px; bottom:106px; }            /* default — above ☰ Menu / 📍 Locate */
+  #audioRec.pos-menu { top:10px; left:10px; }                 /* shown only while ON (status pill) */
+  #audioRec .dot { width:9px; height:9px; border-radius:50%; background:#8a8a8a; }
+  /* OFF — greyed, calm: tap to begin */
+  #audioRec:not(.on) { background:rgba(38,38,44,.78); color:#cfc9bd; }
+  /* ON (armed, no signal) — green, pulsing */
+  #audioRec.on { background:rgba(22,58,32,.92); color:#fff; }
+  #audioRec.on .dot { background:#34c759; animation:agRecPulse 1.4s infinite; }
+  /* RMS approaching the auto-flag threshold — orange */
+  #audioRec.on.lvl-warn { background:rgba(120,74,12,.94); }
+  #audioRec.on.lvl-warn .dot { background:#ffcc00; }
+  /* actively saving an event — red */
+  #audioRec.on.lvl-hot { background:rgba(122,22,18,.96); }
+  #audioRec.on.lvl-hot .dot { background:#ff3b30; }
+  @keyframes agRecPulse { 0%{ box-shadow:0 0 0 0 rgba(255,255,255,.5);} 70%{ box-shadow:0 0 0 7px rgba(255,255,255,0);} 100%{ box-shadow:0 0 0 0 rgba(255,255,255,0);} }
   /* live RMS meter (settings) */
   .au-meter { position:relative; flex:1 1 auto; height:14px; background:#eee; border-radius:7px; overflow:hidden; min-width:0; }
   .au-meter > #auMeterBar { height:100%; width:0%; background:linear-gradient(90deg,#34c759,#ffcc00 65%,#ff3b30);
@@ -703,6 +718,7 @@
       <button id="checklistBtn" class="ag-act" type="button">📋 Fossicking checklist<span class="sub">Miner's Right · where you can dig · daily checks</span></button>
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
       <button id="audioBtn" class="ag-act" type="button">🎵 Audio events (<span id="audioMenuCount">0</span>)<span class="sub">GPS-tagged detector-signal clips · play, confirm, export</span></button>
+      <button id="audioToggleBtn" class="ag-act" type="button">🎙 <span id="audioToggleLbl">Start audio capture</span><span class="sub">Record detector signal audio · pauses when you leave the app</span></button>
       <button id="detBtn" class="ag-act" type="button">🌙 Best times today<span class="sub">Per-hour detection-efficiency forecast · solar · grid EMI · powerlines</span></button>
       <button id="precheckMenuBtn" class="ag-act" type="button">🔍 Pre-detection check<span class="sub">EMI &amp; setup checklist before you start swinging</span></button>
       <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
@@ -764,6 +780,17 @@
         <label class="au-row" style="display:block"><span style="display:block;margin-bottom:2px">Audio input device</span>
           <select id="auDevice" class="ag-select"><option value="">Default input</option></select></label>
         <p class="ag-note" style="margin:0 2px 6px">Pick your <b>USB-C audio adapter</b> — not the built-in phone mic. Names appear after you grant the mic once (Test capture).</p>
+        <div class="ml-sub">Capture controls</div>
+        <label class="af-check"><input type="checkbox" id="auAutoStart"><span>Start audio capture on app open <small>(default off — otherwise you tap REC to begin)</small></span></label>
+        <label class="af-check"><input type="checkbox" id="auAutoResume"><span>Auto-resume audio on foreground after pause <small>(advanced · may clash with Dispatch)</small></span></label>
+        <div class="au-row" style="align-items:flex-start"><span>REC button</span>
+          <div id="auRecPos" class="af-mode" style="flex:1 1 auto;margin:0">
+            <label class="af-opt"><input type="radio" name="recpos" value="br"><span>Bottom-right <small>(default)</small></span></label>
+            <label class="af-opt"><input type="radio" name="recpos" value="tl"><span>Top-left</span></label>
+            <label class="af-opt"><input type="radio" name="recpos" value="menu"><span>In menu <small>(pill only while ON)</small></span></label>
+          </div></div>
+        <label class="af-check"><input type="checkbox" id="auVolToggle"><span>Volume-down long-press toggles REC <small>(experimental · foreground only)</small></span></label>
+        <p class="ag-note" style="margin:2px 2px 6px">Audio is captured <b>only while REC is on</b>. When you switch away from AuraGold, capture is paused automatically and the mic is released so other apps (like Dispatch) can use it.</p>
         <div class="au-row"><span>Live level</span>
           <div class="au-meter"><div id="auMeterBar"></div><div id="auThreshMark"></div></div></div>
         <div class="ml-sub">Smart auto-flag</div>
@@ -788,7 +815,7 @@
         <div class="au-stat"><span id="auCount">0 events</span> · <span id="auSize">0 KB</span> stored</div>
         <button id="auClear" class="ag-act" type="button" style="color:#b3261e">🗑 Clear all audio events<span class="sub" style="color:#c98">Deletes every saved signal clip — can't be undone</span></button>
       </div>
-      <p class="ag-note" style="padding:0 2px">Capture runs only while AuraGold is <b>open on screen</b> (a phone can't keep the mic open in the background). Expect noticeably faster battery drain with audio + GPS both on.</p>
+      <p class="ag-note" style="padding:0 2px">Capture runs only while REC is on <b>and</b> AuraGold is open on screen — backgrounding the app releases the mic. Expect noticeably faster battery drain with audio + GPS both on.</p>
     </div>
 
     <div class="ag-sec">
@@ -870,7 +897,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v29.1</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v30</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -1052,7 +1079,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v29.1';
+var APP_VERSION = 'v30';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -3322,6 +3349,11 @@ var powerLayers = (function () {
   try { acfg = JSON.parse(localStorage.getItem(AKEY)) || {}; } catch (e) { acfg = {}; }
   if (typeof acfg.threshold !== 'number') acfg.threshold = 0;   // 0 = off (recommended start 0.3)
   if (typeof acfg.deviceId !== 'string') acfg.deviceId = '';
+  // v30 capture-control defaults — audio is OFF unless the user opts in / taps REC.
+  if (typeof acfg.autoStart !== 'boolean') acfg.autoStart = false;   // auto-start capture on app open
+  if (typeof acfg.autoResume !== 'boolean') acfg.autoResume = false; // re-arm when app returns to foreground
+  if (acfg.recPos !== 'tl' && acfg.recPos !== 'br' && acfg.recPos !== 'menu') acfg.recPos = 'br';
+  if (typeof acfg.volToggle !== 'boolean') acfg.volToggle = false;   // volume-down long-press toggles REC
   function saveCfg() { try { localStorage.setItem(AKEY, JSON.stringify(acfg)); } catch (e) {} }
 
   // ---- IndexedDB store helpers (reuse the shared connection) ----
@@ -3474,7 +3506,35 @@ var powerLayers = (function () {
   var running = false, startingP = null, denied = false;
   var hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
-  function setIndicator(on) { var r = document.getElementById('audioRec'); if (r) r.classList.toggle('on', !!on); }
+  // v30 — REC button state (live timer + level tint). updateRecBtn() is the single
+  // source of truth for the button; setIndicator() is kept as a thin alias.
+  var recStartTs = 0, recTimer = null, savingFlashUntil = 0;
+  function fmtElapsed(ms) { var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60, p = function (n) { return (n < 10 ? '0' : '') + n; }; return h > 0 ? h + ':' + p(m) + ':' + p(ss) : m + ':' + p(ss); }
+  function updateRecLabel() { var l = document.getElementById('audioRecLbl'); if (l) l.textContent = running ? 'REC · ' + fmtElapsed(Date.now() - recStartTs) : 'OFF'; }
+  function updateRecLevel() {
+    var r = document.getElementById('audioRec'); if (!r) return;
+    if (!running) { r.classList.remove('lvl-warn', 'lvl-hot'); return; }
+    var hot = Date.now() < savingFlashUntil;
+    var thr = acfg.threshold > 0 ? acfg.threshold : 0.3;          // reference even when auto-flag is off
+    var warn = !hot && smoothedRMS >= thr * 0.6;
+    r.classList.toggle('lvl-hot', hot);
+    r.classList.toggle('lvl-warn', warn);
+  }
+  function updateRecBtn() {
+    var r = document.getElementById('audioRec');
+    if (r) {
+      r.classList.remove('pos-tl', 'pos-br', 'pos-menu');
+      r.classList.add(acfg.recPos === 'tl' ? 'pos-tl' : acfg.recPos === 'menu' ? 'pos-menu' : 'pos-br');
+      r.classList.toggle('show', acfg.recPos === 'menu' ? running : true);   // menu mode: pill only while ON
+      r.classList.toggle('on', running);
+      r.title = running ? 'Recording detector audio — tap to stop' : 'Tap to start detector audio capture';
+    }
+    updateRecLabel(); updateRecLevel();
+    var ml = document.getElementById('audioToggleLbl'); if (ml) ml.textContent = running ? 'Stop audio capture' : 'Start audio capture';
+  }
+  function startRecTimer() { if (recTimer) clearInterval(recTimer); recStartTs = Date.now(); recTimer = setInterval(function () { updateRecLabel(); updateRecLevel(); }, 500); }
+  function stopRecTimer() { if (recTimer) { clearInterval(recTimer); recTimer = null; } }
+  function setIndicator() { updateRecBtn(); }
 
   function start() {
     if (running) return Promise.resolve(true);
@@ -3501,10 +3561,10 @@ var powerLayers = (function () {
       if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e2) {} }
       s.getAudioTracks().forEach(function (tr) { tr.onended = function () { stop(); toast('🎙 Audio input disconnected'); }; });
       running = true; startingP = null; denied = false;
-      setIndicator(true);
+      startRecTimer(); setIndicator();
       return true;
     }).catch(function (err) {
-      startingP = null; running = false; setIndicator(false);
+      startingP = null; running = false; stopRecTimer(); setIndicator();
       if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.name === 'PermissionDeniedError')) denied = true;
       try { console.warn('[v24] mic start failed:', err && err.name, err && err.message); } catch (e) {}
       return false;
@@ -3512,7 +3572,7 @@ var powerLayers = (function () {
     return startingP;
   }
   function stop() {
-    running = false; startingP = null; setIndicator(false);
+    running = false; startingP = null; stopRecTimer(); setIndicator();
     try { if (procNode) { procNode.disconnect(); procNode.onaudioprocess = null; } } catch (e) {}
     try { if (zeroGain) zeroGain.disconnect(); } catch (e) {}
     try { if (srcNode) srcNode.disconnect(); } catch (e) {}
@@ -3636,6 +3696,7 @@ var powerLayers = (function () {
     opts = opts || {};
     var ts = Date.now(), dk = dayKey(ts);
     if (opts.source !== 'calibration' && (dailyCount[dk] || 0) >= DAILY_CAP) { if (type === 'manual') toast('Daily audio cap (' + DAILY_CAP + ') reached'); return Promise.resolve(null); }
+    savingFlashUntil = ts + 1200; updateRecLevel();   // v30: flash the REC button red while saving
     pollFix();
     var snapSec = opts.snapSeconds || SNAP_SECONDS;
     var samples = snapshot(snapSec);
@@ -4215,25 +4276,39 @@ var powerLayers = (function () {
   var auExport = document.getElementById('auExport');
   if (auExport) auExport.addEventListener('click', exportZip);
 
-  // ---- REC indicator: tap to toggle capture ----
+  // ---- REC toggle: the single explicit on/off control (button + ☰ menu + volume key) ----
+  function toggleRec() {
+    if (running) { stop(); toast('🎙 Audio capture OFF — mic released'); }
+    else start().then(function (ok) {
+      if (ok) toast('🎙 Audio capture ON — your next hit will save a clip');
+      else toast('🎙 Microphone unavailable — grant the mic (Test capture in Settings) first');
+    });
+  }
   var recBtn = document.getElementById('audioRec');
-  if (recBtn) recBtn.addEventListener('click', function () { if (running) { stop(); toast('Audio capture stopped'); } else start().then(function (ok) { if (ok) toast('🎙 Audio capture on'); }); });
+  if (recBtn) recBtn.addEventListener('click', toggleRec);
+  var audioToggleBtn = document.getElementById('audioToggleBtn');
+  if (audioToggleBtn) audioToggleBtn.addEventListener('click', function () { closeMenu(); toggleRec(); });
 
-  // ---- "Got a hit!" — also snapshot audio (existing handler still logs the GPS find) ----
+  // ---- "Got a hit!" — snapshot audio only if REC is already on (existing handler logs the GPS find) ----
   var hitBtn = document.getElementById('hitBtn');
   if (hitBtn) hitBtn.addEventListener('click', function () {
     if (!hasGUM || denied) return;                       // GPS-only fallback already handled elsewhere
     if (running) { saveEvent('manual'); }
-    else { start().then(function (ok) { if (ok) toast('🎙 Audio armed — your next hit will save a clip'); }); }
+    else { toast('🎙 Tap REC first or enable auto-start in Settings'); }   // v30: no surprise mic grab
   });
 
-  // ---- keep capture alive across foreground/background flips ----
+  // ---- v30: release the mic when backgrounded so other apps (e.g. Dispatch) can use it ----
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && running && ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    if (document.hidden) {
+      if (running) { stop(); toast('🎙 Audio paused — mic released for other apps'); }
+    } else if (acfg.autoResume && !running && !denied) {
+      start().then(function (ok) { if (ok) toast('🎙 Audio capture resumed'); });
+    }
   });
 
-  // ---- auto-start capture if the user already granted the mic (continuous foreground) ----
+  // ---- v30: auto-start on app open ONLY if the user opted in (default OFF) ----
   function tryAutoStart() {
+    if (!acfg.autoStart) return;                         // opt-in only — no silent capture
     if (!hasGUM || running || denied) return;
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'microphone' }).then(function (st) {
@@ -4242,6 +4317,32 @@ var powerLayers = (function () {
       }).catch(function () {});
     }
   }
+
+  // ---- v30: best-effort volume-down long-press toggle (foreground only; rarely fires on mobile) ----
+  (function volToggle() {
+    var pressTimer = null;
+    function isVolDown(e) { return e.key === 'AudioVolumeDown' || e.key === 'VolumeDown' || e.keyCode === 174; }
+    document.addEventListener('keydown', function (e) {
+      if (!acfg.volToggle || document.hidden || pressTimer || !isVolDown(e)) return;
+      pressTimer = setTimeout(function () { pressTimer = null; toggleRec(); toast('🎙 Audio toggled via volume button'); }, 1500);
+    });
+    function clear() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+    document.addEventListener('keyup', function (e) { if (isVolDown(e)) clear(); });
+    window.addEventListener('blur', clear);
+  })();
+
+  // ---- v30: wire the capture-control settings + render the REC button in its initial OFF state ----
+  (function wireCaptureControls() {
+    var as = document.getElementById('auAutoStart'); if (as) { as.checked = acfg.autoStart; as.addEventListener('change', function () { acfg.autoStart = as.checked; saveCfg(); }); }
+    var ar = document.getElementById('auAutoResume'); if (ar) { ar.checked = acfg.autoResume; ar.addEventListener('change', function () { acfg.autoResume = ar.checked; saveCfg(); }); }
+    var vt = document.getElementById('auVolToggle'); if (vt) { vt.checked = acfg.volToggle; vt.addEventListener('change', function () { acfg.volToggle = vt.checked; saveCfg(); }); }
+    var pos = document.getElementById('auRecPos');
+    if (pos) {
+      var sel = pos.querySelector('input[name="recpos"][value="' + acfg.recPos + '"]'); if (sel) sel.checked = true;
+      pos.addEventListener('change', function (e) { if (e.target.name === 'recpos') { acfg.recPos = e.target.value; saveCfg(); updateRecBtn(); } });
+    }
+    updateRecBtn();   // show the OFF toggle immediately (tl/br modes)
+  })();
 
   // ---- init: load saved events, render, then load any trained model + backfill ML features ----
   evAll().then(function (list) {

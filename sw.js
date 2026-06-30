@@ -13,8 +13,14 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v29.1';
+const SHELL_VERSION = 'v30';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
+// v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
+// default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
+// can use it; the REC button moved to the bottom-right and is now an always-visible OFF/ON toggle
+// with a live MM:SS timer + green/orange/red level tint; added a ☰-menu REC toggle, a Settings
+// "Capture controls" group (auto-start / auto-resume / button position / volume-key toggle), and
+// honest, explicit toast copy. "Got a hit" with REC off no longer silently grabs the mic.
 // v29.1: pre-detection EMI/setup checklist (Minelab GPX-class accuracy killers) with best-effort
 // auto-checks (detection score, battery, powerline proximity, ambient mic), long-press dismiss,
 // and a geofence auto-trigger near trip spots. Plus a "Start detecting" button + detecting footer.
@@ -34,7 +40,7 @@ const SHELL_VERSION = 'v29.1';
 // in every WAV, and ML-enriched ZIP export (events.csv + features_v1.json + model_v1.json). tf.js
 // (~1MB) + meyda (~40KB) precached below for offline training/inference. IndexedDB bumped to v4
 // (adds the `auragold_models` store + per-event features / label / source / mlConfidence fields).
-const SHELL_REV = 'v29.1';
+const SHELL_REV = 'v30';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
