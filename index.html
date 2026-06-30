@@ -606,6 +606,60 @@
   .dw-wsum { font-size:11.5px; margin:4px 2px 0; font-weight:600; }
   .au-det { display:inline-block; background:#eef3ff; color:#33518a; border:1px solid #cdd9f3; border-radius:6px;
     padding:0 5px; font-size:10.5px; font-weight:700; vertical-align:middle; }
+
+  /* ===== v29.1 — pre-detection checklist ===== */
+  #detectBtn { position:absolute; bottom:66px; left:12px; z-index:1000; border:none; cursor:pointer;
+    background:#1f8a3b; color:#fff; font:700 14px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:13px 16px; border-radius:24px; box-shadow:0 3px 10px rgba(0,0,0,.4); display:flex; align-items:center; gap:7px;
+    -webkit-tap-highlight-color:transparent; }
+  #detectBtn:active { transform:scale(.96); }
+  #detectBtn.hidden { display:none; }
+  .pc-ov { position:fixed; inset:0; z-index:3000; background:rgba(15,15,20,.55); display:none; align-items:flex-end; justify-content:center; }
+  .pc-ov.show { display:flex; }
+  @media (min-width:560px){ .pc-ov { align-items:center; } }
+  .pc-card { background:#fbf7ec; width:min(540px,100%); max-height:90vh; border-radius:18px 18px 0 0; box-shadow:0 -6px 26px rgba(0,0,0,.4);
+    display:flex; flex-direction:column; overflow:hidden; }
+  @media (min-width:560px){ .pc-card { border-radius:18px; } }
+  .pc-head { padding:14px 16px 10px; border-bottom:1px solid #ece4d0; position:relative; }
+  .pc-head h2 { margin:0; font-size:17px; color:#1f2430; }
+  .pc-head p { margin:3px 0 0; font-size:12px; color:#7a7458; }
+  .pc-head .pc-x { position:absolute; top:10px; right:12px; background:none; border:none; font-size:24px; color:#999; cursor:pointer; line-height:1; }
+  .pc-body { overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 12px 10px; flex:1 1 auto; }
+  .pc-grp { font-weight:800; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:#9a8a52; padding:11px 2px 4px; }
+  .pc-item { display:flex; align-items:flex-start; gap:9px; padding:8px 6px; border-radius:10px; background:#fff; border:1px solid #efe8d6; margin:5px 0;
+    user-select:none; -webkit-user-select:none; }
+  .pc-item.done { background:#eaf7ed; border-color:#bfe3c7; }
+  .pc-item.skip { opacity:.5; }
+  .pc-item.warn { background:#fdece9; border-color:#f3c2b8; }
+  .pc-item.autogood { background:#eaf7ed; border-color:#bfe3c7; }
+  .pc-tick { flex:0 0 auto; width:24px; height:24px; border-radius:50%; border:2px solid #cdbf94; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; color:transparent; margin-top:1px; }
+  .pc-item.done .pc-tick { background:#2c8b3c; border-color:#2c8b3c; color:#fff; }
+  .pc-item.warn .pc-tick { background:#d6553f; border-color:#d6553f; color:#fff; }
+  .pc-item.autogood .pc-tick { background:#2c8b3c; border-color:#2c8b3c; color:#fff; }
+  .pc-txt { flex:1 1 auto; min-width:0; font-size:13px; color:#262626; line-height:1.34; }
+  .pc-txt b { color:#1f2430; }
+  .pc-tip { display:block; font-size:11px; color:#8a8262; margin-top:2px; }
+  .pc-val { display:block; font-size:11.5px; font-weight:700; margin-top:2px; }
+  .pc-skip { flex:0 0 auto; background:none; border:none; color:#b0a884; font-size:18px; cursor:pointer; padding:0 4px; align-self:center; }
+  .pc-item.skip .pc-skip { color:#2c8b3c; }
+  .pc-actbtn { flex:0 0 auto; background:#f0ead8; border:none; border-radius:8px; font-size:11px; font-weight:700; color:#6b6038;
+    padding:5px 8px; cursor:pointer; align-self:center; }
+  .pc-foot-bar { padding:10px 14px 14px; border-top:1px solid #ece4d0; background:#fbf7ec; }
+  .pc-progress { font-size:11.5px; color:#7a7458; margin:0 0 8px; text-align:center; }
+  .pc-ready { width:100%; box-sizing:border-box; border:none; border-radius:12px; padding:13px; font:800 15px/1 -apple-system,sans-serif;
+    cursor:pointer; background:#1f8a3b; color:#fff; }
+  .pc-ready:disabled { background:#cfd6cb; color:#8a8f88; cursor:default; }
+  .pc-hint { font-size:10.5px; color:#a59b78; text-align:center; margin:7px 2px 0; }
+  /* detecting-mode footer pill */
+  #detectFoot { position:absolute; bottom:66px; left:12px; z-index:1150; display:none; align-items:center; gap:9px;
+    background:rgba(20,28,22,.93); color:#fff; border-radius:22px; padding:8px 10px 8px 13px; box-shadow:0 3px 12px rgba(0,0,0,.4);
+    font:13px/1 -apple-system,sans-serif; max-width:94vw; }
+  #detectFoot.show { display:inline-flex; }
+  #detectFoot .df-dot { font-size:13px; }
+  #detectFoot .df-score { font-weight:800; font-variant-numeric:tabular-nums; }
+  #detectFoot .df-best { font-size:11px; color:#bfe3c7; white-space:nowrap; }
+  #detectFoot .df-stop { background:rgba(255,255,255,.16); border:none; color:#fff; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:14px; line-height:1; }
 </style>
 </head>
 <body>
@@ -650,6 +704,7 @@
       <button id="findsBtn" class="ag-act" type="button">🎯 My finds (<span id="findsCount">0</span>)<span class="sub">Saved points · export GPX / JSON</span></button>
       <button id="audioBtn" class="ag-act" type="button">🎵 Audio events (<span id="audioMenuCount">0</span>)<span class="sub">GPS-tagged detector-signal clips · play, confirm, export</span></button>
       <button id="detBtn" class="ag-act" type="button">🌙 Best times today<span class="sub">Per-hour detection-efficiency forecast · solar · grid EMI · powerlines</span></button>
+      <button id="precheckMenuBtn" class="ag-act" type="button">🔍 Pre-detection check<span class="sub">EMI &amp; setup checklist before you start swinging</span></button>
       <button id="tripBtn" class="ag-act" type="button">🗺 Trip planner<span class="sub">Your editable day-by-day plan · reorder, add spots &amp; waypoints</span></button>
       <button id="settingsBtn" class="ag-act" type="button">⚙ Settings<span class="sub">Distance units · app version · force update</span></button>
     </div>
@@ -660,6 +715,8 @@
 
 <!-- Got-a-hit one-tap field log + saved-finds panel (AuraGold PWA) -->
 <button id="hitBtn" type="button" title="Log a find at your GPS location"><span style="font-size:16px">🎯</span> Got a hit!</button>
+<button id="detectBtn" type="button" title="Run the pre-detection EMI &amp; setup checklist"><span style="font-size:15px">🔍</span> Start detecting</button>
+<div id="detectFoot" role="status" aria-live="polite"><span class="df-dot">🟢</span><span>Detecting</span><span class="df-score">–</span><span class="df-best"></span><button class="df-stop" type="button" title="Stop detecting" aria-label="Stop detecting">×</button></div>
 <button id="audioRec" type="button" title="Detector audio is recording — tap to stop"><span class="dot"></span><span id="audioRecLbl">REC</span></button>
 <div class="version-badge" id="versionBadge" aria-hidden="true"></div>
 <aside id="findsPanel" class="ag-panel" aria-hidden="true">
@@ -781,6 +838,8 @@
       <div class="ag-card">
         <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">Forecasts per-hour detector efficiency for the next 24&nbsp;h from your location — solar/geomagnetic &amp; grid EMI, atmosphere, ground coupling, moonlight and powerline proximity. A first-of-its-kind, fully heuristic estimate. Open the full chart from <b>☰ Menu → 🌙 Best times today</b> or the badge at the top of the map.</p>
         <button id="detOpenBtn" class="ag-act" type="button">🌙 Open Best-times chart<span class="sub">24-hour detection-efficiency forecast</span></button>
+        <button id="precheckSetBtn" class="ag-act" type="button">🔍 Pre-detection checklist<span class="sub">Run the EMI &amp; setup check on demand</span></button>
+        <label class="af-check" style="margin:8px 2px 2px"><input type="checkbox" id="pcGeofence" checked><span>Auto-show the checklist when I reach a trip spot</span></label>
         <details class="ag-collap" id="detAdvanced" style="margin-top:8px">
           <summary>Advanced: detection-model weights</summary>
           <p class="ag-note" style="margin:7px 2px">How much each factor counts toward the score. Defaults are conservative — nudge them to match your detector &amp; ground, then re-open the chart. Weights renormalise to 100%.</p>
@@ -811,7 +870,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v29</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v29.1</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -993,7 +1052,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v29';
+var APP_VERSION = 'v29.1';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -4716,6 +4775,220 @@ var powerLayers = (function () {
   var mvT=null; try { map.on('moveend', function(){ clearTimeout(mvT); mvT=setTimeout(function(){ compute(); renderBadge(); if(panelOpen()) renderPanel(); },700); }); } catch(e){}
   setInterval(function(){ compute(); renderBadge(); if(panelOpen()) renderPanel(); }, 5*60000);
   window.addEventListener('online', function(){ refreshData(false); });
+})();
+</script>
+
+<!-- v29.1: pre-detection checklist — the genuine top accuracy killers for PI detectors
+     (Minelab GPX-class), with best-effort auto-checks (detection score, battery, powerline
+     proximity, ambient mic), long-press-to-dismiss, and a geofence auto-trigger near trip spots. -->
+<script>
+(function () {
+  'use strict';
+  var AG = window.AuraGold = window.AuraGold || {};
+  if (AG.precheck) return;
+
+  // Research-grounded checklist. `auto` items self-resolve (informational); manual items gate Ready.
+  var GROUPS = [
+    { g:'Noise & tuning', items:[
+      { id:'noisecancel', txt:'Run <b>Noise Cancel / Auto-Tune</b> — hold the coil still ~10&nbsp;cm above the ground and let it retune to the quietest channel.', tip:'Minelab’s #1 fix for EMI chatter & false signals.' },
+      { id:'groundbal', txt:'<b>Ground balance</b> freshly run for this patch (auto-track on, or run a manual balance).' }
+    ]},
+    { g:'Equipment', items:[
+      { id:'coilcable', txt:'Coil <b>cable secured</b> and routed <b>away from the headphone cable</b> — a loose or crossing cable induces noise.' },
+      { id:'battery', auto:'battery', txt:'Detector / phone <b>battery above 30%</b> (low battery can drop sensitivity).' },
+      { id:'sweep', txt:'Coil kept <b>low &amp; level</b> (~25–50&nbsp;mm), sweeps overlapping — lifting the coil is the biggest depth killer.' },
+      { id:'coiltype', txt:'On a noisy day, consider a <b>Double-D coil</b> over a big mono (mono fields pick up more EMI).' }
+    ]},
+    { g:'Personal EMI sources', items:[
+      { id:'phone', txt:'Phone <b>Bluetooth + Wi-Fi off</b>, or phone kept well away from the coil.' },
+      { id:'watch', txt:'<b>Smartwatch</b> removed or in airplane mode.' },
+      { id:'gps2', txt:'No <b>second GPS / phone</b> on your belt or near the coil.' },
+      { id:'headphones', txt:'<b>Wired headphones</b> in use (preferred over wireless/Bluetooth).' },
+      { id:'boots', txt:'<b>Steel-toed boots</b> kept from crossing under the coil.' }
+    ]},
+    { g:'Environment', items:[
+      { id:'powerline', auto:'powerline', txt:'<b>Outside</b> any 200&nbsp;m powerline EMI buffer.' },
+      { id:'vehicle', txt:'Vehicle parked <b>≥20&nbsp;m</b> from your sweep area.' },
+      { id:'others', txt:'Other detectorists <b>≥50&nbsp;m</b> away.' },
+      { id:'towers', txt:'Clear of <b>mobile/cell towers, generators &amp; electric fences</b>.' },
+      { id:'lightning', txt:'No <b>storms/lightning</b> nearby (atmospheric EMI spikes the threshold).' }
+    ]},
+    { g:'Right now (auto)', items:[
+      { id:'score', auto:'score', txt:'Detection-window score for here &amp; now.' },
+      { id:'ambient', auto:'ambient', txt:'Ambient mic level (best-effort noisy-spot check).' }
+    ]}
+  ];
+
+  var DKEY='ag_pc_dismissed_v1', GKEY='ag_pc_geofence_v1';
+  function getDismissed(){ try { return JSON.parse(localStorage.getItem(DKEY))||[]; } catch(e){ return []; } }
+  function setDismissed(a){ try { localStorage.setItem(DKEY, JSON.stringify(a)); } catch(e){} }
+  function geofenceOn(){ return localStorage.getItem(GKEY)!=='0'; }   // default ON
+  function setGeofence(on){ try { localStorage.setItem(GKEY, on?'1':'0'); } catch(e){} }
+
+  var checked={}, skipped={}, ambient=null, batt=null;   // per-open state
+  function pcToast(m){ var t=document.querySelector('.ag-toast'); if(!t){ t=document.createElement('div'); t.className='ag-toast'; document.body.appendChild(t); } t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove('show'); }, 3000); }
+
+  // ---- best-effort auto checks ----
+  function curLoc(){ var f=AG.lastFix; if(f&&f.lat!=null) return {lat:f.lat,lng:f.lng};
+    try { var c=map.getCenter(); return {lat:c.lat,lng:c.lng}; } catch(e){ return null; } }
+  function batteryCheck(){ return new Promise(function(res){
+    if(navigator.getBattery){ navigator.getBattery().then(function(b){ res({ok:true,pct:Math.round(b.level*100),charging:b.charging}); }, function(){ res({ok:false}); }); }
+    else res({ok:false}); }); }
+  function powerlineStatus(){ var loc=curLoc(); if(!loc||!(AG.powerlines&&AG.powerlines.nearestDistance)) return {known:false};
+    var d=AG.powerlines.nearestDistance(loc.lat,loc.lng);
+    if(d==null) return {known:true,inside:false,dist:null};
+    return {known:true,inside:d<200,dist:d}; }
+  function scoreStatus(){ if(!(AG.detection&&AG.detection.scoreNow)) return null;
+    try { var s=AG.detection.scoreNow(); var bw=AG.detection.bestWindow(); var f=AG.detection.forecast();
+      var bestHr=bw&&bw.best?f.hours[bw.best.start].localHour:null; return {score:s,bestHr:bestHr}; } catch(e){ return null; } }
+  function fmtHour(h){ if(h==null) return ''; h=Math.round(((h%24)+24)%24); var ap=h<12?'am':'pm'; var hh=h%12; if(hh===0) hh=12; return hh+ap; }
+  // One-shot ambient acoustic-noise sample (phone mic) — a loose proxy for a noisy spot.
+  function ambientCheck(cb){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ cb({ok:false,msg:'mic unavailable'}); return; }
+    var done=false, to=setTimeout(function(){ if(!done){ done=true; cb({ok:false,msg:'couldn’t sample'}); } }, 4500);
+    navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } }).then(function(stream){
+      try {
+        var ctx=new (window.AudioContext||window.webkitAudioContext)();
+        var src=ctx.createMediaStreamSource(stream), an=ctx.createAnalyser(); an.fftSize=2048; src.connect(an);
+        var buf=new Float32Array(an.fftSize), peak=0, n=0;
+        var iv=setInterval(function(){ an.getFloatTimeDomainData(buf); var s=0; for(var i=0;i<buf.length;i++) s+=buf[i]*buf[i]; var rms=Math.sqrt(s/buf.length); if(rms>peak) peak=rms; n++;
+          if(n>=14){ clearInterval(iv); if(done) return; done=true; clearTimeout(to);
+            stream.getTracks().forEach(function(t){ t.stop(); }); try{ ctx.close(); }catch(e){}
+            cb({ ok:true, level:Math.round(peak*1000), high:peak>0.06 }); } }, 100);
+      } catch(e){ if(!done){ done=true; clearTimeout(to); cb({ok:false,msg:'audio error'}); } }
+    }).catch(function(){ if(!done){ done=true; clearTimeout(to); cb({ok:false,msg:'mic blocked'}); } });
+  }
+
+  // ---- modal ----
+  var ov=document.createElement('div'); ov.className='pc-ov'; ov.setAttribute('aria-hidden','true');
+  ov.innerHTML='<div class="pc-card" role="dialog" aria-modal="true" aria-label="Pre-detection checklist">'+
+    '<div class="pc-head"><h2>🔍 Pre-detection check</h2><p>Knock out the EMI &amp; setup killers before you swing. Long-press an item to skip it for good.</p><button class="pc-x" aria-label="Close">×</button></div>'+
+    '<div class="pc-body" id="pcBody"></div>'+
+    '<div class="pc-foot-bar"><div class="pc-progress" id="pcProgress"></div><button class="pc-ready" id="pcReady" disabled>Ready to detect</button><div class="pc-hint" id="pcHint"></div></div>'+
+    '</div>';
+  document.body.appendChild(ov);
+  var body=ov.querySelector('#pcBody'), readyBtn=ov.querySelector('#pcReady'), progress=ov.querySelector('#pcProgress'), hint=ov.querySelector('#pcHint');
+  ov.querySelector('.pc-x').addEventListener('click', close);
+  ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+
+  function visibleItems(){ var dis=getDismissed(), out=[]; GROUPS.forEach(function(grp){ grp.items.forEach(function(it){ if(dis.indexOf(it.id)<0) out.push(it); }); }); return out; }
+  function manualItems(){ return visibleItems().filter(function(it){ return !it.auto; }); }
+  function updateReady(){
+    var m=manualItems(), resolved=m.filter(function(it){ return checked[it.id]||skipped[it.id]; }).length;
+    progress.textContent=resolved+' / '+m.length+' checks done'+(resolved<m.length?' · tick or skip the rest':'');
+    readyBtn.disabled = resolved<m.length;
+    readyBtn.textContent = readyBtn.disabled ? 'Ready to detect' : '✓ Ready to detect';
+  }
+
+  function render(){
+    var dis=getDismissed();
+    body.innerHTML='';
+    GROUPS.forEach(function(grp){
+      var live=grp.items.filter(function(it){ return dis.indexOf(it.id)<0; });
+      if(!live.length) return;
+      var h=document.createElement('div'); h.className='pc-grp'; h.textContent=grp.g; body.appendChild(h);
+      live.forEach(function(it){ body.appendChild(renderItem(it)); });
+    });
+    if(dis.length){ var r=document.createElement('button'); r.className='pc-actbtn'; r.style.margin='10px 2px 2px'; r.textContent='↺ Show '+dis.length+' dismissed item'+(dis.length>1?'s':'')+' again';
+      r.addEventListener('click', function(){ setDismissed([]); render(); updateReady(); }); body.appendChild(r); }
+    updateReady();
+  }
+
+  function renderItem(it){
+    var row=document.createElement('div'); row.className='pc-item';
+    var tick=document.createElement('div'); tick.className='pc-tick'; tick.textContent='✓';
+    var txt=document.createElement('div'); txt.className='pc-txt'; txt.innerHTML=it.txt+(it.tip?'<span class="pc-tip">'+it.tip+'</span>':'');
+    row.appendChild(tick); row.appendChild(txt);
+
+    if(it.auto){
+      // auto items: status shown, not gating
+      if(it.auto==='battery'){ var bcls=batt&&batt.ok?(batt.pct<30?'warn':'autogood'):''; if(bcls) row.classList.add(bcls);
+        if(batt&&batt.ok) txt.innerHTML+='<span class="pc-val" style="color:'+(batt.pct<30?'#c0392b':'#2c8b3c')+'">'+batt.pct+'%'+(batt.charging?' ⚡ charging':'')+(batt.pct<30?' — low!':'')+'</span>';
+        else txt.innerHTML+='<span class="pc-val" style="color:#8a8262">battery API unavailable — check manually</span>';
+        tick.textContent = (batt&&batt.ok&&batt.pct>=30)?'✓':(batt&&batt.ok?'!':'');
+      } else if(it.auto==='powerline'){ var p=powerlineStatus();
+        if(p.known){ row.classList.add(p.inside?'warn':'autogood'); tick.textContent=p.inside?'!':'✓';
+          txt.innerHTML+='<span class="pc-val" style="color:'+(p.inside?'#c0392b':'#2c8b3c')+'">'+(p.dist==null?'no powerline mapped nearby':(p.inside?'INSIDE buffer — '+Math.round(p.dist)+' m to line':(p.dist<1000?Math.round(p.dist)+' m':(p.dist/1000).toFixed(1)+' km')+' to nearest line'))+'</span>'; }
+        else txt.innerHTML+='<span class="pc-val" style="color:#8a8262">powerline data loading…</span>';
+      } else if(it.auto==='score'){ var s=scoreStatus();
+        if(s){ row.classList.add('autogood'); tick.textContent='✓';
+          var col=s.score>=66?'#2c8b3c':(s.score>=50?'#c89a1a':'#c0392b');
+          txt.innerHTML+='<span class="pc-val" style="color:'+col+'">'+s.score+'/100'+(s.bestHr!=null?' · best at '+fmtHour(s.bestHr):'')+'</span>'; }
+        else txt.innerHTML+='<span class="pc-val" style="color:#8a8262">forecast not ready</span>';
+      } else if(it.auto==='ambient'){
+        if(ambient&&ambient.ok){ row.classList.add(ambient.high?'warn':'autogood'); tick.textContent=ambient.high?'!':'✓';
+          txt.innerHTML+='<span class="pc-val" style="color:'+(ambient.high?'#c0392b':'#2c8b3c')+'">level '+ambient.level+(ambient.high?' — loud spot, try moving':' — quiet')+'</span>'; }
+        else { var b=document.createElement('button'); b.className='pc-actbtn'; b.textContent=(ambient&&ambient.msg)?'Retry':'Tap to test';
+          if(ambient&&ambient.msg) txt.innerHTML+='<span class="pc-val" style="color:#8a8262">'+ambient.msg+'</span>';
+          b.addEventListener('click', function(){ b.textContent='Listening…'; ambientCheck(function(r){ ambient=r; render(); }); });
+          row.appendChild(b); }
+      }
+      return row;
+    }
+
+    // manual item: tick toggles done; skip button; long-press dismiss
+    if(checked[it.id]) row.classList.add('done');
+    if(skipped[it.id]) row.classList.add('skip');
+    tick.addEventListener('click', function(){ checked[it.id]=!checked[it.id]; if(checked[it.id]) skipped[it.id]=false; row.classList.toggle('done',!!checked[it.id]); row.classList.remove('skip'); updateReady(); });
+    var skip=document.createElement('button'); skip.className='pc-skip'; skip.title='Skip this one'; skip.textContent='—';
+    skip.addEventListener('click', function(e){ e.stopPropagation(); skipped[it.id]=!skipped[it.id]; if(skipped[it.id]) checked[it.id]=false; row.classList.toggle('skip',!!skipped[it.id]); row.classList.remove('done'); updateReady(); });
+    row.appendChild(skip);
+    // long-press to dismiss permanently
+    var lpT=null;
+    function lpStart(){ lpT=setTimeout(function(){ lpT=null; AG.confirmDelete({ title:'Always skip this check?', message:'“'+txt.textContent.replace(it.tip||'','').slice(0,60)+'…” won’t show again. Re-enable from inside the checklist.', confirmLabel:'SKIP ALWAYS', onConfirm:function(){ var d=getDismissed(); if(d.indexOf(it.id)<0) d.push(it.id); setDismissed(d); render(); } }); }, 600); }
+    function lpEnd(){ if(lpT){ clearTimeout(lpT); lpT=null; } }
+    row.addEventListener('pointerdown', lpStart); row.addEventListener('pointerup', lpEnd);
+    row.addEventListener('pointerleave', lpEnd); row.addEventListener('pointercancel', lpEnd);
+    return row;
+  }
+
+  function open(){
+    checked={}; skipped={}; ambient=null;
+    if(AG.powerlines&&AG.powerlines.ensureLoaded) AG.powerlines.ensureLoaded().then(function(){ if(ov.classList.contains('show')) render(); });
+    batteryCheck().then(function(b){ batt=b; if(ov.classList.contains('show')) render(); });
+    render();
+    ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
+    document.addEventListener('keydown', onKey, true);
+  }
+  function close(){ ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); document.removeEventListener('keydown', onKey, true); }
+  function onKey(e){ if(e.key==='Escape') close(); }
+
+  // ---- detecting mode + footer ----
+  var startBtn=document.getElementById('detectBtn'), foot=document.getElementById('detectFoot');
+  var detecting=false, footIv=null;
+  function updateFoot(){ if(!foot||!detecting) return; var s=scoreStatus();
+    foot.querySelector('.df-score').textContent=s?s.score:'–';
+    foot.querySelector('.df-dot').textContent=s?(s.score>=72?'🟢':(s.score>=54?'🟡':'🔴')):'🟢';
+    foot.querySelector('.df-best').textContent=s&&s.bestHr!=null?('best '+fmtHour(s.bestHr)):''; }
+  function startDetecting(){ detecting=true; if(startBtn) startBtn.classList.add('hidden'); if(foot){ foot.classList.add('show'); } updateFoot(); if(footIv) clearInterval(footIv); footIv=setInterval(updateFoot, 60000); }
+  function stopDetecting(){ detecting=false; if(startBtn) startBtn.classList.remove('hidden'); if(foot) foot.classList.remove('show'); if(footIv){ clearInterval(footIv); footIv=null; } }
+  readyBtn.addEventListener('click', function(){ close(); startDetecting(); });
+  if(foot){ var st=foot.querySelector('.df-stop'); if(st) st.addEventListener('click', stopDetecting); }
+
+  // ---- entry points ----
+  if(startBtn) startBtn.addEventListener('click', open);
+  var pm=document.getElementById('precheckMenuBtn'); if(pm) pm.addEventListener('click', function(){ var mp=document.getElementById('menuPanel'); if(mp){ mp.classList.remove('open'); mp.setAttribute('aria-hidden','true'); } open(); });
+  var ps=document.getElementById('precheckSetBtn'); if(ps) ps.addEventListener('click', function(){ var sp=document.getElementById('settingsPanel'); if(sp){ sp.classList.remove('open'); sp.setAttribute('aria-hidden','true'); } open(); });
+  var gf=document.getElementById('pcGeofence'); if(gf){ gf.checked=geofenceOn(); gf.addEventListener('change', function(){ setGeofence(gf.checked); }); }
+
+  // ---- geofence: auto-open near a trip spot (dwell-guarded so drive-bys don't fire) ----
+  function distM(la1,lo1,la2,lo2){ var R=6371000,rad=Math.PI/180; var dla=(la2-la1)*rad, dlo=(lo2-lo1)*rad;
+    var a=Math.sin(dla/2)*Math.sin(dla/2)+Math.cos(la1*rad)*Math.cos(la2*rad)*Math.sin(dlo/2)*Math.sin(dlo/2); return 2*R*Math.asin(Math.sqrt(a)); }
+  var GEO_R=130, triggered={}, dwell={};
+  function geoTick(){
+    if(!geofenceOn() || detecting || ov.classList.contains('show')) return;
+    var f=AG.lastFix; if(!f||f.lat==null||(f.acc!=null&&f.acc>80)) return;          // need a decent fix
+    var sp=(typeof spots!=='undefined')?spots:null; if(!sp) return;
+    for(var i=0;i<sp.length;i++){ var s=sp[i]; var id=s.n!=null?s.n:i; var d=distM(f.lat,f.lng,s.lat,s.lng);
+      if(d<=GEO_R){ dwell[id]=(dwell[id]||0)+1;
+        if(dwell[id]>=2 && !triggered[id]){ triggered[id]=true;
+          pcToast('📍 You’re at '+(s.name||('spot '+id))+' — running the pre-detect check'); open(); return; }
+      } else { dwell[id]=0; }
+    }
+  }
+  setInterval(geoTick, 8000);
+
+  AG.precheck = { open:open, close:close, isDetecting:function(){ return detecting; }, _geoTick:geoTick };
 })();
 </script>
 </body>
