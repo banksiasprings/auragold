@@ -505,12 +505,25 @@
     color:#8a6d1e; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif; padding:6px 8px; border-radius:7px; cursor:pointer; }
   .npi-why-btn:active { background:#f2ebd6; }
   .npi-why { margin-top:4px; }
-  /* v36: on-map colour-ramp legend */
-  #npiLegend { position:absolute; left:10px; bottom:16px; z-index:1100; display:none;
-    background:rgba(255,255,255,.94); border-radius:11px; box-shadow:0 2px 9px rgba(0,0,0,.28);
-    padding:8px 9px 8px 8px; font:600 10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#333;
-    -webkit-user-select:none; user-select:none; max-width:44vw; }
+  /* v39: collapsible on-map colour-ramp legend — top-left, clear of the bottom action
+     buttons (OFF / Menu / Locate) at every width. Collapsed to a small chip by default;
+     tap to expand the full key, choice remembered. */
+  #npiLegend { position:absolute; left:10px; top:112px; z-index:1100; display:none;
+    -webkit-user-select:none; user-select:none; }
   #npiLegend.show { display:block; }
+  #npiLegendToggle { display:flex; align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(255,255,255,.94); border-radius:9px; box-shadow:0 2px 9px rgba(0,0,0,.28);
+    padding:6px 9px 6px 7px; font:700 11px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:#8a6d1e; letter-spacing:.2px; -webkit-tap-highlight-color:transparent; }
+  #npiLegendToggle:active { transform:scale(.97); }
+  .npi-lg-swatch { width:13px; height:13px; border-radius:3px; flex:0 0 auto; box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
+    background:linear-gradient(to top,#1a9850 0%,#66bd63 22%,#fee08b 52%,#fdae61 74%,#d73027 100%); }
+  .npi-lg-caret { font-size:9px; color:#b09a5e; transition:transform .18s; margin-left:1px; }
+  #npiLegend.open .npi-lg-caret { transform:rotate(90deg); }
+  .npi-lg-card { display:none; margin-top:6px; max-width:46vw;
+    background:rgba(255,255,255,.94); border-radius:11px; box-shadow:0 2px 9px rgba(0,0,0,.28);
+    padding:8px 9px 8px 8px; font:600 10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#333; }
+  #npiLegend.open .npi-lg-card { display:block; }
   .npi-lg-title { font-size:10.5px; font-weight:700; color:#8a6d1e; margin:0 0 5px; letter-spacing:.2px; }
   .npi-lg-body { display:flex; gap:7px; }
   .npi-lg-ramp { width:11px; border-radius:4px; flex:0 0 auto;
@@ -520,6 +533,11 @@
   .npi-lg-mid { color:#9a8a52; font-weight:600; }
   .npi-lg-lo { color:#1a7a3c; font-weight:700; }
   .npi-lg-labels small { display:block; font-weight:500; color:#888; }
+  /* v39: keep the legally-required tile attribution (© Esri etc.) but make it as tiny &
+     unobtrusive as possible — full data-source list now lives in Settings › Data sources. */
+  .leaflet-container .leaflet-control-attribution { font-size:9px; line-height:1.3;
+    background:rgba(255,255,255,.6); color:#777; padding:0 4px; }
+  .leaflet-container .leaflet-control-attribution a { color:#6b8b78; }
   /* v36: one-time per-variant explainer bottom sheet */
   #npiSheet { position:fixed; left:0; right:0; bottom:0; z-index:1400; display:none; justify-content:center; pointer-events:none; }
   #npiSheet.show { display:flex; }
@@ -798,15 +816,24 @@
   </div>
 </div>
 
-<!-- v36: NPI colour-ramp legend (bottom-left, shown only while a Nugget-Potential layer is on; re-words per detector) -->
+<!-- v39: collapsible NPI colour-ramp legend (top-left, shown only while a Nugget-Potential
+     layer is on; re-words per detector). Collapsed to a chip by default so it never crowds
+     the OFF / Menu / Locate action buttons. -->
 <div id="npiLegend" aria-hidden="true">
-  <div class="npi-lg-title" id="npiLgTitle">Nugget Potential</div>
-  <div class="npi-lg-body">
-    <div class="npi-lg-ramp" style="min-height:64px"></div>
-    <div class="npi-lg-labels">
-      <span class="npi-lg-hi" id="npiLgHi">HIGH — swing here</span>
-      <span class="npi-lg-mid">middling</span>
-      <span class="npi-lg-lo" id="npiLgLo">LOW — skip</span>
+  <button type="button" id="npiLegendToggle" aria-expanded="false" aria-controls="npiLegendCard" title="Nugget-potential colour key — tap to show/hide">
+    <span class="npi-lg-swatch" aria-hidden="true"></span>
+    <span id="npiLegendToggleLbl">Legend</span>
+    <span class="npi-lg-caret" aria-hidden="true">▸</span>
+  </button>
+  <div class="npi-lg-card" id="npiLegendCard">
+    <div class="npi-lg-title" id="npiLgTitle">Nugget Potential</div>
+    <div class="npi-lg-body">
+      <div class="npi-lg-ramp" style="min-height:64px"></div>
+      <div class="npi-lg-labels">
+        <span class="npi-lg-hi" id="npiLgHi">HIGH — swing here</span>
+        <span class="npi-lg-mid">middling</span>
+        <span class="npi-lg-lo" id="npiLgLo">LOW — skip</span>
+      </div>
     </div>
   </div>
 </div>
@@ -1046,9 +1073,26 @@
     </div>
 
     <div class="ag-sec">
+      <h3>Data sources</h3>
+      <div class="ag-card">
+        <p class="ag-note" style="margin:6px 0 8px">The base maps, 🎯 Nugget Potential heatmaps and nugget model are built from these open datasets:</p>
+        <ul class="ag-list">
+          <li><b>SRTM</b> — 30&nbsp;m elevation (NASA)</li>
+          <li><b>VicMine</b> — Victorian Government mineral occurrence points</li>
+          <li><b>GA magnetics</b> — Geoscience Australia TMI-RTP magnetic grid</li>
+          <li><b>GA radiometrics</b> — Geoscience Australia K/Th channels</li>
+          <li><b>Vic geology</b> — Geological Survey of Victoria 1:250k surface geology</li>
+          <li><b>Fire</b> — DELWP fire history + Sentinel-2 NBR burn severity</li>
+          <li><b>Esri</b> — basemap tiles</li>
+        </ul>
+        <p class="ag-note" style="margin:9px 0 2px">The 🎯 Nugget Potential heatmap is a <b>heuristic model</b> over these layers — a guide to promising ground, not a guarantee of gold.</p>
+      </div>
+    </div>
+
+    <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v35</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v39</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -1230,7 +1274,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v38';
+var APP_VERSION = 'v39';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1608,7 +1652,9 @@ function makeNPILayer(variant, paneId) {
     pane: paneId, minNativeZoom: 10, maxNativeZoom: 12,
     bounds: L.latLngBounds([[-37.97, 142.93], [-36.03, 146.74]]),
     errorTileUrl: NPI_BLANK, className: 'npi-tiles',
-    attribution: 'NPI heuristic — AuraGold (SRTM + VicMine + GA magnetics/radiometrics + Vic geology/fire)'
+    // v39: verbose data-source list moved to Settings › Data sources — keep the on-map
+    // strip to just the short honesty label (the base-map © Esri tile credit stays too).
+    attribution: 'NPI heuristic'
   });
 }
 const layerNPIvlf = makeNPILayer('vlf', 'p-npi-vlf');
@@ -1859,6 +1905,24 @@ function npiDetectorVariant() {
     for (var i = 0; i < NPI_VKEYS.length; i++) if (map.hasLayer(NPI_LAYERS[NPI_VKEYS[i]])) return NPI_VKEYS[i];
     return null;
   }
+  // v39: collapsible legend — default collapsed so it never crowds the action buttons,
+  // choice remembered across sessions.
+  var LG_TOG = document.getElementById('npiLegendToggle');
+  var LG_TOGLBL = document.getElementById('npiLegendToggleLbl');
+  function setLegendOpen(open, persist) {
+    if (!LG) return;
+    LG.classList.toggle('open', !!open);
+    if (LG_TOG) LG_TOG.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (persist) { try { localStorage.setItem('ag_npi_legend_open', open ? '1' : '0'); } catch (e) {} }
+  }
+  if (LG_TOG) LG_TOG.addEventListener('click', function () {
+    setLegendOpen(!LG.classList.contains('open'), true);
+  });
+  (function () {
+    var saved = '0';
+    try { saved = localStorage.getItem('ag_npi_legend_open') || '0'; } catch (e) {}
+    setLegendOpen(saved === '1', false);
+  })();
   function updateLegend() {
     if (!LG) return;
     var vv = visibleVariant();
@@ -1868,6 +1932,7 @@ function npiDetectorVariant() {
     if (t) t.textContent = (det === 'auto-best' ? 'Auto · ' : '') + wds.t;
     if (hi) hi.textContent = wds.hi;
     if (lo) lo.textContent = wds.lo;
+    if (LG_TOGLBL) LG_TOGLBL.textContent = (det === 'auto-best' ? 'Auto ' : '') + vv.toUpperCase();
     LG.classList.add('show'); LG.setAttribute('aria-hidden', 'false');
   }
 
