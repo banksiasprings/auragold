@@ -1,184 +1,275 @@
 {
-"version": "v35",
+"version": "v37",
 "built": "2026-07-01",
 "pearson_vlf_pi": 0.846,
 "topShare": {
 "vlf": {
 "input": "prior",
-"pct": 24.2
+"pct": 24.8
 },
 "pi": {
 "input": "prior",
-"pct": 27.6
+"pct": 27.5
 },
 "zvt": {
 "input": "hammered",
-"pct": 30.4
+"pct": 30.5
 }
 },
 "importance": {
 "vlf": {
-"prior": 24.2,
-"hammered": 19.2,
-"workkde": 16.4,
+"prior": 24.8,
+"hammered": 19.5,
+"workkde": 16.8,
 "litho": 14.1,
-"k": 6.7,
-"mag": 4.8,
-"drain": 4.2,
-"th": 3.6,
-"asig": 3.2,
-"burn": 2.5,
-"bedrock": 0.9
+"k": 7.0,
+"mag": 4.6,
+"th": 3.5,
+"asig": 3.4,
+"burn": 2.6,
+"bedrock": 1.7,
+"drain": 1.4,
+"stream": 0.8
 },
 "pi": {
-"prior": 27.6,
-"hammered": 23.7,
-"workkde": 23.2,
-"litho": 11.4,
-"k": 3.8,
-"th": 3.2,
-"burn": 2.6,
+"prior": 27.5,
+"hammered": 23.8,
+"workkde": 23.6,
+"litho": 10.8,
+"k": 3.6,
+"th": 2.8,
+"burn": 2.5,
 "bedrock": 1.6,
-"asig": 1.6,
-"mag": 0.7,
-"drain": 0.6
+"asig": 1.5,
+"mag": 1.1,
+"drain": 0.7,
+"stream": 0.7
 },
 "zvt": {
-"hammered": 30.4,
-"workkde": 28.1,
-"prior": 26.9,
-"mag": 4.1,
-"k": 4.0,
-"litho": 3.1,
-"th": 1.2,
-"burn": 1.2,
+"hammered": 30.5,
+"workkde": 28.5,
+"prior": 26.2,
+"k": 5.0,
+"mag": 3.7,
+"litho": 2.0,
+"th": 1.5,
+"burn": 1.1,
+"stream": 0.5,
+"asig": 0.3,
 "bedrock": 0.3,
-"drain": 0.2,
-"asig": 0.2
+"drain": 0.2
 }
 },
 "spots": {
 "Mount Cole / Bayindeen": {
-"vlf": 23.7,
-"pi": 21.7,
-"zvt": 14.2
+"vlf": 21.7,
+"pi": 20.4,
+"zvt": 13.8
 },
 "Avoca / Pyrenees": {
-"vlf": 90.2,
-"pi": 42.3,
-"zvt": 59.1
+"vlf": 55.7,
+"pi": 39.7,
+"zvt": 54.1
 },
 "Tarnagulla / Waanyarra": {
-"vlf": 41.7,
-"pi": 45.1,
-"zvt": 57.6
+"vlf": 35.1,
+"pi": 43.7,
+"zvt": 54.7
 },
 "Talbot / Daisy Hill": {
-"vlf": 54.0,
-"pi": 25.9,
-"zvt": 40.3
+"vlf": 41.3,
+"pi": 24.9,
+"zvt": 38.7
 },
 "Heathcote / McIvor": {
-"vlf": 79.7,
-"pi": 49.1,
-"zvt": 69.0
+"vlf": 53.2,
+"pi": 47.1,
+"zvt": 67.4
 },
 "Whroo / Rushworth": {
-"vlf": 39.3,
-"pi": 15.7,
-"zvt": 14.1
+"vlf": 25.9,
+"pi": 13.9,
+"zvt": 11.5
 },
 "Inglewood / Kingower": {
-"vlf": 65.3,
-"pi": 64.7,
-"zvt": 69.3
+"vlf": 51.9,
+"pi": 62.8,
+"zvt": 67.8
 },
 "Hepburn / Sailors Ck": {
-"vlf": 97.2,
-"pi": 65.8,
-"zvt": 99.2
+"vlf": 71.2,
+"pi": 63.1,
+"zvt": 96.7
 },
 "Maldon / Muckleford": {
-"vlf": 100.0,
-"pi": 63.2,
-"zvt": 76.3
+"vlf": 74.4,
+"pi": 60.4,
+"zvt": 72.0
 },
 "WEDDERBURN (HEADLINE)": {
-"vlf": 75.6,
-"pi": 50.2,
-"zvt": 70.7
+"vlf": 59.3,
+"pi": 48.1,
+"zvt": 69.2
 },
 "Wombat / Bullarook": {
-"vlf": 90.2,
-"pi": 42.0,
-"zvt": 54.9
+"vlf": 57.2,
+"pi": 39.3,
+"zvt": 51.5
 },
 "Chiltern / Eldorado": {
-"vlf": 45.5,
-"pi": 20.3,
-"zvt": 15.2
+"vlf": 33.7,
+"pi": 19.1,
+"zvt": 14.5
 }
 },
 "negativeControls": [
 {
 "name": "Melbourne CBD (urban)",
-"vlf": 13.7,
-"pi": 9.1,
-"zvt": 7.0
-},
-{
-"name": "Werribee basalt plain",
-"vlf": 9.3,
-"pi": 5.7,
-"zvt": 4.0
-},
-{
-"name": "Skipton volcanic plain",
-"vlf": 17.9,
-"pi": 7.7,
-"zvt": 7.2
-},
-{
-"name": "Murray Basin plains (Boort N)",
-"vlf": 16.3,
-"pi": 7.0,
-"zvt": 5.6
-},
-{
-"name": "Bacchus Marsh sediments",
-"vlf": 15.3,
-"pi": 15.8,
-"zvt": 12.9
-},
-{
-"name": "Wimmera cropland (Donald)",
-"vlf": 12.9,
-"pi": 5.1,
-"zvt": 4.2
-},
-{
-"name": "Charlton Avon floodplain",
-"vlf": 13.7,
+"vlf": 9.4,
 "pi": 8.7,
 "zvt": 6.0
 },
 {
-"name": "Bendigo Murray-basin edge N",
+"name": "Werribee basalt plain",
+"vlf": 8.5,
+"pi": 5.2,
+"zvt": 3.7
+},
+{
+"name": "Skipton volcanic plain",
 "vlf": 13.1,
-"pi": 7.6,
-"zvt": 4.5
+"pi": 6.9,
+"zvt": 5.8
+},
+{
+"name": "Murray Basin plains (Boort N)",
+"vlf": 11.9,
+"pi": 6.4,
+"zvt": 4.4
+},
+{
+"name": "Bacchus Marsh sediments",
+"vlf": 9.8,
+"pi": 15.0,
+"zvt": 11.7
+},
+{
+"name": "Wimmera cropland (Donald)",
+"vlf": 9.4,
+"pi": 4.7,
+"zvt": 3.2
+},
+{
+"name": "Charlton Avon floodplain",
+"vlf": 12.2,
+"pi": 8.3,
+"zvt": 5.3
+},
+{
+"name": "Bendigo Murray-basin edge N",
+"vlf": 9.5,
+"pi": 6.9,
+"zvt": 3.5
 },
 {
 "name": "Ballan farmland",
-"vlf": 25.1,
-"pi": 12.5,
-"zvt": 13.0
+"vlf": 20.4,
+"pi": 11.2,
+"zvt": 11.4
 },
 {
 "name": "Lake Bolac plains W",
-"vlf": 11.3,
-"pi": 6.8,
-"zvt": 3.9
+"vlf": 8.6,
+"pi": 6.5,
+"zvt": 3.5
 }
-]
+],
+"streamHotspots": {
+"subSignalShare": {
+"bend": 77.8,
+"confl": 13.3,
+"slopebreak": 6.2,
+"pshadow": 1.7,
+"bench": 1.0
+},
+"verify": [
+{
+"hotspot": {
+"after": 76.5,
+"before": 100.0,
+"sh": 0.34
+},
+"straight": {
+"after": 62.1,
+"before": 69.5,
+"sh": 0.1
+},
+"distM": 156,
+"name": "Wombat Ck / Daylesford"
+},
+{
+"hotspot": {
+"after": 58.5,
+"before": 86.2,
+"sh": 0.2
+},
+"straight": {
+"after": 48.9,
+"before": 54.1,
+"sh": 0.1
+},
+"distM": 110,
+"name": "Creswick Ck confluence"
+},
+{
+"hotspot": {
+"after": 20.7,
+"before": 33.8,
+"sh": 0.17
+},
+"straight": {
+"after": 14.1,
+"before": 16.6,
+"sh": 0.09
+},
+"distM": 126,
+"name": "Loddon at Tarnagulla"
+},
+{
+"hotspot": {
+"after": 48.5,
+"before": 66.7,
+"sh": 0.19
+},
+"straight": {
+"after": 41.6,
+"before": 54.4,
+"sh": 0.1
+},
+"distM": 110,
+"name": "Avoca R at Amherst"
+},
+{
+"hotspot": {
+"after": 48.8,
+"before": 55.4,
+"sh": 0.21
+},
+"straight": {
+"after": 44.0,
+"before": 52.3,
+"sh": 0.1
+},
+"distM": 152,
+"name": "Yankee Ck / Dunolly"
+}
+],
+"regionLift": {
+"hotspotMeanVLF": 43.5,
+"straightMeanVLF": 20.1,
+"lift": 23.5,
+"nHotspot": 158,
+"nStraight": 7106263
+}
+}
 }

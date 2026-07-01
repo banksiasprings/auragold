@@ -31,6 +31,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
 import regions as R
+import stream_hotspots as SH
 
 Image.MAX_IMAGE_PIXELS = None
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -52,15 +53,24 @@ REGIONS = R.BUILD
 # by their DIVERGENT terms: VLF is drainage-heavy + rewards LOW magnetics (clean ground);
 # PI is magnetics-heavy + structural (analytic signal) + drainage-blind; ZVT is hammered +
 # structural. The shared workings backbone keeps the headline goldfields strong.
+# v37: a `stream` micro-feature hotspot term (see stream_hotspots.py) SHARPENS the drainage.
+# VLF steals 0.18 from its uniform `drain` (drain becomes the permissive layer, the hotspot the
+# sharpener) so the inside-of-the-bend / slope-break out-scores the straight reaches on the same
+# creek; PI/ZVT take a small 0.05 (benches still matter for the GPZ/GPX). VLF's interaction bonus
+# is now hotspot-weighted too, so the confluence lift lands ON the micro-feature, not the whole run.
 VARIANTS = {
     "vlf": dict(label="VLF (Gold Monster)", slope=(10.0, 10.0),   # gentle clean creek/eluvial
-        w=dict(drain=0.30, lowmag=0.20, slope=0.14, workkde=0.12, litho=0.10, bedrock=0.08, k=0.06)),
+        w=dict(drain=0.12, stream=0.20, lowmag=0.22, slope=0.13, workkde=0.10, litho=0.09, bedrock=0.08, k=0.06)),
     "pi":  dict(label="PI (GPX 6000)", slope=(22.5, 12.5),        # steeper mineralised hot ground
-        w=dict(mag=0.26, asig=0.18, slope=0.14, workkde=0.12, litho=0.10, th=0.10, bedrock=0.06, drain=0.04)),
+        w=dict(mag=0.26, asig=0.18, slope=0.14, workkde=0.12, litho=0.10, th=0.10, bedrock=0.04, drain=0.01, stream=0.05)),
     "zvt": dict(label="ZVT (GPZ 7000)", slope=(17.5, 15.0),       # hammered premium ground
-        w=dict(hammered=0.26, asig=0.18, workkde=0.14, mag=0.14, slope=0.10, litho=0.10, drain=0.08)),
+        w=dict(hammered=0.26, asig=0.18, workkde=0.14, mag=0.14, slope=0.10, litho=0.10, drain=0.03, stream=0.05)),
 }
 VKEYS = ["vlf", "pi", "zvt"]
+# VLF interaction: how much of the confluence bonus follows the stream hotspot vs raw drainage.
+# 0.85 = mostly hotspot-driven (the sharpener) but keeps 15% raw drainage so headline eluvial/hillslope
+# spots off the modern channel don't crater. Tuned against the 5-creek + region-wide sharpening eval.
+VLF_INT_STREAM = 0.85
 
 # 12 known trip spots (report sanity-check) + ~10 negative controls (item 11).
 SPOTS = [
@@ -85,6 +95,19 @@ NEG = [   # (name, lat, lon) — genuinely NON-gold ground (basalt / urban / sed
     ("Bendigo Murray-basin edge N", -36.3000, 144.3000),
     ("Ballan farmland", -37.6000, 144.2300),
     ("Lake Bolac plains W", -37.7100, 142.9700),
+]
+
+# v37 verification: 5 known VLF hotspots on Vic goldfield creeks. For each, the build compares the
+# VLF score at the best stream MICRO-FEATURE (highest stream_hotspot channel cell nearby) against a
+# nearby STRAIGHT REACH (a low-hotspot channel cell on the same drainage) — before (v36 uniform
+# drainage) vs after (v37 sharpener). Sharpening works iff the micro-feature out-scores the straight
+# reach AND the gap widens vs v36. (Town-scale coords; the sampler finds the real channel nearby.)
+VERIFY = [
+    ("Wombat Ck / Daylesford", -37.3400, 144.1400),
+    ("Creswick Ck confluence", -37.4200, 143.8950),
+    ("Loddon at Tarnagulla",   -36.7750, 143.8050),
+    ("Avoca R at Amherst",     -37.1900, 143.6600),
+    ("Yankee Ck / Dunolly",    -36.8480, 143.7350),
 ]
 
 # ---------- web-mercator helpers ----------
@@ -135,8 +158,11 @@ def slope_curv(elev, ymin):
 def slope_band(slope_deg, peak, halfwidth):
     return np.clip(1.0 - np.abs((slope_deg - peak) / halfwidth), 0, 1).astype(np.float32)
 
-# ---------- D8 priority-flood flow accumulation (computed downsampled, upsampled back) ----------
-def flow_accum(elev, factor=4):
+# ---------- D8 priority-flood flow routing (computed downsampled) ----------
+# route_flow returns the depression-filled DEM, the D8 receiver graph and flow accumulation on
+# the downsampled grid. `drain` (the permissive drainage term) AND the v37 stream micro-feature
+# hotspots (stream_hotspots.py) both consume this SAME route, so we pay for one flood.
+def route_flow(elev, factor=4):
     H, W = elev.shape; h, w = H // factor, W // factor
     dem = elev[:h * factor, :w * factor].reshape(h, factor, w, factor).mean(axis=(1, 3)).astype(np.float64)
     EPS = 1e-3
@@ -172,8 +198,14 @@ def flow_accum(elev, factor=4):
     for idx in order:
         r = rflat[idx]
         if r >= 0: acc[r] += acc[idx]
-    score = np.clip(np.log1p(acc.reshape(h, w)) / math.log(100.0), 0, 1)
-    return np.kron(score, np.ones((factor, factor))).astype(np.float32)[:H, :W]
+    return dict(recv=recv.astype(np.int64), acc=acc.reshape(h, w).astype(np.float32),
+                dem=dem.astype(np.float32), filled=filled.astype(np.float32), factor=factor)
+
+def drain_from_route(route, H, W):
+    """log-scaled flow-accumulation score, upsampled to full res (== v35 flow_accum output)."""
+    f = int(route["factor"])
+    score = np.clip(np.log1p(route["acc"].astype(np.float64)) / math.log(100.0), 0, 1)
+    return np.kron(score, np.ones((f, f))).astype(np.float32)[:H, :W]
 
 # ---------- workings KDE (item 1) — replaces the 94.7%-zero 500 m count ----------
 def workings_kde(pts, xmin, ymin, H, W, gres, sigma_m):
@@ -344,34 +376,53 @@ def compute_variants(F):
     lowmag = 1.0 - F["mag"]
     for vk, cfg in VARIANTS.items():
         wt = cfg["w"]; pk, hw = cfg["slope"]; sb = slope_band(F["slope_deg"], pk, hw)
-        terms = dict(drain=F["drain"], workkde=F["workkde"], hammered=F["hammered"], slope=sb,
+        terms = dict(drain=F["drain"], stream=F["stream"], workkde=F["workkde"], hammered=F["hammered"], slope=sb,
                      bedrock=F["bedrock"], mag=F["mag"], lowmag=lowmag, asig=F["asig"],
                      k=F["k"], th=F["th"], litho=F["litho"])
         evidence = sum(wt[t] * terms[t] for t in wt) / sum(wt.values())
-        if vk == "vlf":   interact = F["drain"] * F["prior"] * sb
+        # v37: VLF's confluence bonus now follows the stream hotspot (blended with raw drainage),
+        # so the interaction lift lands ON the point-bar / slope-break, not the whole straight run.
+        if vk == "vlf":   interact = (VLF_INT_STREAM * F["stream"] + (1 - VLF_INT_STREAM) * F["drain"]) * F["prior"] * sb
         elif vk == "pi":  interact = F["workkde"] * F["mag"] * F["prior"]
         else:             interact = F["hammered"] * F["asig"] * F["prior"]
         npi = 100.0 * GAIN * evidence * (1.0 + K_INT * interact) * prior_mod * burn_mult
         out[vk] = np.clip(ndimage.gaussian_filter(npi, 1.0), 0, 100).astype(np.float32)
     return out
 
+def compute_vlf_v36(F):
+    """Reproduce the PRE-v37 VLF (uniform drain=0.30, no stream term, drain-driven interaction)
+    for the honest before/after report — every cell as hot as any other on the same creek."""
+    prior_mod = 0.15 + 0.85 * F["prior"]; burn_mult = 1.0 + 0.10 * F["burn"]; lowmag = 1.0 - F["mag"]
+    sb = slope_band(F["slope_deg"], 10.0, 10.0)
+    w = dict(drain=0.30, lowmag=0.20, slope=0.14, workkde=0.12, litho=0.10, bedrock=0.08, k=0.06)
+    terms = dict(drain=F["drain"], lowmag=lowmag, slope=sb, workkde=F["workkde"], litho=F["litho"], bedrock=F["bedrock"], k=F["k"])
+    evidence = sum(w[t] * terms[t] for t in w) / sum(w.values())
+    interact = F["drain"] * F["prior"] * sb
+    npi = 100.0 * GAIN * evidence * (1.0 + K_INT * interact) * prior_mod * burn_mult
+    return np.clip(ndimage.gaussian_filter(npi, 1.0), 0, 100).astype(np.float32)
+
 # ---------- per-region base inputs (the real pipeline; cached for fast re-tiling) ----------
 RAW_KEYS = ["slope_deg", "bedrock", "drain", "workkde", "hammered", "prior", "dist_gf",
             "litho", "burn", "tmi_raw", "as_raw", "k_raw", "th_raw"]
+# v37: the downsampled flow-route graph is cached too, so the stream-hotspot signals can be
+# recomputed / re-tuned in the scoring phase WITHOUT re-running the expensive flood.
+ROUTE_KEYS = ["rcv", "racc", "rdem"]
 
 def build_base(rname, w, s, e, n, pts):
     cache = os.path.join(HERE, "cache_" + R.slug(rname) + ".npz")
-    if os.path.exists(cache):
+    if os.path.exists(cache) and "rcv" in np.load(cache).files:
         z = np.load(cache)
         print(f"  [cache] {os.path.basename(cache)}", flush=True)
         d = {k: z[k] for k in RAW_KEYS}
-        d.update(xmin=int(z["xmin"]), ymin=int(z["ymin"]), H=int(z["H"]), W=int(z["W"]))
+        d["route"] = dict(recv=z["rcv"], acc=z["racc"], dem=z["rdem"], factor=int(z["rfactor"]))
+        d.update(xmin=int(z["xmin"]), ymin=int(z["ymin"]), H=int(z["H"]), W=int(z["W"]), gres=float(z["gres"]))
         return d
     slug = R.slug(rname)
     elev, xmin, ymin, xmax, ymax = load_mosaic(w, s, e, n); H, W = elev.shape
     print(f"  mosaic {W}x{H}", flush=True)
     slope_deg, bedrock, gres = slope_curv(elev, ymin)
-    drain = flow_accum(elev)
+    route = route_flow(elev)
+    drain = drain_from_route(route, H, W)
     workkde, _cnt = workings_kde(pts, xmin, ymin, H, W, gres, sigma_m=600.0)
     hammered, _ = workings_kde(pts, xmin, ymin, H, W, gres, sigma_m=2000.0)
     prior, dist_gf, npri = goldfield_prior(xmin, ymin, H, W, gres)
@@ -387,9 +438,10 @@ def build_base(rname, w, s, e, n, pts):
     d = dict(slope_deg=slope_deg, bedrock=bedrock, drain=drain, workkde=workkde, hammered=hammered,
              prior=prior, dist_gf=dist_gf, litho=litho, burn=burn,
              tmi_raw=tmi_raw, as_raw=as_raw, k_raw=k_raw, th_raw=th_raw,
-             xmin=xmin, ymin=ymin, H=H, W=W)
+             route=route, gres=gres, xmin=xmin, ymin=ymin, H=H, W=W)
     np.savez_compressed(cache, **{k: d[k] for k in RAW_KEYS},
-                        xmin=xmin, ymin=ymin, H=H, W=W)
+                        rcv=route["recv"], racc=route["acc"], rdem=route["dem"],
+                        rfactor=route["factor"], gres=gres, xmin=xmin, ymin=ymin, H=H, W=W)
     return d
 
 # ---------- global geophysics normalisation (item 9) ----------
@@ -404,7 +456,8 @@ def assemble(base, stats):
     """Normalise + neutral-fill into the 0..1 input dict the model consumes. The prior
     (item 12) is a noisy-OR of the goldfield-polygon prior and geological favourability
     (lithology x K) — so contact-hosted ground (granite + K anomaly) outside the mapped
-    historical goldfields still registers, while basalt/water (low litho) does not."""
+    historical goldfields still registers, while basalt/water (low litho) does not.
+    v37 also derives the stream micro-feature hotspots from the cached flow route."""
     F = dict(slope_deg=base["slope_deg"], bedrock=base["bedrock"], drain=base["drain"],
              workkde=base["workkde"], hammered=base["hammered"], litho=base["litho"], burn=base["burn"])
     F["mag"] = norm01(base["tmi_raw"], *stats["tmi"])
@@ -414,12 +467,16 @@ def assemble(base, stats):
     gf = base["prior"]                                   # goldfield-polygon prior
     geo_favour = np.clip(F["litho"] * (0.4 + 0.6 * F["k"]), 0, 1)
     F["prior"] = (1.0 - (1.0 - gf) * (1.0 - GEO_PRIOR_W * geo_favour)).astype(np.float32)
+    sh = SH.compute_stream_signals(base["route"], base["gres"], base["H"], base["W"])
+    F["stream"] = sh["stream_hotspot"]
+    for k in ["sh_bend", "sh_slopebreak", "sh_confl", "sh_bench", "sh_pshadow", "sh_streammask"]:
+        F[k] = sh[k]
     return F
 
 # ---------- eval: importance, correlation, spot/negative-control sampling ----------
 def variant_importance(F, npis):
     """Per variant: |corr(input, npi)| over visible cells, normalised to shares (%)."""
-    inputs = ["prior", "workkde", "hammered", "drain", "bedrock", "mag", "asig", "k", "th", "litho", "burn"]
+    inputs = ["prior", "workkde", "hammered", "drain", "stream", "bedrock", "mag", "asig", "k", "th", "litho", "burn"]
     res = {}
     for vk in VKEYS:
         npi = npis[vk]; vis = npi >= NPI_FLOOR
@@ -458,10 +515,10 @@ def main():
     g8x0 = min(int(lon2px(r[1], 8)) for r in REGIONS); g8x1 = max(int(lon2px(r[3], 8)) for r in REGIONS)
     g8y0 = min(int(lat2px(r[4], 8)) for r in REGIONS); g8y1 = max(int(lat2px(r[2], 8)) for r in REGIONS)
     gcols, grows = g8x1 - g8x0 + 1, g8y1 - g8y0 + 1
-    NPLANES = 5
+    NPLANES = 7   # v37: +2 planes for the stream hotspot composite + its 5 sub-signals
     grid = np.zeros((grows * NPLANES, gcols, 4), np.uint8)
 
-    region_var = {}; tiles_written = 0; total_bytes = 0; tile_paths = []
+    region_var = {}; vlf_before = {}; tiles_written = 0; total_bytes = 0; tile_paths = []
     var_bytes = {v: 0 for v in VKEYS}; imp_acc = {v: {} for v in VKEYS}
     corr_pairs = []   # (vlf_vec, pi_vec) samples for global Pearson
 
@@ -472,6 +529,7 @@ def main():
         xmin, ymin, H, W = base["xmin"], base["ymin"], base["H"], base["W"]
         npis = compute_variants(F)
         region_var[rname] = (npis, xmin, ymin, H, W, F)
+        vlf_before[rname] = compute_vlf_v36(F)   # v37 before/after reference
 
         imp = variant_importance(F, npis)
         for vk in VKEYS: imp_acc[vk][rname] = imp.get(vk, {})
@@ -504,9 +562,16 @@ def main():
 
         # ---- 5-plane popup grid (z8) ----
         def to8(a): return block_mean(a.astype(np.float32), 16)
+        def to8max(a):                                   # block-MAX: a sparse micro-feature would vanish
+            b = a.astype(np.float32); hh, ww = b.shape[0] // 16, b.shape[1] // 16   # under a z8 (~490 m) block-mean
+            return b[:hh * 16, :ww * 16].reshape(hh, 16, ww, 16).max(axis=(1, 3))
         gv = {vk: to8(npis[vk]) for vk in VKEYS}
         G = {k: to8(F[k]) for k in ["prior", "workkde", "drain", "slope_deg", "bedrock", "mag",
                                     "asig", "k", "th", "litho", "burn", "hammered"]}
+        # stream planes F/G carry the block-MAX so a point-bar / drop-pool that occupies a few 30 m cells
+        # still reads as a hotspot when tapped at z8 — mean would dilute it to noise (measured 0.11 vs 0.31).
+        for k in ["stream", "sh_bend", "sh_slopebreak", "sh_confl", "sh_bench", "sh_pshadow"]:
+            G[k] = to8max(F[k])
         gh, gw = G["prior"].shape
         rx0 = (xmin * 256) // 16 - g8x0; ry0 = (ymin * 256) // 16 - g8y0
         def u8(x, sc=255): return int(np.clip(x * sc, 0, 255))
@@ -519,6 +584,8 @@ def main():
                 grid[2 * grows + gr, gc] = (min(255, int(round(G["slope_deg"][r, c]))), u8(G["bedrock"][r, c]), u8(G["mag"][r, c]), 255)  # C
                 grid[3 * grows + gr, gc] = (u8(G["asig"][r, c]), u8(G["k"][r, c]), u8(G["th"][r, c]), 255)          # D
                 grid[4 * grows + gr, gc] = (u8(G["litho"][r, c]), u8(G["burn"][r, c]), u8(G["hammered"][r, c]), 255)  # E
+                grid[5 * grows + gr, gc] = (u8(G["stream"][r, c]), u8(G["sh_bend"][r, c]), u8(G["sh_slopebreak"][r, c]), 255)  # F
+                grid[6 * grows + gr, gc] = (u8(G["sh_confl"][r, c]), u8(G["sh_bench"][r, c]), u8(G["sh_pshadow"][r, c]), 255)  # G
 
     # ---- spot + negative-control sampling ----
     def sample(lat, lon, comps=False):
@@ -530,7 +597,8 @@ def main():
                 if comps:
                     cy, cx = min(max(py, 0), H - 1), min(max(px, 0), W - 1)
                     rec["c"] = {k: round(float(F[k][cy, cx]), 2) for k in
-                                ["prior", "workkde", "drain", "slope_deg", "bedrock", "mag", "asig", "k", "th", "litho", "burn"]}
+                                ["prior", "workkde", "drain", "stream", "slope_deg", "bedrock", "mag", "asig", "k", "th", "litho", "burn",
+                                 "sh_bend", "sh_slopebreak", "sh_confl", "sh_bench", "sh_pshadow"]}
                 return rec
         return None
 
@@ -542,6 +610,60 @@ def main():
     for nm, lat, lon in NEG:
         r = sample(lat, lon, comps=True) or {vk: 0.0 for vk in VKEYS}
         r["name"] = nm; negs.append(r)
+
+    # ---- v37 verification: VLF at a stream micro-feature vs the ADJACENT straight reach on the SAME
+    # creek (nearest low-hotspot channel cell, >=~100 m away). Spatially adjacent = same goldfield
+    # ground / geology / flow, so the ONLY difference is the placer micro-feature — the honest
+    # "sweep here or 100 m up the creek?" test. (A drainage-only match can wander onto a different,
+    # richer creek; the region-wide lift below is the aggregate proof.) ----
+    GRES_APPROX = 30.5   # m/px near lat -37 at z12 (search-window sizing only)
+    def sample_creek(lat, lon, radius_m=2600):
+        for rname, (npis, xmin, ymin, H, W, F) in region_var.items():
+            px = int(lon2px(lon, Z) - xmin * 256); py = int(lat2px(lat, Z) - ymin * 256)
+            if not (0 <= px < W and 0 <= py < H): continue
+            rad = int(radius_m / GRES_APPROX)
+            y0, y1 = max(0, py - rad), min(H, py + rad); x0, x1 = max(0, px - rad), min(W, px + rad)
+            near = ndimage.binary_dilation(F["sh_streammask"][y0:y1, x0:x1], iterations=2)  # incl point bars/benches
+            if not near.any(): return None
+            sh = F["stream"][y0:y1, x0:x1]; dr = F["drain"][y0:y1, x0:x1]
+            vlfA = npis["vlf"][y0:y1, x0:x1]; vlfB = vlf_before[rname][y0:y1, x0:x1]
+            hi = np.unravel_index(np.argmax(np.where(near, sh, -1.0)), sh.shape)     # strongest micro-feature
+            yy, xx = np.mgrid[0:sh.shape[0], 0:sh.shape[1]]
+            d2 = (yy - hi[0]) ** 2 + (xx - hi[1]) ** 2
+            straight = near & (sh < 0.10) & (d2 >= 9)                                # adjacent reach, >=~100 m off
+            if not straight.any(): return None
+            st = np.unravel_index(np.argmin(np.where(straight, d2, np.inf)), d2.shape)  # nearest straight reach
+            return {"hotspot": {"after": round(float(vlfA[hi]), 1), "before": round(float(vlfB[hi]), 1), "sh": round(float(sh[hi]), 2)},
+                    "straight": {"after": round(float(vlfA[st]), 1), "before": round(float(vlfB[st]), 1), "sh": round(float(sh[st]), 2)},
+                    "distM": round(float(np.sqrt(d2[st]) * GRES_APPROX))}
+        return None
+    verify = []
+    for nm, lat, lon in VERIFY:
+        rc = sample_creek(lat, lon)
+        if rc: rc["name"] = nm; verify.append(rc)
+
+    # region-wide sharpening proof: mean VLF at strong hotspots vs straight reaches (near-stream cells)
+    hot_all, str_all = [], []
+    for rname, (npis, xmin, ymin, H, W, F) in region_var.items():
+        near = ndimage.binary_dilation(F["sh_streammask"], iterations=2)
+        v = npis["vlf"]; sh = F["stream"]; dr = F["drain"]
+        hot_all.append(v[near & (sh > 0.30)]); str_all.append(v[near & (sh < 0.08) & (dr >= 0.4)])
+    hot_all = np.concatenate(hot_all); str_all = np.concatenate(str_all)
+    region_lift = {"hotspotMeanVLF": round(float(hot_all.mean()), 1), "straightMeanVLF": round(float(str_all.mean()), 1),
+                   "lift": round(float(hot_all.mean() - str_all.mean()), 1),
+                   "nHotspot": int(hot_all.size), "nStraight": int(str_all.size)}
+
+    # ---- which sub-signal drives the hotspot layer (share of composite over active cells) ----
+    SUB_W = {"sh_bend": 0.30, "sh_slopebreak": 0.25, "sh_confl": 0.15, "sh_bench": 0.20, "sh_pshadow": 0.10}
+    sub_acc = {s: 0.0 for s in SUB_W}; sub_cells = 0
+    for rname, (npis, xmin, ymin, H, W, F) in region_var.items():
+        active = F["stream"] > 0.02
+        if not active.any(): continue
+        sub_cells += int(active.sum())
+        for s in SUB_W: sub_acc[s] += float((SUB_W[s] * F[s][active]).sum())
+    sub_tot = sum(sub_acc.values()) or 1.0
+    sub_share = {s.replace("sh_", ""): round(100.0 * sub_acc[s] / sub_tot, 1)
+                 for s in sorted(SUB_W, key=lambda k: -sub_acc[k])}
 
     # ---- Pearson VLF vs PI (pooled) ----
     if corr_pairs:
@@ -566,9 +688,10 @@ def main():
 
     built = os.environ.get("BUILD_DATE") or datetime.date.today().isoformat()
     meta = {
-        "version": "v35", "built": built,
+        "version": "v37", "built": built,
         "dem": "AWS terrarium z12 (~30 m, SRTM-derived)", "lidar": False,
-        "model": "prior x evidence x interaction (v35); soft goldfield prior replaces the hardcoded distance term",
+        "model": "prior x evidence x interaction (v35); v37 adds a stream micro-feature hotspot term that sharpens the VLF drainage",
+        "streamHotspot": "6 placer signals (inside-bend 0.30, slope-break 0.25, bench 0.20, confluence 0.15, pressure-shadow 0.10; bar-head deferred — 30 m SRTM too coarse)",
         "geophysics": "GA magnetics (TMI-RTP + analytic signal) + radiometrics (%K, Th ppm), globally normalised",
         "lithology": "Vic 1:250k surface geology (geol250_polygon)",
         "fire": "Vic DELWP fire_history perimeters >=2008, recency-weighted (perimeter proxy, not per-pixel NBR)",
@@ -580,32 +703,48 @@ def main():
         "grid": {"zoom": 8, "x0": g8x0, "y0": g8y0, "cols": gcols, "rows": grows, "planes": NPLANES,
                  "layout": "A=[npiVLF,npiPI,npiZVT]; B=[prior*255,workkde*255,drain*255]; "
                            "C=[slopeDeg,bedrock*255,mag*255]; D=[asig*255,k*255,th*255]; "
-                           "E=[litho*255,burn*255,hammered*255]; alpha=mask"},
+                           "E=[litho*255,burn*255,hammered*255]; "
+                           "F=[stream*255,bend*255,slopebreak*255]; G=[confl*255,bench*255,pshadow*255]; alpha=mask"},
         "limitations": [
             "NPI is a heuristic prior, not a prediction. Success depends on terrain, ground conditions, equipment and technique.",
             "Elevation is SRTM-derived ~30 m terrain (no open Vic 5 m DEM service + full-region 5 m is infeasible in this build) — slope/drainage/bedrock are coarse and weighted low.",
             "Detector variants weight the same real inputs differently: VLF favours clean low-magnetic alluvial ground, PI favours mineralised (magnetic + structural) hot ground, ZVT favours hammered premium ground.",
             "Fire term is a recency-weighted perimeter proxy from Vic fire_history, not per-pixel Sentinel-2 NBR severity.",
+            "Stream hotspots (v37) sharpen VLF onto point-bars / slope-breaks / benches, but are computed on the ~30 m SRTM route (~120 m flow grid). Bar-head scale is deferred (needs 5 m LiDAR); the resolved features are 100 m+.",
             "Future versions will retrain on your confirmed gold events for personal calibration."],
         "spots": spots,
         "eval": {
             "pearson_vlf_pi": round(pear, 3) if pear is not None else None,
             "importance": importance, "topShare": {vk: {"input": top_share[vk][0], "pct": top_share[vk][1]} for vk in VKEYS},
             "negativeControls": negs,
+            "streamHotspots": {"subSignalShare": sub_share, "verify": verify, "regionLift": region_lift},
         },
     }
     json.dump(meta, open(os.path.join(OUT, "npi-meta.json"), "w"), indent=0)
     # also write a compact eval card the app's Settings reads
-    json.dump({"version": "v35", "built": built, "pearson_vlf_pi": meta["eval"]["pearson_vlf_pi"],
+    json.dump({"version": "v37", "built": built, "pearson_vlf_pi": meta["eval"]["pearson_vlf_pi"],
                "topShare": meta["eval"]["topShare"], "importance": importance,
                "spots": {spots[k]["name"]: {vk: spots[k][vk] for vk in VKEYS} for k in sorted(spots)},
-               "negativeControls": [{"name": x["name"], **{vk: x[vk] for vk in VKEYS}} for x in negs]},
+               "negativeControls": [{"name": x["name"], **{vk: x[vk] for vk in VKEYS}} for x in negs],
+               "streamHotspots": {"subSignalShare": sub_share, "verify": verify, "regionLift": region_lift}},
               open(os.path.join(OUT, "npi-eval.json"), "w"), indent=0)
 
     # ---- report ----
-    print("\n========== v35 SUMMARY ==========")
+    print("\n========== v37 SUMMARY ==========")
     print(f"tiles: {tiles_written}  total: {total_bytes/1e6:.2f} MB  grid.png: {gsize/1024:.0f} KB ({NPLANES} planes)")
     for vk in VKEYS: print(f"  {vk}: {var_bytes[vk]/1e6:.2f} MB")
+
+    print("\n--- v37 STREAM HOTSPOTS ---")
+    print(f"REGION-WIDE sharpening: strong hotspots mean VLF {region_lift['hotspotMeanVLF']} (n={region_lift['nHotspot']}) "
+          f"vs straight reaches {region_lift['straightMeanVLF']} (n={region_lift['nStraight']})  ->  +{region_lift['lift']} lift")
+    print("sub-signal share of the hotspot layer (over active cells):")
+    for s, pc in sub_share.items(): print(f"  {s:12s} {pc:5.1f}%")
+    print("\nVLF at stream MICRO-FEATURE vs ADJACENT straight reach on the SAME creek  (before v36 -> after v37):")
+    print(f"  {'creek':26s} {'hotspot b->a':>14s} {'straight b->a':>15s} {'gap b->a':>12s}  dist")
+    for r in verify:
+        hs, sr = r["hotspot"], r["straight"]
+        gb = hs["before"] - sr["before"]; ga = hs["after"] - sr["after"]
+        print(f"  {r['name']:26s} {hs['before']:5.1f}->{hs['after']:5.1f}   {sr['before']:5.1f}->{sr['after']:5.1f}    {gb:+5.1f}->{ga:+5.1f}  {r.get('distM','?')}m")
     print(f"\nPearson VLF vs PI (pooled visible cells): {pear:.3f}   (target < 0.85)")
     print("\nTop input share per variant (target: no input > 40%):")
     for vk in VKEYS:

@@ -479,6 +479,11 @@
   .npi-vscore .band { text-transform:uppercase; letter-spacing:.4px; color:var(--vc,#c98a00); }
   .npi-drivers { font-size:11px; color:#5a4f33; margin:0 0 5px; line-height:1.35; }
   .npi-drivers b { color:#a06600; }
+  /* v37: stream micro-feature call-out inside the verdict box */
+  .npi-hotspot { font-size:11.5px; line-height:1.4; color:#0d5c4a; background:#e8f6f0; border-radius:6px;
+    padding:5px 8px; margin:6px 0 2px; border-left:3px solid #17a67f; }
+  .npi-hotspot.straight { color:#6a5a2a; background:#f7f2e4; border-left-color:#caa64a; }
+  .npi-hotspot b { color:inherit; }
   .npi-why-btn { display:block; width:100%; text-align:left; margin-top:6px; border:1px solid #e7e0cc; background:#faf7ee;
     color:#8a6d1e; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif; padding:6px 8px; border-radius:7px; cursor:pointer; }
   .npi-why-btn:active { background:#f2ebd6; }
@@ -1208,7 +1213,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v36';
+var APP_VERSION = 'v37';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1487,7 +1492,10 @@ const layerEndowment = L.geoJSON(dataEndowment, {
 //   VLF (Gold Monster) — gentle clean creek/eluvial ground, drainage-heavy, LOW magnetics
 //   PI  (GPX 6000)     — steeper mineralised (magnetic + structural) hot ground, deeper targets
 //   ZVT (GPZ 7000)     — hammered premium ground (sensitive AND mineralization-tolerant)
-// Tap-to-explain shows all three scores + the full component breakdown.
+// v37: a stream micro-feature `stream` term (inside-bend / slope-break / confluence / bench /
+// drop-pool, from stream_hotspots.py) SHARPENS the VLF drainage — the point-bar out-scores the
+// straight reach on the same creek. Popup grid gained 2 planes (F,G) for the composite + sub-signals.
+// Tap-to-explain shows all three scores, names the micro-feature, + the full component breakdown.
 const NPI_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 function makeNPILayer(variant, paneId) {
   return L.tileLayer('data/npi/' + variant + '/{z}/{x}/{y}.png', {
@@ -1575,7 +1583,7 @@ function npiDetectorVariant() {
   // NOTE: threshold keys are hiCut/midCut (NOT hi/mid) so they don't collide with the high/mid/low
   // verdict-text keys in the same object — a mid:30 threshold key would be overwritten by mid:'text'.
   var NPI_VERDICT = {
-    vlf: { hiCut: 54, midCut: 30,
+    vlf: { hiCut: 43, midCut: 30,
       high: '<b>GO here with the Gold Monster.</b> Classic alluvial creek country — gentle slope, strong drainage catching wash-down, low mineralisation, near a known reef. Sweep the creek gutters and terraces.',
       mid:  "<b>Maybe — reads like edge alluvial.</b> Drainage and terrain are OK for the Gold Monster, but the signal's thin. Worth an hour if you're passing.",
       low:  '<b>Not the Monster’s ground here.</b> Too rocky / mineralised or no drainage focus. Try a PI or ZVT if you must swing this spot.' },
@@ -1597,15 +1605,30 @@ function npiDetectorVariant() {
     return det === 'gpx-6000' ? 'pi' : det === 'gpz-7000' ? 'zvt' : 'vlf';
   }
   // Plain-prospector labels for each evidence term (positive / negative framing).
-  var DRV_POS = { drain: 'strong drainage catch', lowmag: 'clean low-mineral ground', slope: 'well-graded slope', workkde: 'dense old workings nearby', litho: 'favourable host rock', bedrock: 'bedrock exposure', k: 'K-rich granite margin', mag: 'mineralised hot ground', asig: 'structural contact / shear', th: 'evolved-granite signature', hammered: 'heavily-worked historic field' };
-  var DRV_NEG = { drain: 'no drainage focus', lowmag: 'too magnetic / mineralised', slope: 'wrong slope for this detector', workkde: 'no worked history nearby', litho: 'poor host rock (cover/basalt)', bedrock: 'no bedrock exposure', k: 'not granitic (low K)', mag: 'no magnetic signature', asig: 'no structural indicators', th: 'no evolved-granite signature', hammered: 'not a hammered field' };
+  var DRV_POS = { drain: 'strong drainage catch', stream: 'a stream micro-feature hotspot', lowmag: 'clean low-mineral ground', slope: 'well-graded slope', workkde: 'dense old workings nearby', litho: 'favourable host rock', bedrock: 'bedrock exposure', k: 'K-rich granite margin', mag: 'mineralised hot ground', asig: 'structural contact / shear', th: 'evolved-granite signature', hammered: 'heavily-worked historic field' };
+  var DRV_NEG = { drain: 'no drainage focus', stream: 'a straight reach (no micro-feature)', lowmag: 'too magnetic / mineralised', slope: 'wrong slope for this detector', workkde: 'no worked history nearby', litho: 'poor host rock (cover/basalt)', bedrock: 'no bedrock exposure', k: 'not granitic (low K)', mag: 'no magnetic signature', asig: 'no structural indicators', th: 'no evolved-granite signature', hammered: 'not a hammered field' };
+  // v37: which placer micro-feature is under the tap — name it in prospector language.
+  var SH_FEATURES = [
+    { k: 'bend',  w: 0.30, verb: 'Point-bar candidate — sweep the <b>inside of the bend</b> where the current slackens and gold drops.' },
+    { k: 'slopebreak', w: 0.25, verb: 'Slope-break drop — work the reach where the <b>steep creek flattens out</b> and can no longer carry the heavies.' },
+    { k: 'bench', w: 0.20, verb: 'Bench / old high terrace — check the <b>flat ground a few metres above the creek</b>: an ancient channel where deep leads sit.' },
+    { k: 'confl', w: 0.15, verb: 'Confluence bar — sweep <b>just below where the two creeks meet</b>, on the downstream bars.' },
+    { k: 'pshadow', w: 0.10, verb: 'Drop-pool / pressure shadow — dig the <b>pocket just below the steepening</b> where flow stalls and heavies settle.' }
+  ];
+  function hotspotFeature(C) {
+    // C.stream / sub-signals are the z8 block-MAX (planes F/G) so a sparse micro-feature survives the tap.
+    if (!C || C.stream == null || C.stream < 0.12) return null;   // straight reach / not a stream cell
+    var best = null;
+    SH_FEATURES.forEach(function (f) { var v = C[f.k] || 0; if (v >= 0.30 && (!best || v > best.v)) best = { f: f, v: v }; });
+    return best ? { label: best.f.verb, key: best.f.k, val: best.v, stream: C.stream } : null;
+  }
   function slopeBand(vk, deg) {
     var s = (META && META.variants && META.variants[vk] && META.variants[vk].slope) || ({ vlf: [10, 10], pi: [22.5, 12.5], zvt: [17.5, 15] }[vk]);
     return Math.max(0, Math.min(1, 1 - Math.abs((deg - s[0]) / s[1])));
   }
   // True per-term evidence values for THIS cell + variant (mirrors compute_variants in build_npi.py).
   function termVals(vk, C) {
-    return { drain: C.drain, workkde: C.workKde, hammered: C.hammered, slope: slopeBand(vk, C.slopeDeg),
+    return { drain: C.drain, stream: (C.stream == null ? 0 : C.stream), workkde: C.workKde, hammered: C.hammered, slope: slopeBand(vk, C.slopeDeg),
       bedrock: C.bedScore, mag: C.mineral, lowmag: 1 - C.mineral, asig: C.asig, k: C.kRad, th: C.thRad, litho: C.litho };
   }
   // Name the two terms with the biggest weight*value contribution (positive) or biggest miss (low).
@@ -1631,6 +1654,8 @@ function npiDetectorVariant() {
     var d = GRID.data, W = GRID.w;
     var iA = (r * W + col) * 4, iB = ((R + r) * W + col) * 4, iC = ((2 * R + r) * W + col) * 4;
     var iD = ((3 * R + r) * W + col) * 4, iE = ((4 * R + r) * W + col) * 4;
+    var iF = ((5 * R + r) * W + col) * 4, iG = ((6 * R + r) * W + col) * 4;   // v37 stream-hotspot planes
+    var has7 = (META.grid.planes || 5) >= 7;
     var mask = inGrid ? d[iA + 3] : 0;
     if (!inGrid || mask === 0) {
       L.popup({ maxWidth: 250, className: 'npi-pop' }).setLatLng(latlng)
@@ -1639,7 +1664,9 @@ function npiDetectorVariant() {
     }
     var npi = { vlf: d[iA], pi: d[iA + 1], zvt: d[iA + 2] };
     var C = { prior: d[iB] / 255, workKde: d[iB + 1] / 255, drain: d[iB + 2] / 255, slopeDeg: d[iC], bedScore: d[iC + 1] / 255,
-      mineral: d[iC + 2] / 255, asig: d[iD] / 255, kRad: d[iD + 1] / 255, thRad: d[iD + 2] / 255, litho: d[iE] / 255, burn: d[iE + 1] / 255, hammered: d[iE + 2] / 255 };
+      mineral: d[iC + 2] / 255, asig: d[iD] / 255, kRad: d[iD + 1] / 255, thRad: d[iD + 2] / 255, litho: d[iE] / 255, burn: d[iE + 1] / 255, hammered: d[iE + 2] / 255,
+      stream: has7 ? d[iF] / 255 : null, bend: has7 ? d[iF + 1] / 255 : 0, slopebreak: has7 ? d[iF + 2] / 255 : 0,
+      confl: has7 ? d[iG] / 255 : 0, bench: has7 ? d[iG + 1] / 255 : 0, pshadow: has7 ? d[iG + 2] / 255 : 0 };
     var prior = C.prior, workKde = C.workKde, drainScore = C.drain, slopeDeg = C.slopeDeg, bedScore = C.bedScore,
       mineral = C.mineral, asig = C.asig, kRad = C.kRad, thRad = C.thRad, litho = C.litho, burn = C.burn;
     var reef = nearestReef(latlng.lat, latlng.lng);
@@ -1650,6 +1677,12 @@ function npiDetectorVariant() {
     var bandWord = { high: 'high potential', mid: 'middling', low: 'low' }[vb];
     var verdictTxt = NPI_VERDICT[vk][vb];
     var drivers = driverLine(vk, vb, C, prior);
+    // ---- v37: name the placer micro-feature under the tap (or flag a straight reach) ----
+    var hf = hotspotFeature(C);
+    var featureHtml = '';
+    if (hf) featureHtml = '<div class="npi-hotspot">🎯 ' + hf.label + '</div>';
+    else if (C.stream != null && drainScore >= 0.45 && C.stream < 0.12)
+      featureHtml = '<div class="npi-hotspot straight">↔ On the creek but a <b>straight reach</b> — the pay is up- or downstream at the next bend or slope-break. Follow the channel.</div>';
 
     // ---- cross-detector chips + best-swung ----
     var chips = NPI_VKEYS.map(function (k) { var bd = band(npi[k]); return '<span class="npi-chip' + (k === vk ? ' active' : '') + '" style="--c:' + bd[1] + '"><i>' + k.toUpperCase() + '</i><b>' + npi[k] + '</b></span>'; }).join('');
@@ -1661,6 +1694,13 @@ function npiDetectorVariant() {
     function lvl(v, hi, mid, hiTxt, midTxt, loTxt, hiCol) {
       return v >= hi ? '<span style="color:' + (hiCol || '#b3261e') + '">' + hiTxt + '</span>' : v >= mid ? midTxt : '<span style="color:#1a9850">' + loTxt + '</span>';
     }
+    // v37: stream micro-feature composite + which sub-signals are present under the tap
+    function streamRowTxt(C) {
+      var subs = [['bend', 'point-bar bend'], ['slopebreak', 'slope-break'], ['bench', 'bench/terrace'], ['confl', 'confluence'], ['pshadow', 'drop-pool']];
+      var present = subs.filter(function (s) { return (C[s[0]] || 0) >= 0.30; }).sort(function (a, b) { return C[b[0]] - C[a[0]]; }).map(function (s) { return s[1]; });
+      var lt = C.stream >= 0.24 ? '<span style="color:#0d7a5c">strong hotspot</span>' : C.stream >= 0.12 ? '<span style="color:#a06600">micro-feature</span>' : '<span style="color:#1a9850">straight reach</span>';
+      return lt + (present.length ? ' <span style="color:#999">(' + present.slice(0, 2).join(', ') + ')</span>' : '');
+    }
     var priorTxt = prior >= 0.75 ? '<span style="color:#1f7a32">in goldfield</span>' : prior >= 0.4 ? 'favourable geology' : prior >= 0.18 ? 'goldfield margin' : '<span style="color:#999">off known ground</span>';
     var breakdown =
       row('Goldfield prior', priorTxt + (reef ? ' <span style="color:#999">(' + cleanReef(reef) + ')</span>' : '')) +
@@ -1670,6 +1710,7 @@ function npiDetectorVariant() {
       row('Structure (analytic sig.)', lvl(asig, 0.5, 0.25, 'strong (shear/contact)', 'moderate', 'quiet', '#a06600')) +
       row('Radiometric K / Th', lvl(kRad, 0.6, 0.35, 'K-rich (granitic)', 'moderate K', 'low K', '#a06600') + ' <span style="color:#999">· Th ' + (thRad >= 0.6 ? 'hi' : thRad >= 0.35 ? 'mid' : 'lo') + '</span>') +
       row('Drainage', drainScore >= 0.55 ? 'gully confluence' : drainScore >= 0.3 ? 'minor channel' : 'ridge / divide') +
+      (C.stream != null ? row('Stream micro-feature', streamRowTxt(C)) : '') +
       row('Slope', slopeDeg + '°') +
       row('Bedrock exposure', bedScore >= 0.55 ? 'high' : bedScore >= 0.3 ? 'moderate' : 'low') +
       (burn >= 0.25 ? row('Recent fire scar', '<span style="color:#c65a00">fresh exposure ✓</span>') : '');
@@ -1677,6 +1718,7 @@ function npiDetectorVariant() {
       '<div class="day" style="color:#a06600">🎯 Nugget Potential' + (reef ? ' — ' + cleanReef(reef) : '') + '</div>' +
       '<div class="npi-verdict ' + vbClass + '">' +
         '<div class="npi-vtext">' + verdictTxt + '</div>' +
+        featureHtml +
         '<div class="npi-vscore">' + NPI_WHO[vk] + ' here: <b>' + score + '</b>/100 · <span class="band">' + bandWord + '</span></div>' +
       '</div>' +
       '<div class="npi-drivers">' + drivers + '</div>' +
@@ -1701,7 +1743,7 @@ function npiDetectorVariant() {
   // ===== v36: on-map colour-ramp legend (re-words per visible detector variant) =====
   var LG = document.getElementById('npiLegend');
   var LG_WORDS = {
-    vlf: { t: 'VLF · Gold Monster 1000', hi: 'HIGH — swing the Monster here', lo: 'LOW — rocky/dry, skip' },
+    vlf: { t: 'VLF · Gold Monster 1000', hi: 'HIGH — point-bar / slope-break, swing here', lo: 'LOW — straight reach / dry, skip' },
     pi:  { t: 'PI · GPX 6000',           hi: 'HIGH — swing the GPX here',     lo: 'LOW — save the batteries' },
     zvt: { t: 'ZVT · GPZ 7000',          hi: 'HIGH — swing the GPZ here',     lo: 'LOW — not deep-nugget ground' }
   };
@@ -1726,9 +1768,9 @@ function npiDetectorVariant() {
   // ===== v36: one-time per-variant explainer bottom sheet =====
   var SHEET_TXT = {
     vlf: '<strong>🎯 VLF heatmap — where the Gold Monster 1000 shines</strong>' +
-      '<div class="ln">🔴 <b>Red</b> = gentle creek / alluvial ground with clean soil.</div>' +
-      '<div class="ln">🟢 <b>Green/blue</b> = rocky, mineralised or dry ridges — skip.</div>' +
-      '<div class="ln">Tap any spot for a plain-English verdict.</div>',
+      '<div class="ln">🔴 <b>Red</b> = the <b>hot spot ON the creek</b> — inside of a meander bend, a slope-break where a steep creek flattens, a confluence, or an old bench terrace. Not the whole creek — the bit worth sweeping.</div>' +
+      '<div class="ln">🟢 <b>Green/blue</b> = straight reaches, rocky/mineralised or dry ridges — skip.</div>' +
+      '<div class="ln">Tap any spot — it names the micro-feature (point-bar, slope-break…).</div>',
     pi: '<strong>🎯 PI heatmap — where the GPX 6000 shines</strong>' +
       '<div class="ln">🔴 <b>Red</b> = hammered old goldfields with mineralised hot ground the GPX handles better than VLF. Deep nuggets and reef-hosted stuff.</div>' +
       '<div class="ln">🟢 <b>Green/blue</b> = clean but unworked / no host rock — probably nothing to find.</div>' +
@@ -1827,7 +1869,27 @@ function npiDetectorVariant() {
     body.innerHTML = head +
       '<div style="font-weight:600;color:#a06600;margin:2px 0 2px">Known goldfields <span style="color:#999;font-weight:400">(want high)</span></div>' + tbl(sr, 'Trip spot') +
       '<div style="font-weight:600;color:#1f7a32;margin:9px 0 2px">Negative controls <span style="color:#999;font-weight:400">(want low, &lt; 30)</span></div>' + tbl(nr, 'Non-gold ground') +
+      streamHotspotBlock(e.streamHotspots) +
       '<p class="ag-note" style="margin:8px 0 0">Scores are “max within ~200 m”. Reservoirs flooding gold valleys (Cairn Curran, Eppalock) are excluded — they sit on real gold ground.</p>';
+  }
+  // v37: VLF sharpening — micro-feature vs straight reach (before v36 → after v37) + which sub-signal drives it.
+  function streamHotspotBlock(sh) {
+    if (!sh || !sh.verify || !sh.verify.length) return '';
+    var rows = sh.verify.map(function (r) {
+      var hs = r.hotspot, st = r.straight, ga = (hs.after - st.after);
+      var gc = ga >= 8 ? '#1f7a32' : ga >= 3 ? '#c98a00' : '#b3261e';
+      return '<tr><td style="padding:1px 6px 1px 0;color:#333">' + r.name + '</td>' +
+        '<td style="text-align:center;color:#0d7a5c;font-weight:600">' + hs.after + '</td>' +
+        '<td style="text-align:center;color:#888">' + st.after + '</td>' +
+        '<td style="text-align:center;color:' + gc + ';font-weight:600">+' + ga.toFixed(0) + '</td></tr>';
+    }).join('');
+    var sub = sh.subSignalShare || {};
+    var subTxt = Object.keys(sub).map(function (k) { return k + ' ' + sub[k] + '%'; }).join(' · ');
+    return '<div style="font-weight:600;color:#0d7a5c;margin:9px 0 2px">VLF sharpening (v37) <span style="color:#999;font-weight:400">(micro-feature should beat straight reach)</span></div>' +
+      '<table style="font-size:11.5px;border-collapse:collapse;width:100%">' +
+      '<tr><th style="text-align:left;font-weight:600;color:#666;padding:1px 6px 3px 0">Creek</th>' +
+      '<th style="color:#0d7a5c;font-weight:600">hotspot</th><th style="color:#888;font-weight:600">straight</th><th style="color:#666;font-weight:600">Δ</th></tr>' + rows + '</table>' +
+      (subTxt ? '<p class="ag-note" style="margin:4px 0 0">Hotspot layer driven by: ' + subTxt + '</p>' : '');
   }
   var wrap = document.getElementById('npiEvalWrap');
   if (wrap) wrap.addEventListener('toggle', function () {

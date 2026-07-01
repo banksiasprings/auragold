@@ -1,7 +1,14 @@
-# NPI build pipeline (v35 — per-detector Nugget Potential Index heatmaps)
+# NPI build pipeline (v37 — per-detector Nugget Potential Index heatmaps)
 
 Offline, reproducible build of the `data/npi/` heatmap tiles + tap-to-explain grid +
 per-detector eval scorecard. All inputs are free / Australia-licensed; no API keys.
+
+**v37** adds **stream micro-feature hotspots** (`stream_hotspots.py`) — the placer-science
+sharpener. Real alluvial gold is 90% about *where on a creek*, not which creek, so v36's uniform
+drainage term is post-processed into six placer signals and folded into the model as a `stream`
+term. The VLF branch steals 0.18 of its weight from the uniform `drain` (drainage becomes the
+*permissive* layer, the hotspot the *sharpener*); PI/ZVT take 0.05 (benches still matter). See
+**"v37 stream hotspots"** below.
 
 ## Run (Mac/Linux with python3)
 
@@ -52,6 +59,33 @@ comparable region-to-region. Missing data → **neutral 0.5**, never a silent bo
 - **PI (GPX 6000)** — steeper mineralised hot ground: **high** magnetics + analytic-signal structure, drainage-blind.
 - **ZVT (GPZ 7000)** — hammered premium ground: broad workings density + structure.
 
+## v37 stream hotspots (`stream_hotspots.py`)
+
+Six placer signals, computed on the **same flow route** as `drain` (one flood, cached), then
+composited and upsampled. Bar-head (signal 6) is **deferred** — it needs sub-30 m LiDAR.
+
+| Signal | w | What it flags |
+|--------|---|---------------|
+| **inside-bend / point-bar** | 0.30 | sagitta of the vectorised channel → the **inside** (deposition) bank of a high-curvature bend, where velocity is lowest and gold drops |
+| **slope-break** | 0.25 | along-stream d(slope)/ds — steep-above / **flat-below** = the drop point where the current can no longer carry heavies |
+| **bench / paleochannel** | 0.20 | cells ≤200 m from an active channel, **5–30 m above** local drainage, low local slope: old high terraces / deep leads |
+| **confluence** | 0.15 | network nodes with in-degree ≥2, buffered ~50–220 m downstream with distance decay (the junction bar) |
+| **pressure-shadow / pool** | 0.10 | the cell **immediately downstream of a >30 % slope drop** (relative), where a drop-pool forms and heavies settle |
+
+Wired into the model as a `stream` term: **VLF 0.18** (stolen from `drain` 0.30→0.12) + a
+hotspot-weighted confluence interaction, **PI 0.05**, **ZVT 0.05**. The result is that the
+point-bar / slope-break on a creek out-scores the straight reaches — you can see *which meander to
+sweep*, not just which stream (see the before/after eval).
+
+### Resolution honesty
+
+Hotspots run on the **~30 m SRTM** route (downsampled to a ~120 m flow grid — the same route
+`drain` already uses, so the flood is paid once). Placer micro-features are usually **100 m+**
+(meander wavelengths, terrace widths, confluence bars), so the sharpening is real at this scale.
+**Bar-head scale (~10–30 m) is out of reach** and deferred — it would need an ELVIS 5 m DEM, which
+has no open fetchable endpoint (documented in v35) and is infeasible full-region in pure Python.
+The takeaway: v37 tells you *which bend / break / bench* on a creek, not *which end of one gravel bar*.
+
 ## Honest limitations (documented judgment calls)
 
 - **DEM is SRTM-derived ~30 m, not 5 m LiDAR.** No Vic 5 m DEM is openly fetchable (ELVIS is
@@ -67,7 +101,7 @@ comparable region-to-region. Missing data → **neutral 0.5**, never a silent bo
 | File | What |
 |------|------|
 | `{vlf,pi,zvt}/{z}/{x}/{y}.png` | palettised RdYlGn tiles, 3 detector variants, z10–12 native (~26 MB) |
-| `npi-grid.png` | packed z8 (~490 m) grid, **5 stacked planes** for tap-to-explain: A=[npiVLF,npiPI,npiZVT]; B=[prior,workkde,drain]; C=[slopeDeg,bedrock,mag]; D=[asig,k,th]; E=[litho,burn,hammered]; **alpha = validity MASK only** (canvas premultiplies alpha — data must live in RGB) |
+| `npi-grid.png` | packed z8 (~490 m) grid, **7 stacked planes** for tap-to-explain: A=[npiVLF,npiPI,npiZVT]; B=[prior,workkde,drain]; C=[slopeDeg,bedrock,mag]; D=[asig,k,th]; E=[litho,burn,hammered]; **F=[stream,bend,slopebreak]; G=[confl,bench,pshadow]** (v37); **alpha = validity MASK only** (canvas premultiplies alpha — data must live in RGB) |
 | `npi-meta.json` | bbox, grid geo-ref, weights, global-norm stats, limitations, per-spot component breakdown, eval |
 | `npi-eval.json` | Settings scorecard: Pearson, per-input importance, 12 known spots + negative controls |
 | `tiles-manifest.json` | every tile path, so the service worker precaches the region for offline use |

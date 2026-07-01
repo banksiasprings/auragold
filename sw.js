@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v36';
+const SHELL_VERSION = 'v37';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -56,7 +56,11 @@ const SHELL_VERSION = 'v36';
 // Skip per detector + top-2 plain-language drivers, raw component grid preserved behind a "Why?"
 // toggle), an on-map colour-ramp legend that re-words per detector variant, and a one-time per-variant
 // bottom-sheet explainer. All inline in index.html, so only a shell-rev bump is needed.
-const SHELL_REV = 'v36';
+// v37: stream micro-feature hotspots sharpen the VLF drainage — six placer signals (inside-bend,
+// slope-break, confluence, bench, pressure-shadow) fold into a `stream` term so the point-bar / drop
+// out-scores the straight reaches. npi-grid.png is now 7 planes (+stream composite & sub-signals);
+// popups name the micro-feature. Re-fetched via SHELL_ASSETS on the shell-rev bump.
+const SHELL_REV = 'v37';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
