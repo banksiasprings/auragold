@@ -468,6 +468,52 @@
   .npi-chip b { display:block; font-size:17px; color:var(--c); font-variant-numeric:tabular-nums; }
   .npi-interp { font-size:11px; color:#5a4f33; margin:1px 0 4px; }
   .npi-caveat { font-size:10px; color:#9a8; margin-top:7px; line-height:1.35; border-top:1px solid #eee; padding-top:5px; }
+  /* v36: verdict-first NPI popup */
+  .npi-verdict { border-left:4px solid var(--vc,#c98a00); border-radius:0 8px 8px 0; padding:7px 9px; margin:6px 0 5px;
+    background:color-mix(in srgb, var(--vc,#c98a00) 8%, #fff); }
+  .npi-b-high { --vc:#b3261e; } .npi-b-mid { --vc:#c98a00; } .npi-b-low { --vc:#1a9850; }
+  .npi-vtext { font-size:12.5px; line-height:1.42; color:#2a2a2a; }
+  .npi-vtext b { color:var(--vc,#c98a00); }
+  .npi-vscore { font-size:11px; color:#555; margin-top:5px; font-weight:600; }
+  .npi-vscore b { font-size:16px; color:var(--vc,#c98a00); font-variant-numeric:tabular-nums; }
+  .npi-vscore .band { text-transform:uppercase; letter-spacing:.4px; color:var(--vc,#c98a00); }
+  .npi-drivers { font-size:11px; color:#5a4f33; margin:0 0 5px; line-height:1.35; }
+  .npi-drivers b { color:#a06600; }
+  .npi-why-btn { display:block; width:100%; text-align:left; margin-top:6px; border:1px solid #e7e0cc; background:#faf7ee;
+    color:#8a6d1e; font:600 11px -apple-system,BlinkMacSystemFont,sans-serif; padding:6px 8px; border-radius:7px; cursor:pointer; }
+  .npi-why-btn:active { background:#f2ebd6; }
+  .npi-why { margin-top:4px; }
+  /* v36: on-map colour-ramp legend */
+  #npiLegend { position:absolute; left:10px; bottom:16px; z-index:1100; display:none;
+    background:rgba(255,255,255,.94); border-radius:11px; box-shadow:0 2px 9px rgba(0,0,0,.28);
+    padding:8px 9px 8px 8px; font:600 10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#333;
+    -webkit-user-select:none; user-select:none; max-width:44vw; }
+  #npiLegend.show { display:block; }
+  .npi-lg-title { font-size:10.5px; font-weight:700; color:#8a6d1e; margin:0 0 5px; letter-spacing:.2px; }
+  .npi-lg-body { display:flex; gap:7px; }
+  .npi-lg-ramp { width:11px; border-radius:4px; flex:0 0 auto;
+    background:linear-gradient(to top,#1a9850 0%,#66bd63 22%,#fee08b 52%,#fdae61 74%,#d73027 100%); box-shadow:inset 0 0 0 1px rgba(0,0,0,.12); }
+  .npi-lg-labels { display:flex; flex-direction:column; justify-content:space-between; line-height:1.18; }
+  .npi-lg-hi { color:#b3261e; font-weight:700; }
+  .npi-lg-mid { color:#9a8a52; font-weight:600; }
+  .npi-lg-lo { color:#1a7a3c; font-weight:700; }
+  .npi-lg-labels small { display:block; font-weight:500; color:#888; }
+  /* v36: one-time per-variant explainer bottom sheet */
+  #npiSheet { position:fixed; left:0; right:0; bottom:0; z-index:1400; display:none; justify-content:center; pointer-events:none; }
+  #npiSheet.show { display:flex; }
+  .npi-sheet-card { pointer-events:auto; width:min(440px,94vw); margin:0 8px 10px; background:rgba(22,22,28,.97); color:#f3f0e8;
+    border-radius:15px 15px 12px 12px; box-shadow:0 -3px 22px rgba(0,0,0,.42); padding:14px 16px 13px;
+    transform:translateY(115%); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
+  #npiSheet.show .npi-sheet-card { transform:translateY(0); }
+  .npi-sheet-body { font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,sans-serif; }
+  .npi-sheet-body strong { display:block; font-size:13.5px; color:#ffd54a; margin-bottom:5px; }
+  .npi-sheet-body .ln { margin:3px 0; }
+  .npi-sheet-foot { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:11px; }
+  .npi-sheet-dsa { font-size:11.5px; color:#c9c4b6; display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .npi-sheet-dsa input { width:15px; height:15px; }
+  .npi-sheet-ok { background:#ffd54a; color:#1a1a22; border:none; border-radius:9px; padding:9px 18px;
+    font:700 13px -apple-system,BlinkMacSystemFont,sans-serif; cursor:pointer; }
+  .npi-sheet-ok:active { transform:scale(.96); }
   .ag-audio-pop .ev-lbl-h { font-size:11px; font-weight:700; color:#555; margin:6px 0 4px; }
   .ag-audio-pop .ev-lbls { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
   .ag-audio-pop .ev-lbl { border:1.5px solid var(--lc); background:#fff; color:var(--lc); cursor:pointer; border-radius:7px;
@@ -727,6 +773,30 @@
     <div class="lp-head"><strong>Map layers</strong><button class="lp-x" id="lpClose" type="button" aria-label="Collapse">×</button></div>
     <div id="lpList"></div>
     <div class="lp-note" id="lpNote"></div>
+  </div>
+</div>
+
+<!-- v36: NPI colour-ramp legend (bottom-left, shown only while a Nugget-Potential layer is on; re-words per detector) -->
+<div id="npiLegend" aria-hidden="true">
+  <div class="npi-lg-title" id="npiLgTitle">Nugget Potential</div>
+  <div class="npi-lg-body">
+    <div class="npi-lg-ramp" style="min-height:64px"></div>
+    <div class="npi-lg-labels">
+      <span class="npi-lg-hi" id="npiLgHi">HIGH — swing here</span>
+      <span class="npi-lg-mid">middling</span>
+      <span class="npi-lg-lo" id="npiLgLo">LOW — skip</span>
+    </div>
+  </div>
+</div>
+
+<!-- v36: one-time per-variant explainer bottom sheet -->
+<div id="npiSheet" aria-hidden="true">
+  <div class="npi-sheet-card">
+    <div class="npi-sheet-body" id="npiSheetBody"></div>
+    <div class="npi-sheet-foot">
+      <label class="npi-sheet-dsa"><input type="checkbox" id="npiSheetDsa"> Don't show this again</label>
+      <button type="button" class="npi-sheet-ok" id="npiSheetOk">Got it</button>
+    </div>
   </div>
 </div>
 
@@ -1138,7 +1208,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v35';
+var APP_VERSION = 'v36';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1494,6 +1564,65 @@ function npiDetectorVariant() {
   function cleanReef(nm) { return nm ? nm.replace(/ GOLDFIELD| ZONE/ig, '').replace(/^(\w)(.*)/, function (_, a, b) { return a + b.toLowerCase(); }) : ''; }
   function band(npi) { return npi >= 66 ? ['high', '#d73027'] : npi >= 33 ? ['moderate', '#fdae61'] : ['low', '#1a9850']; }
   function row(label, val) { return '<tr><td style="color:#666;padding:1px 8px 1px 0">' + label + '</td><td style="font-weight:600">' + val + '</td></tr>'; }
+
+  // ===== v36: verdict-first interpretability (no model change) =====
+  // Band cutoffs are tuned to the v35 POPUP score distribution — the tap reads the z8 block-mean
+  // grid, which sits ~10-35 pts below the eval peak scores, so cutoffs are lower than the raw eval.
+  // Across the 12 known spots this lands VLF 7/12, PI 3/12, ZVT 5/12 as "high" (GO). Copy is
+  // prospector-language; the words matter more than the exact number.
+  var NPI_WHO = { vlf: 'Gold Monster 1000', pi: 'GPX 6000', zvt: 'GPZ 7000' };
+  var NPI_WHO_LONG = { vlf: 'Gold Monster (clean, gentle ground)', pi: 'GPX 6000 (steeper, hotter ground)', zvt: 'GPZ 7000 (premium hammered ground)' };
+  // NOTE: threshold keys are hiCut/midCut (NOT hi/mid) so they don't collide with the high/mid/low
+  // verdict-text keys in the same object — a mid:30 threshold key would be overwritten by mid:'text'.
+  var NPI_VERDICT = {
+    vlf: { hiCut: 54, midCut: 30,
+      high: '<b>GO here with the Gold Monster.</b> Classic alluvial creek country — gentle slope, strong drainage catching wash-down, low mineralisation, near a known reef. Sweep the creek gutters and terraces.',
+      mid:  "<b>Maybe — reads like edge alluvial.</b> Drainage and terrain are OK for the Gold Monster, but the signal's thin. Worth an hour if you're passing.",
+      low:  '<b>Not the Monster’s ground here.</b> Too rocky / mineralised or no drainage focus. Try a PI or ZVT if you must swing this spot.' },
+    pi:  { hiCut: 55, midCut: 30,
+      high: '<b>GO here with the GPX 6000.</b> Hammered goldfield with mineralised hot ground the GPX handles beautifully, plus structural indicators for reef-hosted nuggets. Work the workings edges and follow the aeromag gradient.',
+      mid:  '<b>Worth a run with the GPX.</b> Some good indicators — old workings, a magnetic signature or a steep contact — but not all of them. Not a first-choice spot.',
+      low:  '<b>Poor country for the GPX.</b> No worked history, no mineralised host rock. Save the batteries.' },
+    zvt: { hiCut: 60, midCut: 30,
+      high: '<b>GO here with the GPZ 7000.</b> Deep-nugget premium ground — heavily-worked historical field where the earlier detectors couldn’t reach the deep ones. The ZVT’s depth advantage is exactly what this spot rewards.',
+      mid:  '<b>Worth a walk with the GPZ.</b> Historic activity nearby but not the premium hammered stuff.',
+      low:  '<b>Not deep-nugget country.</b> No historic worked density to justify the GPZ.' }
+  };
+  function verdictBand(vk, score) { var t = NPI_VERDICT[vk]; return score >= t.hiCut ? 'high' : score >= t.midCut ? 'mid' : 'low'; }
+  function activeDetector() { try { return (JSON.parse(localStorage.getItem('auragold_audio') || '{}').detector) || 'gold-monster-1000'; } catch (e) { return 'gold-monster-1000'; } }
+  // The verdict speaks for the configured detector; in Auto-best it speaks for the best variant here.
+  function verdictVariant(npi) {
+    var det = activeDetector();
+    if (det === 'auto-best') return NPI_VKEYS.reduce(function (a, b) { return npi[b] > npi[a] ? b : a; });
+    return det === 'gpx-6000' ? 'pi' : det === 'gpz-7000' ? 'zvt' : 'vlf';
+  }
+  // Plain-prospector labels for each evidence term (positive / negative framing).
+  var DRV_POS = { drain: 'strong drainage catch', lowmag: 'clean low-mineral ground', slope: 'well-graded slope', workkde: 'dense old workings nearby', litho: 'favourable host rock', bedrock: 'bedrock exposure', k: 'K-rich granite margin', mag: 'mineralised hot ground', asig: 'structural contact / shear', th: 'evolved-granite signature', hammered: 'heavily-worked historic field' };
+  var DRV_NEG = { drain: 'no drainage focus', lowmag: 'too magnetic / mineralised', slope: 'wrong slope for this detector', workkde: 'no worked history nearby', litho: 'poor host rock (cover/basalt)', bedrock: 'no bedrock exposure', k: 'not granitic (low K)', mag: 'no magnetic signature', asig: 'no structural indicators', th: 'no evolved-granite signature', hammered: 'not a hammered field' };
+  function slopeBand(vk, deg) {
+    var s = (META && META.variants && META.variants[vk] && META.variants[vk].slope) || ({ vlf: [10, 10], pi: [22.5, 12.5], zvt: [17.5, 15] }[vk]);
+    return Math.max(0, Math.min(1, 1 - Math.abs((deg - s[0]) / s[1])));
+  }
+  // True per-term evidence values for THIS cell + variant (mirrors compute_variants in build_npi.py).
+  function termVals(vk, C) {
+    return { drain: C.drain, workkde: C.workKde, hammered: C.hammered, slope: slopeBand(vk, C.slopeDeg),
+      bedrock: C.bedScore, mag: C.mineral, lowmag: 1 - C.mineral, asig: C.asig, k: C.kRad, th: C.thRad, litho: C.litho };
+  }
+  // Name the two terms with the biggest weight*value contribution (positive) or biggest miss (low).
+  function driverLine(vk, vb, C, prior) {
+    var w = (META && META.variants && META.variants[vk] && META.variants[vk].weights) || {};
+    var tv = termVals(vk, C), keys = Object.keys(w);
+    if (vb === 'low') {
+      var miss = keys.map(function (k) { return { k: k, s: w[k] * (1 - (tv[k] || 0)) }; }).sort(function (a, b) { return b.s - a.s; });
+      var parts = [];
+      if (prior < 0.4) parts.push('off known goldfield ground');
+      for (var i = 0; i < miss.length && parts.length < 2; i++) { var nm = DRV_NEG[miss[i].k]; if (nm && parts.indexOf(nm) < 0) parts.push(nm); }
+      return 'Weak here: <b>' + parts.join('</b> + <b>') + '</b>';
+    }
+    var top = keys.map(function (k) { return { k: k, c: w[k] * (tv[k] || 0), v: (tv[k] || 0) }; }).sort(function (a, b) { return b.c - a.c; }).slice(0, 2);
+    return 'Driven by: <b>' + top.map(function (t) { return DRV_POS[t.k] + ' (' + t.v.toFixed(2) + ')'; }).join('</b> + <b>') + '</b>';
+  }
+
   function showAt(latlng) {
     if (!GRID || !META) { loadGrid(); return; }
     var z = META.grid.zoom, R = META.grid.rows;
@@ -1509,17 +1638,26 @@ function npiDetectorVariant() {
       return;
     }
     var npi = { vlf: d[iA], pi: d[iA + 1], zvt: d[iA + 2] };
-    var prior = d[iB] / 255, workKde = d[iB + 1] / 255, drainScore = d[iB + 2] / 255;
-    var slopeDeg = d[iC], bedScore = d[iC + 1] / 255, mineral = d[iC + 2] / 255;
-    var asig = d[iD] / 255, kRad = d[iD + 1] / 255, thRad = d[iD + 2] / 255;
-    var litho = d[iE] / 255, burn = d[iE + 1] / 255, hammered = d[iE + 2] / 255;
+    var C = { prior: d[iB] / 255, workKde: d[iB + 1] / 255, drain: d[iB + 2] / 255, slopeDeg: d[iC], bedScore: d[iC + 1] / 255,
+      mineral: d[iC + 2] / 255, asig: d[iD] / 255, kRad: d[iD + 1] / 255, thRad: d[iD + 2] / 255, litho: d[iE] / 255, burn: d[iE + 1] / 255, hammered: d[iE + 2] / 255 };
+    var prior = C.prior, workKde = C.workKde, drainScore = C.drain, slopeDeg = C.slopeDeg, bedScore = C.bedScore,
+      mineral = C.mineral, asig = C.asig, kRad = C.kRad, thRad = C.thRad, litho = C.litho, burn = C.burn;
     var reef = nearestReef(latlng.lat, latlng.lng);
-    var av = npiDetectorVariant();
-    var chips = NPI_VKEYS.map(function (vk) { var bd = band(npi[vk]); return '<span class="npi-chip' + (vk === av ? ' active' : '') + '" style="--c:' + bd[1] + '"><i>' + vk.toUpperCase() + '</i><b>' + npi[vk] + '</b></span>'; }).join('');
+
+    // ---- verdict (leads) ----
+    var vk = verdictVariant(npi), score = npi[vk], vb = verdictBand(vk, score);
+    var vbClass = { high: 'npi-b-high', mid: 'npi-b-mid', low: 'npi-b-low' }[vb];
+    var bandWord = { high: 'high potential', mid: 'middling', low: 'low' }[vb];
+    var verdictTxt = NPI_VERDICT[vk][vb];
+    var drivers = driverLine(vk, vb, C, prior);
+
+    // ---- cross-detector chips + best-swung ----
+    var chips = NPI_VKEYS.map(function (k) { var bd = band(npi[k]); return '<span class="npi-chip' + (k === vk ? ' active' : '') + '" style="--c:' + bd[1] + '"><i>' + k.toUpperCase() + '</i><b>' + npi[k] + '</b></span>'; }).join('');
     var best = NPI_VKEYS.reduce(function (a, b) { return npi[b] > npi[a] ? b : a; });
     var lo = Math.min(npi.vlf, npi.pi, npi.zvt);
-    var who = { vlf: 'Gold Monster (clean, gentle ground)', pi: 'GPX 6000 (steeper, hotter ground)', zvt: 'GPZ 7000 (premium hammered ground)' };
-    var interp = (npi[best] - lo) >= 8 ? ('Best swung with the <b>' + who[best] + '</b>') : 'Comparable for all detector types here';
+    var interp = (npi[best] - lo) >= 8 ? ('Best swung with the <b>' + NPI_WHO_LONG[best] + '</b>') : 'Comparable for all detector types here';
+
+    // ---- raw component grid (preserved, behind the Why? toggle) ----
     function lvl(v, hi, mid, hiTxt, midTxt, loTxt, hiCol) {
       return v >= hi ? '<span style="color:' + (hiCol || '#b3261e') + '">' + hiTxt + '</span>' : v >= mid ? midTxt : '<span style="color:#1a9850">' + loTxt + '</span>';
     }
@@ -1537,14 +1675,102 @@ function npiDetectorVariant() {
       (burn >= 0.25 ? row('Recent fire scar', '<span style="color:#c65a00">fresh exposure ✓</span>') : '');
     var html = '<div class="popup-spot npi-pop-in">' +
       '<div class="day" style="color:#a06600">🎯 Nugget Potential' + (reef ? ' — ' + cleanReef(reef) : '') + '</div>' +
+      '<div class="npi-verdict ' + vbClass + '">' +
+        '<div class="npi-vtext">' + verdictTxt + '</div>' +
+        '<div class="npi-vscore">' + NPI_WHO[vk] + ' here: <b>' + score + '</b>/100 · <span class="band">' + bandWord + '</span></div>' +
+      '</div>' +
+      '<div class="npi-drivers">' + drivers + '</div>' +
       '<div class="npi-chips">' + chips + '</div>' +
       '<div class="npi-interp">' + interp + '</div>' +
-      '<table style="font-size:12px;border-collapse:collapse;margin-top:3px">' + breakdown + '</table>' +
-      '<div class="npi-caveat">Heuristic prior, not a prediction — depends on terrain, ground, gear &amp; technique. Inputs: SRTM ~30 m terrain (no public Vic LiDAR tiles yet), GA magnetics + radiometrics, Vic 1:250k geology &amp; fire history.</div>' +
+      '<button type="button" class="npi-why-btn" onclick="window.__npiWhy(this)">▾ Why? — show all the raw signals</button>' +
+      '<div class="npi-why" style="display:none">' +
+        '<table style="font-size:12px;border-collapse:collapse;margin-top:3px">' + breakdown + '</table>' +
+        '<div class="npi-caveat">Heuristic prior, not a prediction — depends on terrain, ground, gear &amp; technique. Inputs: SRTM ~30 m terrain (no public Vic LiDAR tiles yet), GA magnetics + radiometrics, Vic 1:250k geology &amp; fire history.</div>' +
+      '</div>' +
       '</div>';
-    L.popup({ maxWidth: 274, minWidth: 238, className: 'npi-pop' }).setLatLng(latlng).setContent(html).openOn(map);
+    L.popup({ maxWidth: 290, minWidth: 246, className: 'npi-pop' }).setLatLng(latlng).setContent(html).openOn(map);
   }
-  NPI_VKEYS.forEach(function (vk) { NPI_LAYERS[vk].on('add', loadGrid); });
+  // Why? toggle (global — popups are recreated each open, so an inline handler is simplest).
+  window.__npiWhy = function (btn) {
+    var w = btn.nextElementSibling; if (!w) return;
+    var open = w.style.display !== 'none';
+    w.style.display = open ? 'none' : 'block';
+    btn.textContent = open ? '▾ Why? — show all the raw signals' : '▴ Hide the raw signals';
+  };
+
+  // ===== v36: on-map colour-ramp legend (re-words per visible detector variant) =====
+  var LG = document.getElementById('npiLegend');
+  var LG_WORDS = {
+    vlf: { t: 'VLF · Gold Monster 1000', hi: 'HIGH — swing the Monster here', lo: 'LOW — rocky/dry, skip' },
+    pi:  { t: 'PI · GPX 6000',           hi: 'HIGH — swing the GPX here',     lo: 'LOW — save the batteries' },
+    zvt: { t: 'ZVT · GPZ 7000',          hi: 'HIGH — swing the GPZ here',     lo: 'LOW — not deep-nugget ground' }
+  };
+  function visibleVariant() {
+    var av = npiDetectorVariant();
+    if (map.hasLayer(NPI_LAYERS[av])) return av;
+    for (var i = 0; i < NPI_VKEYS.length; i++) if (map.hasLayer(NPI_LAYERS[NPI_VKEYS[i]])) return NPI_VKEYS[i];
+    return null;
+  }
+  function updateLegend() {
+    if (!LG) return;
+    var vv = visibleVariant();
+    if (!vv) { LG.classList.remove('show'); LG.setAttribute('aria-hidden', 'true'); return; }
+    var wds = LG_WORDS[vv], det = activeDetector();
+    var t = document.getElementById('npiLgTitle'), hi = document.getElementById('npiLgHi'), lo = document.getElementById('npiLgLo');
+    if (t) t.textContent = (det === 'auto-best' ? 'Auto · ' : '') + wds.t;
+    if (hi) hi.textContent = wds.hi;
+    if (lo) lo.textContent = wds.lo;
+    LG.classList.add('show'); LG.setAttribute('aria-hidden', 'false');
+  }
+
+  // ===== v36: one-time per-variant explainer bottom sheet =====
+  var SHEET_TXT = {
+    vlf: '<strong>🎯 VLF heatmap — where the Gold Monster 1000 shines</strong>' +
+      '<div class="ln">🔴 <b>Red</b> = gentle creek / alluvial ground with clean soil.</div>' +
+      '<div class="ln">🟢 <b>Green/blue</b> = rocky, mineralised or dry ridges — skip.</div>' +
+      '<div class="ln">Tap any spot for a plain-English verdict.</div>',
+    pi: '<strong>🎯 PI heatmap — where the GPX 6000 shines</strong>' +
+      '<div class="ln">🔴 <b>Red</b> = hammered old goldfields with mineralised hot ground the GPX handles better than VLF. Deep nuggets and reef-hosted stuff.</div>' +
+      '<div class="ln">🟢 <b>Green/blue</b> = clean but unworked / no host rock — probably nothing to find.</div>' +
+      '<div class="ln">Tap any spot for a plain-English verdict.</div>',
+    zvt: '<strong>🎯 ZVT heatmap — where the GPZ 7000 shines</strong>' +
+      '<div class="ln">🔴 <b>Red</b> = premium hammered fields where earlier detectors missed the deep ones. The ZVT reaches deeper than PI or VLF and needs that depth to matter.</div>' +
+      '<div class="ln">🟢 <b>Green/blue</b> = shallow or unworked ground where a GPX would do the job.</div>' +
+      '<div class="ln">Tap any spot for a plain-English verdict.</div>',
+    auto: '<strong>🎯 Auto-best heatmap — it follows your detector</strong>' +
+      '<div class="ln">The map switches to the VLF, PI or ZVT layer that matches the detector you’ve set in Audio settings.</div>' +
+      '<div class="ln">🔴 <b>Red</b> = go here with your detector · 🟢 <b>Green/blue</b> = skip.</div>' +
+      '<div class="ln">Tap any spot for a plain-English verdict.</div>'
+  };
+  var SHEET_LS = 'auragold_npi_explainer', sheetSeen = {};
+  function sheetDismissed() { try { return JSON.parse(localStorage.getItem(SHEET_LS) || '{}'); } catch (e) { return {}; } }
+  function showSheet(k) {
+    var el = document.getElementById('npiSheet'); if (!el || !SHEET_TXT[k] || sheetSeen[k] || sheetDismissed()[k]) return;
+    sheetSeen[k] = true;
+    document.getElementById('npiSheetBody').innerHTML = SHEET_TXT[k];
+    var dsa = document.getElementById('npiSheetDsa'); if (dsa) dsa.checked = false;
+    el.dataset.k = k; el.classList.add('show'); el.setAttribute('aria-hidden', 'false');
+  }
+  (function wireSheet() {
+    var el = document.getElementById('npiSheet'); if (!el) return;
+    var ok = document.getElementById('npiSheetOk'), dsa = document.getElementById('npiSheetDsa');
+    if (ok) ok.addEventListener('click', function () {
+      if (dsa && dsa.checked) { var m = sheetDismissed(); m[el.dataset.k] = 1; try { localStorage.setItem(SHEET_LS, JSON.stringify(m)); } catch (e) {} }
+      el.classList.remove('show'); el.setAttribute('aria-hidden', 'true');
+    });
+    if (L.DomEvent) { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); }
+  })();
+
+  // Wire layer add/remove → grid load + legend + first-time explainer.
+  NPI_VKEYS.forEach(function (vk) {
+    NPI_LAYERS[vk].on('add', function () {
+      loadGrid(); updateLegend();
+      var key = activeDetector() === 'auto-best' ? 'auto' : vk;
+      setTimeout(function () { showSheet(key); }, 700);
+    });
+    NPI_LAYERS[vk].on('remove', updateLegend);
+  });
+  updateLegend();
   map.on('click', function (e) {
     if (!NPI_VKEYS.some(function (vk) { return map.hasLayer(NPI_LAYERS[vk]); })) return;
     var tg = e.originalEvent && e.originalEvent.target;
@@ -1560,9 +1786,10 @@ function npiDetectorVariant() {
     } else {
       NPI_VKEYS.forEach(function (k) { var l = NPI_LAYERS[k]; if (k === vk) { if (!map.hasLayer(l)) l.addTo(map); } else if (map.hasLayer(l)) map.removeLayer(l); });
     }
+    updateLegend();
   }
   window.AuraGold = window.AuraGold || {};
-  window.AuraGold.npi = { _showAt: showAt, _load: loadGrid, _meta: function () { return META; }, setActive: setActive, variantFor: npiDetectorVariant };
+  window.AuraGold.npi = { _showAt: showAt, _load: loadGrid, _meta: function () { return META; }, setActive: setActive, variantFor: npiDetectorVariant, _legend: updateLegend };
 })();
 
 // v35: Settings → 🎯 Nugget model quality — per-detector eval scorecard (12 known spots +
