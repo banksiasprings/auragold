@@ -2,16 +2,14 @@
 """Fetch AWS terrarium terrain tiles (keyless, ~30m at z12) for the Vic Goldfields
 region. Cache to terrain_z12/. Idempotent: skips tiles already on disk."""
 import math, os, sys, time, urllib.request, concurrent.futures as cf
+import regions as R
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "terrain_z12")
 os.makedirs(CACHE, exist_ok=True)
 Z = 12
-# Regions (west, south, east, north) — generous around the 12 trip spots.
-REGIONS = [
-    (142.95, -37.60, 145.15, -36.05),   # western goldfields cluster (spots 1-11 + subs/camps)
-    (146.30, -36.42, 146.72, -36.08),   # Chiltern-Mt Pilot / Eldorado (spot 12)
-]
+# Single source of truth: the padded fetch regions (regions.py).
+REGIONS = [(w, s, e, n) for (_slug, w, s, e, n) in R.FETCH]
 UA = {"User-Agent": "AuraGold-NPI-build/1.0 (offline prospecting PWA)"}
 
 def lon2x(lon, z): return int((lon + 180.0) / 360.0 * (1 << z))

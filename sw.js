@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v33';
+const SHELL_VERSION = 'v35';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -47,9 +47,12 @@ const SHELL_VERSION = 'v33';
 // offline in the field. Audio events now carry a detector + coil tag (Gold Monster 1000 / GPX
 // 6000 + coil); a separate classifier model is trained per combo.
 // v33: the NPI heatmap is now THREE detector-class variants (VLF/PI/ZVT) — different detectors
-// favour different terrain. data/npi/{vlf,pi,zvt}/ tile pyramids (~26 MB total) + a 3-plane
-// packed grid + a real GA-magnetics mineralization input. All precached from the tile manifest.
-const SHELL_REV = 'v33';
+// favour different terrain. data/npi/{vlf,pi,zvt}/ tile pyramids + a packed grid, precached from
+// the tile manifest.
+// v35: NPI rebuilt on a prior x evidence x interaction model with real geophysics (GA magnetics
+// TMI-RTP + analytic signal, radiometrics %K/Th), Vic 1:250k geology + fire-history exposure, and
+// KDE workings. 5-plane popup grid + a per-detector eval scorecard (npi-eval.json). ~26 MB tiles.
+const SHELL_REV = 'v35';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -77,6 +80,7 @@ const SHELL_ASSETS = [
   // TILE pyramid is precached separately from data/npi/tiles-manifest.json (see install below).
   './data/npi/npi-grid.png',
   './data/npi/npi-meta.json',
+  './data/npi/npi-eval.json',
   './data/npi/tiles-manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

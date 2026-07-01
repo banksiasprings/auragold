@@ -609,3 +609,36 @@ Steven's refinement to v32: one-size-fits-all NPI isn't useful in the field — 
 - **Mount Cole fire scar** → low on all (24/18/19), NOT "high on both." The NPI has **no fire-scar / freshly-exposed-ground input** — it's reef + workings + terrain driven, so a speculative post-fire spot with little historic working scores low. Honest gap; a burn-severity layer would fix it.
 - The variant differentiation is real and mostly sensible (VLF dominates gentle alluvial Avoca/Whroo/Wombat; PI/ZVT lead hammered Inglewood/Wedderburn). Same dev-preview grid HTTP-cache flakiness as v32 (data/math proven via cache-busted reads; production SW+Pages unaffected).
 - Bumped APP/SHELL/REV → **v33**; SW precaches all 3 tile sets via the manifest. `fetch_magnetic.py` + the variant `build_npi.py` committed.
+
+---
+
+## Round / v35 — NPI model rebuild (audit response) — 2026-07-01
+
+Full response to the NPI audit ("competent engineering wrapped around a thin model": 74–83% of the score was distance-to-goldfield-polygon, the 3 variants were 70–94% the same map, magnetics wasn't wired into PI, the derived-input functions were dead code, the 12-spot check was circular). Implemented **all 14** improvements across the 4 tiers.
+
+### Model — prior × evidence × interaction (was a linear distance sum)
+`NPI = 100·GAIN·evidence·(1+K_INT·interact)·prior_mod·burn_mult`, where the prior is a **noisy-OR of the goldfield-polygon prior and geological favourability (lithology×K)** — so contact-hosted ground outside the mapped fields still registers, basalt/water doesn't. Missing data → **neutral 0.5** (killed the silent-bonus bug). Geophysics **globally normalised** (was per-region).
+
+### New REAL inputs (all fetched in-session, no keys)
+- **Magnetics into PI as POSITIVE** + **analytic signal** (`magmap_v7_2019_VRTP_AS`) for structure/shears (PI+ZVT). VLF keeps the low-mag "clean ground" reward.
+- **Radiometrics** — GA %K + Th (`radmap_v4_2019`) — granitic/contact signal.
+- **Lithology** — Vic 1:250k `geol250_polygon` → granite/turbidite host vs basalt/cover favourability (the Mt Cole "Mount Cole Suite" granite + "Wedderburn Granodiorite" show up directly).
+- **Fire fresh-exposure** — Vic DELWP `fire_history` perimeters, recency-weighted (caught the **2024 Bayindeen/Mt Cole bushfire**, fire_cover 90-100). Honest: perimeter+recency proxy, not per-pixel Sentinel-2 NBR (no rasterio in the build env).
+- **Workings KDE** (σ≈600 m / 2 km) replaces the 500 m point-count that read 0 across 94.7% of cells (incl. Tarnagulla, Whroo).
+- **ELVIS 5 m DEM: documented NO** — every endpoint 403/404/unresolvable + full-region 5 m infeasible (multi-GB + billion-cell pure-Python flow + 60 MB budget). Kept SRTM terrarium, demoted terrain to low-weight terms.
+
+### Reproducibility + eval (Tier 3)
+Every derived input is now computed by a real function wired into `build_base` — **no orphan/cache-only path** (`reef_distance`/`workings_density` deleted; `flow_accum`/`slope_curv` live). New `regions.py` (single source of truth), `fetch_geophys/geology/fire.py`, `extract_app_geojson.py`, `Makefile` (`make all` / `make rebuild`), `.gitignore` for the (large, regenerable) inputs. **Negative-control eval** (10 non-gold spots) + Pearson + variance decomposition written to `npi-eval.json`.
+
+### Results (vs shipped v33 — all targets met)
+- **VLF↔PI Pearson 0.94 → 0.846** (target <0.85) — variants are genuinely different maps now (Wedderburn 64/69/69 → **76/50/71**; Avoca 64/50/38 → **90/42/59**).
+- **Top input share: distance ~75–83% → prior ≤28% (ZVT hammered 30%)** — no input >40%.
+- **Negative controls all <30**: Melbourne CBD **13.7**, worst = Ballan farmland 25.1. (Reservoirs flooding gold valleys — Cairn Curran 37, Eppalock 33 — excluded as invalid negatives: they sit on real gold ground.)
+- Audit-flagged spots rescued for the RIGHT reasons: Talbot VLF 28→54, Tarnagulla ZVT 16→58, Chiltern 34→46 (KDE); Mt Cole stays ~24 but now cites its granite K-anomaly (k 0.68) + 2024 fire scar (burn 0.83), not terrain noise; PI 18→22 as magnetics came online.
+- **26 MB** tiles (2908, <60 MB budget). 5-plane popup grid keeps ALL new components (item 13); Settings → **🎯 Nugget model quality** scorecard (item 14).
+
+### Verified ✓ (real Chrome preview, localhost:8135)
+- Clean boot, zero console errors; v35 meta (5 planes) + eval (pearson 0.846) served.
+- Popup renders full breakdown: Wedderburn "in goldfield / dense workings / favourable host / low-mag", Melbourne CBD 9/7/5 "off known ground / cover-basalt". Found + **fixed** an intermittent all-zero `getImageData` (added `willReadFrequently:true` to the grid canvas — real robustness fix, was the "screenshots render black" family).
+- Settings scorecard renders both tables + correlation/importance with pass indicators.
+- Bumped APP/SHELL/REV → **v35**; SW precaches `npi-eval.json`.

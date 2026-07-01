@@ -1,0 +1,13 @@
+# NPI build INPUTS + caches — large, regenerable via `make fetch` / `make build`.
+# Only the pipeline code (fetch_*.py, build_npi.py, regions.py, Makefile, README) and the
+# built output (../../data/npi/) are committed.
+terrain_z12/
+*.npz
+*.tif
+workings.json
+geology_*.geojson
+fire_*.geojson
+# extracted from index.html by extract_app_geojson.py (regenerable)
+dataGoldfields.geojson
+dataEndowment.geojson
+dataFires.geojson

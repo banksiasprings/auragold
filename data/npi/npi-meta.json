@@ -1,19 +1,23 @@
 {
-"version": "v33",
+"version": "v35",
 "built": "2026-07-01",
 "dem": "AWS terrarium z12 (~30 m, SRTM-derived)",
 "lidar": false,
-"mineralization": "GA magnetics TMI-RTP (magmap_v7_2019_RTP), WCS",
+"model": "prior x evidence x interaction (v35); soft goldfield prior replaces the hardcoded distance term",
+"geophysics": "GA magnetics (TMI-RTP + analytic signal) + radiometrics (%K, Th ppm), globally normalised",
+"lithology": "Vic 1:250k surface geology (geol250_polygon)",
+"fire": "Vic DELWP fire_history perimeters >=2008, recency-weighted (perimeter proxy, not per-pixel NBR)",
 "variants": {
 "vlf": {
 "label": "VLF (Gold Monster)",
 "weights": {
-"dist": 0.3,
-"work": 0.15,
 "drain": 0.3,
-"slope": 0.15,
-"bedrock": 0.1,
-"lowmin": 0.1
+"lowmag": 0.2,
+"slope": 0.14,
+"workkde": 0.12,
+"litho": 0.1,
+"bedrock": 0.08,
+"k": 0.06
 },
 "slope": [
 10.0,
@@ -23,11 +27,14 @@
 "pi": {
 "label": "PI (GPX 6000)",
 "weights": {
-"dist": 0.35,
-"work": 0.3,
-"drain": 0.1,
-"slope": 0.15,
-"bedrock": 0.1
+"mag": 0.26,
+"asig": 0.18,
+"slope": 0.14,
+"workkde": 0.12,
+"litho": 0.1,
+"th": 0.1,
+"bedrock": 0.06,
+"drain": 0.04
 },
 "slope": [
 22.5,
@@ -37,11 +44,13 @@
 "zvt": {
 "label": "ZVT (GPZ 7000)",
 "weights": {
-"hammered": 0.4,
-"work": 0.2,
-"drain": 0.2,
+"hammered": 0.26,
+"asig": 0.18,
+"workkde": 0.14,
+"mag": 0.14,
 "slope": 0.1,
-"bedrock": 0.1
+"litho": 0.1,
+"drain": 0.08
 },
 "slope": [
 17.5,
@@ -49,13 +58,33 @@
 ]
 }
 },
-"npiFloor": 6,
+"gain": 1.18,
+"kInteraction": 0.8,
+"npiFloor": 8,
+"geophysNorm": {
+"tmi": [
+-139.812,
+215.719
+],
+"asig": [
+0.003,
+0.953
+],
+"k": [
+0.27,
+2.265
+],
+"th": [
+5.587,
+18.832
+]
+},
 "regions": [
 {
 "name": "Western goldfields",
 "bbox": [
 142.95,
--37.6,
+-37.95,
 145.15,
 -36.05
 ]
@@ -77,87 +106,495 @@
 "x0": 58791,
 "y0": 39812,
 "cols": 687,
-"rows": 353,
-"planes": "A RGBA=[npiVLF, npiPI, npiZVT, mask]; B RGBA=[distReefScore*255, workingsCount, drainScore*255, mask]; C RGBA=[slopeDeg, bedrockScore*255, mineralization*255, mask]"
+"rows": 434,
+"planes": 5,
+"layout": "A=[npiVLF,npiPI,npiZVT]; B=[prior*255,workkde*255,drain*255]; C=[slopeDeg,bedrock*255,mag*255]; D=[asig*255,k*255,th*255]; E=[litho*255,burn*255,hammered*255]; alpha=mask"
 },
 "limitations": [
-"NPI is a heuristic, not a prediction. Real-world success depends on terrain, ground conditions, equipment and technique.",
-"Elevation is SRTM-derived ~30 m terrain (no Victorian public LiDAR tile service exists yet) \u2014 slope, drainage and bedrock terms are coarse.",
-"Detector variants reweight the same inputs (VLF favours gentle clean creek ground, PI favours steeper mineralised ground, ZVT favours hammered premium ground); mineralization is GA TMI-RTP magnetics.",
+"NPI is a heuristic prior, not a prediction. Success depends on terrain, ground conditions, equipment and technique.",
+"Elevation is SRTM-derived ~30 m terrain (no open Vic 5 m DEM service + full-region 5 m is infeasible in this build) \u2014 slope/drainage/bedrock are coarse and weighted low.",
+"Detector variants weight the same real inputs differently: VLF favours clean low-magnetic alluvial ground, PI favours mineralised (magnetic + structural) hot ground, ZVT favours hammered premium ground.",
+"Fire term is a recency-weighted perimeter proxy from Vic fire_history, not per-pixel Sentinel-2 NBR severity.",
 "Future versions will retrain on your confirmed gold events for personal calibration."
 ],
 "spots": {
 "1": {
-"name": "Mount Cole / Bayindeen",
-"vlf": 24.0,
-"pi": 17.6,
-"zvt": 18.5
+"vlf": 23.7,
+"pi": 21.7,
+"zvt": 14.2,
+"c": {
+"prior": 0.28,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 12.2,
+"bedrock": 1.0,
+"mag": 0.4,
+"asig": 0.06,
+"k": 0.68,
+"th": 0.34,
+"litho": 0.6,
+"burn": 0.83
+},
+"name": "Mount Cole / Bayindeen"
 },
 "2": {
-"name": "Avoca / Pyrenees",
-"vlf": 63.9,
-"pi": 49.7,
-"zvt": 38.1
+"vlf": 90.2,
+"pi": 42.3,
+"zvt": 59.1,
+"c": {
+"prior": 1.0,
+"workkde": 0.56,
+"drain": 0.15,
+"slope_deg": 2.82,
+"bedrock": 0.25,
+"mag": 0.32,
+"asig": 0.01,
+"k": 0.28,
+"th": 0.46,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Avoca / Pyrenees"
 },
 "3": {
-"name": "Tarnagulla / Waanyarra",
-"vlf": 44.2,
-"pi": 38.3,
-"zvt": 16.5
+"vlf": 41.7,
+"pi": 45.1,
+"zvt": 57.6,
+"c": {
+"prior": 0.95,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 5.44,
+"bedrock": 0.5,
+"mag": 0.58,
+"asig": 0.43,
+"k": 0.27,
+"th": 0.43,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Tarnagulla / Waanyarra"
 },
 "4": {
-"name": "Talbot / Daisy Hill",
-"vlf": 28.5,
-"pi": 10.0,
-"zvt": 25.8
+"vlf": 54.0,
+"pi": 25.9,
+"zvt": 40.3,
+"c": {
+"prior": 0.77,
+"workkde": 0.18,
+"drain": 0.15,
+"slope_deg": 2.82,
+"bedrock": 0.0,
+"mag": 0.19,
+"asig": 0.02,
+"k": 0.21,
+"th": 0.61,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "Talbot / Daisy Hill"
 },
 "5": {
-"name": "Heathcote / McIvor",
-"vlf": 57.5,
-"pi": 49.4,
-"zvt": 49.3
+"vlf": 79.7,
+"pi": 49.1,
+"zvt": 69.0,
+"c": {
+"prior": 1.0,
+"workkde": 0.92,
+"drain": 0.3,
+"slope_deg": 2.81,
+"bedrock": 0.0,
+"mag": 0.35,
+"asig": 0.02,
+"k": 0.0,
+"th": 0.0,
+"litho": 0.6,
+"burn": 0.0
+},
+"name": "Heathcote / McIvor"
 },
 "6": {
-"name": "Whroo / Rushworth",
-"vlf": 38.2,
-"pi": 10.3,
-"zvt": 22.2
+"vlf": 39.3,
+"pi": 15.7,
+"zvt": 14.1,
+"c": {
+"prior": 0.42,
+"workkde": 0.0,
+"drain": 1.0,
+"slope_deg": 2.81,
+"bedrock": 0.0,
+"mag": 0.34,
+"asig": 0.03,
+"k": 0.27,
+"th": 0.57,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Whroo / Rushworth"
 },
 "7": {
-"name": "Inglewood / Kingower",
-"vlf": 48.8,
-"pi": 52.6,
-"zvt": 54.7
+"vlf": 65.3,
+"pi": 64.7,
+"zvt": 69.3,
+"c": {
+"prior": 1.0,
+"workkde": 0.93,
+"drain": 0.15,
+"slope_deg": 3.36,
+"bedrock": 0.25,
+"mag": 0.43,
+"asig": 0.01,
+"k": 0.57,
+"th": 0.71,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "Inglewood / Kingower"
 },
 "8": {
-"name": "Hepburn / Sailors Ck",
-"vlf": 69.8,
-"pi": 70.0,
-"zvt": 72.6
+"vlf": 97.2,
+"pi": 65.8,
+"zvt": 99.2,
+"c": {
+"prior": 1.0,
+"workkde": 1.0,
+"drain": 0.35,
+"slope_deg": 2.67,
+"bedrock": 0.5,
+"mag": 0.33,
+"asig": 0.13,
+"k": 0.18,
+"th": 0.28,
+"litho": 0.9,
+"burn": 0.0
+},
+"name": "Hepburn / Sailors Ck"
 },
 "9": {
-"name": "Maldon / Muckleford",
-"vlf": 80.0,
-"pi": 74.6,
-"zvt": 80.8
+"vlf": 100.0,
+"pi": 63.2,
+"zvt": 76.3,
+"c": {
+"prior": 1.0,
+"workkde": 1.0,
+"drain": 0.15,
+"slope_deg": 6.8,
+"bedrock": 0.25,
+"mag": 0.34,
+"asig": 0.02,
+"k": 0.6,
+"th": 0.78,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "Maldon / Muckleford"
 },
 "10": {
-"name": "WEDDERBURN (HEADLINE)",
-"vlf": 63.8,
-"pi": 69.3,
-"zvt": 68.9
+"vlf": 75.6,
+"pi": 50.2,
+"zvt": 70.7,
+"c": {
+"prior": 1.0,
+"workkde": 1.0,
+"drain": 0.24,
+"slope_deg": 3.83,
+"bedrock": 0.0,
+"mag": 0.3,
+"asig": 0.02,
+"k": 0.1,
+"th": 0.16,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "WEDDERBURN (HEADLINE)"
 },
 "11": {
-"name": "Wombat / Bullarook",
-"vlf": 61.3,
-"pi": 45.2,
-"zvt": 27.6
+"vlf": 90.2,
+"pi": 42.0,
+"zvt": 54.9,
+"c": {
+"prior": 1.0,
+"workkde": 0.05,
+"drain": 0.39,
+"slope_deg": 6.84,
+"bedrock": 0.0,
+"mag": 0.46,
+"asig": 0.01,
+"k": 0.36,
+"th": 0.37,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "Wombat / Bullarook"
 },
 "12": {
-"name": "Chiltern / Eldorado",
-"vlf": 33.8,
-"pi": 11.9,
-"zvt": 16.7
+"vlf": 45.5,
+"pi": 20.3,
+"zvt": 15.2,
+"c": {
+"prior": 0.51,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 15.2,
+"bedrock": 0.25,
+"mag": 0.23,
+"asig": 0.0,
+"k": 1.0,
+"th": 0.53,
+"litho": 0.85,
+"burn": 0.0
+},
+"name": "Chiltern / Eldorado"
 }
+},
+"eval": {
+"pearson_vlf_pi": 0.846,
+"importance": {
+"vlf": {
+"prior": 24.2,
+"hammered": 19.2,
+"workkde": 16.4,
+"litho": 14.1,
+"k": 6.7,
+"mag": 4.8,
+"drain": 4.2,
+"th": 3.6,
+"asig": 3.2,
+"burn": 2.5,
+"bedrock": 0.9
+},
+"pi": {
+"prior": 27.6,
+"hammered": 23.7,
+"workkde": 23.2,
+"litho": 11.4,
+"k": 3.8,
+"th": 3.2,
+"burn": 2.6,
+"bedrock": 1.6,
+"asig": 1.6,
+"mag": 0.7,
+"drain": 0.6
+},
+"zvt": {
+"hammered": 30.4,
+"workkde": 28.1,
+"prior": 26.9,
+"mag": 4.1,
+"k": 4.0,
+"litho": 3.1,
+"th": 1.2,
+"burn": 1.2,
+"bedrock": 0.3,
+"drain": 0.2,
+"asig": 0.2
+}
+},
+"topShare": {
+"vlf": {
+"input": "prior",
+"pct": 24.2
+},
+"pi": {
+"input": "prior",
+"pct": 27.6
+},
+"zvt": {
+"input": "hammered",
+"pct": 30.4
+}
+},
+"negativeControls": [
+{
+"vlf": 13.7,
+"pi": 9.1,
+"zvt": 7.0,
+"c": {
+"prior": 0.07,
+"workkde": 0.0,
+"drain": 0.35,
+"slope_deg": 2.12,
+"bedrock": 0.75,
+"mag": 0.65,
+"asig": 0.24,
+"k": 0.12,
+"th": 0.0,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Melbourne CBD (urban)"
+},
+{
+"vlf": 9.3,
+"pi": 5.7,
+"zvt": 4.0,
+"c": {
+"prior": 0.08,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 5.1,
+"bedrock": 0.75,
+"mag": 0.34,
+"asig": 0.11,
+"k": 0.28,
+"th": 0.26,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Werribee basalt plain"
+},
+{
+"vlf": 17.9,
+"pi": 7.7,
+"zvt": 7.2,
+"c": {
+"prior": 0.12,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 2.68,
+"bedrock": 0.0,
+"mag": 0.06,
+"asig": 0.34,
+"k": 0.14,
+"th": 0.37,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Skipton volcanic plain"
+},
+{
+"vlf": 16.3,
+"pi": 7.0,
+"zvt": 5.6,
+"c": {
+"prior": 0.12,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 1.86,
+"bedrock": 1.0,
+"mag": 0.32,
+"asig": 0.07,
+"k": 0.21,
+"th": 0.18,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Murray Basin plains (Boort N)"
+},
+{
+"vlf": 15.3,
+"pi": 15.8,
+"zvt": 12.9,
+"c": {
+"prior": 0.14,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 0.95,
+"bedrock": 0.25,
+"mag": 1.0,
+"asig": 0.58,
+"k": 0.23,
+"th": 0.05,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Bacchus Marsh sediments"
+},
+{
+"vlf": 12.9,
+"pi": 5.1,
+"zvt": 4.2,
+"c": {
+"prior": 0.11,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 2.08,
+"bedrock": 0.75,
+"mag": 0.27,
+"asig": 0.01,
+"k": 0.12,
+"th": 0.12,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Wimmera cropland (Donald)"
+},
+{
+"vlf": 13.7,
+"pi": 8.7,
+"zvt": 6.0,
+"c": {
+"prior": 0.09,
+"workkde": 0.0,
+"drain": 0.48,
+"slope_deg": 3.35,
+"bedrock": 0.0,
+"mag": 0.35,
+"asig": 0.1,
+"k": 0.3,
+"th": 0.33,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Charlton Avon floodplain"
+},
+{
+"vlf": 13.1,
+"pi": 7.6,
+"zvt": 4.5,
+"c": {
+"prior": 0.09,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 0.0,
+"bedrock": 0.0,
+"mag": 0.47,
+"asig": 0.0,
+"k": 0.45,
+"th": 0.75,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Bendigo Murray-basin edge N"
+},
+{
+"vlf": 25.1,
+"pi": 12.5,
+"zvt": 13.0,
+"c": {
+"prior": 0.26,
+"workkde": 0.0,
+"drain": 0.54,
+"slope_deg": 4.72,
+"bedrock": 0.0,
+"mag": 0.19,
+"asig": 0.38,
+"k": 0.11,
+"th": 0.15,
+"litho": 0.5,
+"burn": 0.0
+},
+"name": "Ballan farmland"
+},
+{
+"vlf": 11.3,
+"pi": 6.8,
+"zvt": 3.9,
+"c": {
+"prior": 0.07,
+"workkde": 0.0,
+"drain": 0.15,
+"slope_deg": 2.68,
+"bedrock": 0.0,
+"mag": 0.32,
+"asig": 0.04,
+"k": 0.24,
+"th": 0.67,
+"litho": 0.3,
+"burn": 0.0
+},
+"name": "Lake Bolac plains W"
+}
+]
 }
 }

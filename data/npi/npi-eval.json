@@ -1,0 +1,184 @@
+{
+"version": "v35",
+"built": "2026-07-01",
+"pearson_vlf_pi": 0.846,
+"topShare": {
+"vlf": {
+"input": "prior",
+"pct": 24.2
+},
+"pi": {
+"input": "prior",
+"pct": 27.6
+},
+"zvt": {
+"input": "hammered",
+"pct": 30.4
+}
+},
+"importance": {
+"vlf": {
+"prior": 24.2,
+"hammered": 19.2,
+"workkde": 16.4,
+"litho": 14.1,
+"k": 6.7,
+"mag": 4.8,
+"drain": 4.2,
+"th": 3.6,
+"asig": 3.2,
+"burn": 2.5,
+"bedrock": 0.9
+},
+"pi": {
+"prior": 27.6,
+"hammered": 23.7,
+"workkde": 23.2,
+"litho": 11.4,
+"k": 3.8,
+"th": 3.2,
+"burn": 2.6,
+"bedrock": 1.6,
+"asig": 1.6,
+"mag": 0.7,
+"drain": 0.6
+},
+"zvt": {
+"hammered": 30.4,
+"workkde": 28.1,
+"prior": 26.9,
+"mag": 4.1,
+"k": 4.0,
+"litho": 3.1,
+"th": 1.2,
+"burn": 1.2,
+"bedrock": 0.3,
+"drain": 0.2,
+"asig": 0.2
+}
+},
+"spots": {
+"Mount Cole / Bayindeen": {
+"vlf": 23.7,
+"pi": 21.7,
+"zvt": 14.2
+},
+"Avoca / Pyrenees": {
+"vlf": 90.2,
+"pi": 42.3,
+"zvt": 59.1
+},
+"Tarnagulla / Waanyarra": {
+"vlf": 41.7,
+"pi": 45.1,
+"zvt": 57.6
+},
+"Talbot / Daisy Hill": {
+"vlf": 54.0,
+"pi": 25.9,
+"zvt": 40.3
+},
+"Heathcote / McIvor": {
+"vlf": 79.7,
+"pi": 49.1,
+"zvt": 69.0
+},
+"Whroo / Rushworth": {
+"vlf": 39.3,
+"pi": 15.7,
+"zvt": 14.1
+},
+"Inglewood / Kingower": {
+"vlf": 65.3,
+"pi": 64.7,
+"zvt": 69.3
+},
+"Hepburn / Sailors Ck": {
+"vlf": 97.2,
+"pi": 65.8,
+"zvt": 99.2
+},
+"Maldon / Muckleford": {
+"vlf": 100.0,
+"pi": 63.2,
+"zvt": 76.3
+},
+"WEDDERBURN (HEADLINE)": {
+"vlf": 75.6,
+"pi": 50.2,
+"zvt": 70.7
+},
+"Wombat / Bullarook": {
+"vlf": 90.2,
+"pi": 42.0,
+"zvt": 54.9
+},
+"Chiltern / Eldorado": {
+"vlf": 45.5,
+"pi": 20.3,
+"zvt": 15.2
+}
+},
+"negativeControls": [
+{
+"name": "Melbourne CBD (urban)",
+"vlf": 13.7,
+"pi": 9.1,
+"zvt": 7.0
+},
+{
+"name": "Werribee basalt plain",
+"vlf": 9.3,
+"pi": 5.7,
+"zvt": 4.0
+},
+{
+"name": "Skipton volcanic plain",
+"vlf": 17.9,
+"pi": 7.7,
+"zvt": 7.2
+},
+{
+"name": "Murray Basin plains (Boort N)",
+"vlf": 16.3,
+"pi": 7.0,
+"zvt": 5.6
+},
+{
+"name": "Bacchus Marsh sediments",
+"vlf": 15.3,
+"pi": 15.8,
+"zvt": 12.9
+},
+{
+"name": "Wimmera cropland (Donald)",
+"vlf": 12.9,
+"pi": 5.1,
+"zvt": 4.2
+},
+{
+"name": "Charlton Avon floodplain",
+"vlf": 13.7,
+"pi": 8.7,
+"zvt": 6.0
+},
+{
+"name": "Bendigo Murray-basin edge N",
+"vlf": 13.1,
+"pi": 7.6,
+"zvt": 4.5
+},
+{
+"name": "Ballan farmland",
+"vlf": 25.1,
+"pi": 12.5,
+"zvt": 13.0
+},
+{
+"name": "Lake Bolac plains W",
+"vlf": 11.3,
+"pi": 6.8,
+"zvt": 3.9
+}
+]
+}

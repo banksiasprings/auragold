@@ -943,9 +943,20 @@
     </details>
 
     <div class="ag-sec">
+      <h3>🎯 Nugget model quality</h3>
+      <div class="ag-card">
+        <details id="npiEvalWrap">
+          <summary style="cursor:pointer;font-weight:600;list-style:revert">Per-detector eval scorecard <span id="npiEvalVer" class="ag-note" style="font-weight:400"></span></summary>
+          <div id="npiEvalBody" style="margin-top:9px"><p class="ag-note">Open to load…</p></div>
+        </details>
+        <p class="ag-note" style="margin:9px 0 2px">How the v35 Nugget Potential model scores 12 known goldfields (want high) against non-gold “negative controls” (want low), plus the VLF↔PI map correlation and the top input driving each detector. Refreshes when the heatmap is rebuilt.</p>
+      </div>
+    </div>
+
+    <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v30</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v35</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -1127,7 +1138,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v33';
+var APP_VERSION = 'v35';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1396,21 +1407,24 @@ const layerEndowment = L.geoJSON(dataEndowment, {
   }
 });
 
-// --- 2b. 🎯 Nugget Potential Index (NPI) heatmaps — 3 detector-class variants (v33) ---
-// Precomputed RdYlGn tiles at data/npi/{vlf|pi|zvt}/{z}/{x}/{y}.png. Different detectors favour
-// different terrain, so we ship THREE reweighted heatmaps off the SAME inputs (SRTM terrain +
-// reef polygons + VicMine workings + GA TMI-RTP magnetics):
-//   VLF (Gold Monster) — gentle 5-15° clean creek/alluvial ground, LOW mineralization
-//   PI  (GPX 6000)     — steeper 10-35° mass-wasted mineralised (hot) ground, deeper targets
+// --- 2b. 🎯 Nugget Potential Index (NPI) heatmaps — 3 detector-class variants (v35) ---
+// Precomputed RdYlGn tiles at data/npi/{vlf|pi|zvt}/{z}/{x}/{y}.png. v35 model = a soft goldfield
+// PRIOR (official goldfield polygons + granite/K geology) x detector-specific EVIDENCE x a
+// multiplicative confluence bonus — NOT a linear distance sum. Real inputs: SRTM terrain, VicMine
+// workings (2-D KDE), GA magnetics (TMI-RTP + analytic-signal structure) + radiometrics (%K, Th),
+// Vic 1:250k surface geology, and Vic fire-history fresh-exposure scars. The three variants weight
+// these differently so they are genuinely different maps (VLF/PI map correlation 0.85, was 0.94):
+//   VLF (Gold Monster) — gentle clean creek/eluvial ground, drainage-heavy, LOW magnetics
+//   PI  (GPX 6000)     — steeper mineralised (magnetic + structural) hot ground, deeper targets
 //   ZVT (GPZ 7000)     — hammered premium ground (sensitive AND mineralization-tolerant)
-// Tap-to-explain shows all three scores so you can tell "great for VLF, only OK for PI".
+// Tap-to-explain shows all three scores + the full component breakdown.
 const NPI_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 function makeNPILayer(variant, paneId) {
   return L.tileLayer('data/npi/' + variant + '/{z}/{x}/{y}.png', {
     pane: paneId, minNativeZoom: 10, maxNativeZoom: 12,
-    bounds: L.latLngBounds([[-37.62, 142.93], [-36.05, 146.74]]),
+    bounds: L.latLngBounds([[-37.97, 142.93], [-36.03, 146.74]]),
     errorTileUrl: NPI_BLANK, className: 'npi-tiles',
-    attribution: 'NPI heuristic — AuraGold (SRTM + VicMine + GA magnetics)'
+    attribution: 'NPI heuristic — AuraGold (SRTM + VicMine + GA magnetics/radiometrics + Vic geology/fire)'
   });
 }
 const layerNPIvlf = makeNPILayer('vlf', 'p-npi-vlf');
@@ -1436,7 +1450,9 @@ function npiDetectorVariant() {
         var img = new Image();
         img.onload = function () {
           var cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
-          var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+          // willReadFrequently: correct hint for a canvas we only getImageData from — also dodges
+          // an intermittent all-zero readback seen on some renderers (default context).
+          var cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(img, 0, 0);
           GRID = { w: img.width, h: img.height, data: cx.getImageData(0, 0, img.width, img.height).data };
           res();
         };
@@ -1485,6 +1501,7 @@ function npiDetectorVariant() {
     var inGrid = col >= 0 && col < META.grid.cols && r >= 0 && r < R;
     var d = GRID.data, W = GRID.w;
     var iA = (r * W + col) * 4, iB = ((R + r) * W + col) * 4, iC = ((2 * R + r) * W + col) * 4;
+    var iD = ((3 * R + r) * W + col) * 4, iE = ((4 * R + r) * W + col) * 4;
     var mask = inGrid ? d[iA + 3] : 0;
     if (!inGrid || mask === 0) {
       L.popup({ maxWidth: 250, className: 'npi-pop' }).setLatLng(latlng)
@@ -1492,28 +1509,38 @@ function npiDetectorVariant() {
       return;
     }
     var npi = { vlf: d[iA], pi: d[iA + 1], zvt: d[iA + 2] };
-    var distScore = d[iB] / 255, workings = d[iB + 1], drainScore = d[iB + 2] / 255;
+    var prior = d[iB] / 255, workKde = d[iB + 1] / 255, drainScore = d[iB + 2] / 255;
     var slopeDeg = d[iC], bedScore = d[iC + 1] / 255, mineral = d[iC + 2] / 255;
-    var distM = Math.round((1 - distScore) * 1000), reef = nearestReef(latlng.lat, latlng.lng);
+    var asig = d[iD] / 255, kRad = d[iD + 1] / 255, thRad = d[iD + 2] / 255;
+    var litho = d[iE] / 255, burn = d[iE + 1] / 255, hammered = d[iE + 2] / 255;
+    var reef = nearestReef(latlng.lat, latlng.lng);
     var av = npiDetectorVariant();
     var chips = NPI_VKEYS.map(function (vk) { var bd = band(npi[vk]); return '<span class="npi-chip' + (vk === av ? ' active' : '') + '" style="--c:' + bd[1] + '"><i>' + vk.toUpperCase() + '</i><b>' + npi[vk] + '</b></span>'; }).join('');
     var best = NPI_VKEYS.reduce(function (a, b) { return npi[b] > npi[a] ? b : a; });
     var lo = Math.min(npi.vlf, npi.pi, npi.zvt);
     var who = { vlf: 'Gold Monster (clean, gentle ground)', pi: 'GPX 6000 (steeper, hotter ground)', zvt: 'GPZ 7000 (premium hammered ground)' };
     var interp = (npi[best] - lo) >= 8 ? ('Best swung with the <b>' + who[best] + '</b>') : 'Comparable for all detector types here';
+    function lvl(v, hi, mid, hiTxt, midTxt, loTxt, hiCol) {
+      return v >= hi ? '<span style="color:' + (hiCol || '#b3261e') + '">' + hiTxt + '</span>' : v >= mid ? midTxt : '<span style="color:#1a9850">' + loTxt + '</span>';
+    }
+    var priorTxt = prior >= 0.75 ? '<span style="color:#1f7a32">in goldfield</span>' : prior >= 0.4 ? 'favourable geology' : prior >= 0.18 ? 'goldfield margin' : '<span style="color:#999">off known ground</span>';
     var breakdown =
-      row('Distance to reef', (distScore > 0 ? '~' + distM + ' m' : '> 1 km') + (reef ? ' <span style="color:#999">(' + cleanReef(reef) + ')</span>' : '')) +
-      row('Workings density', workings + ' shaft' + (workings === 1 ? '' : 's') + ' / 500 m') +
+      row('Goldfield prior', priorTxt + (reef ? ' <span style="color:#999">(' + cleanReef(reef) + ')</span>' : '')) +
+      row('Workings nearby', lvl(workKde, 0.55, 0.25, 'dense (hammered)', 'some old workings', 'sparse / none', '#a06600')) +
+      row('Lithology (host rock)', lvl(litho, 0.8, 0.55, 'favourable host', 'moderate', 'cover / basalt')) +
+      row('Magnetics', lvl(mineral, 0.6, 0.35, 'high (hot ground)', 'moderate', 'low (clean)')) +
+      row('Structure (analytic sig.)', lvl(asig, 0.5, 0.25, 'strong (shear/contact)', 'moderate', 'quiet', '#a06600')) +
+      row('Radiometric K / Th', lvl(kRad, 0.6, 0.35, 'K-rich (granitic)', 'moderate K', 'low K', '#a06600') + ' <span style="color:#999">· Th ' + (thRad >= 0.6 ? 'hi' : thRad >= 0.35 ? 'mid' : 'lo') + '</span>') +
       row('Drainage', drainScore >= 0.55 ? 'gully confluence' : drainScore >= 0.3 ? 'minor channel' : 'ridge / divide') +
       row('Slope', slopeDeg + '°') +
-      row('Mineralisation', mineral >= 0.6 ? '<span style="color:#b3261e">high (hot ground)</span>' : mineral >= 0.35 ? 'moderate' : '<span style="color:#1a9850">low (clean)</span>') +
-      row('Bedrock exposure', bedScore >= 0.55 ? 'high' : bedScore >= 0.3 ? 'moderate' : 'low');
+      row('Bedrock exposure', bedScore >= 0.55 ? 'high' : bedScore >= 0.3 ? 'moderate' : 'low') +
+      (burn >= 0.25 ? row('Recent fire scar', '<span style="color:#c65a00">fresh exposure ✓</span>') : '');
     var html = '<div class="popup-spot npi-pop-in">' +
       '<div class="day" style="color:#a06600">🎯 Nugget Potential' + (reef ? ' — ' + cleanReef(reef) : '') + '</div>' +
       '<div class="npi-chips">' + chips + '</div>' +
       '<div class="npi-interp">' + interp + '</div>' +
       '<table style="font-size:12px;border-collapse:collapse;margin-top:3px">' + breakdown + '</table>' +
-      '<div class="npi-caveat">Heuristic, not a prediction — depends on terrain, ground, gear &amp; technique. SRTM ~30 m terrain + GA magnetics; no public Vic LiDAR tiles yet.</div>' +
+      '<div class="npi-caveat">Heuristic prior, not a prediction — depends on terrain, ground, gear &amp; technique. Inputs: SRTM ~30 m terrain (no public Vic LiDAR tiles yet), GA magnetics + radiometrics, Vic 1:250k geology &amp; fire history.</div>' +
       '</div>';
     L.popup({ maxWidth: 274, minWidth: 238, className: 'npi-pop' }).setLatLng(latlng).setContent(html).openOn(map);
   }
@@ -1536,6 +1563,51 @@ function npiDetectorVariant() {
   }
   window.AuraGold = window.AuraGold || {};
   window.AuraGold.npi = { _showAt: showAt, _load: loadGrid, _meta: function () { return META; }, setActive: setActive, variantFor: npiDetectorVariant };
+})();
+
+// v35: Settings → 🎯 Nugget model quality — per-detector eval scorecard (12 known spots +
+// negative controls + VLF/PI correlation), loaded lazily from data/npi/npi-eval.json.
+(function npiEvalCard() {
+  var loaded = false;
+  function cell(v) {
+    if (v == null) return '<td style="color:#bbb;text-align:center">–</td>';
+    var c = v >= 66 ? '#b3261e' : v >= 33 ? '#c98a00' : '#1a9850';
+    return '<td style="text-align:center;color:' + c + ';font-weight:600">' + v + '</td>';
+  }
+  function tbl(rows, hdr) {
+    var h = '<tr><th style="text-align:left;font-weight:600;color:#666;padding:1px 6px 3px 0">' + hdr +
+      '</th><th style="color:#666;font-weight:600">VLF</th><th style="color:#666;font-weight:600">PI</th><th style="color:#666;font-weight:600">ZVT</th></tr>';
+    return '<table style="font-size:11.5px;border-collapse:collapse;width:100%">' + h + rows + '</table>';
+  }
+  function render(e) {
+    var body = document.getElementById('npiEvalBody'); if (!body) return;
+    document.getElementById('npiEvalVer').textContent = '(' + e.version + ' · ' + (e.built || '') + ')';
+    var pear = e.pearson_vlf_pi;
+    var pearOk = pear != null && pear < 0.85;
+    var ts = e.topShare || {};
+    var head = '<div style="font-size:12px;line-height:1.7;margin-bottom:7px">' +
+      '<b>VLF↔PI map correlation:</b> <span style="color:' + (pearOk ? '#1f7a32' : '#b3261e') + ';font-weight:600">' + (pear != null ? pear.toFixed(3) : '—') + '</span> ' +
+      '<span style="color:#999">(want &lt; 0.85 — distinct maps)</span><br>' +
+      '<b>Top input / detector:</b> ' + ['vlf', 'pi', 'zvt'].map(function (k) {
+        return k.toUpperCase() + ' ' + (ts[k] ? ts[k].input + ' ' + ts[k].pct + '%' : '—');
+      }).join(' · ') + ' <span style="color:#999">(want &lt; 40%)</span></div>';
+    var sr = '';
+    Object.keys(e.spots || {}).forEach(function (nm) { var s = e.spots[nm];
+      sr += '<tr><td style="padding:1px 6px 1px 0;color:#333">' + nm.replace(/ \(HEADLINE\)/, ' ★') + '</td>' + cell(s.vlf) + cell(s.pi) + cell(s.zvt) + '</tr>'; });
+    var nr = '';
+    (e.negativeControls || []).forEach(function (s) {
+      nr += '<tr><td style="padding:1px 6px 1px 0;color:#333">' + s.name + '</td>' + cell(s.vlf) + cell(s.pi) + cell(s.zvt) + '</tr>'; });
+    body.innerHTML = head +
+      '<div style="font-weight:600;color:#a06600;margin:2px 0 2px">Known goldfields <span style="color:#999;font-weight:400">(want high)</span></div>' + tbl(sr, 'Trip spot') +
+      '<div style="font-weight:600;color:#1f7a32;margin:9px 0 2px">Negative controls <span style="color:#999;font-weight:400">(want low, &lt; 30)</span></div>' + tbl(nr, 'Non-gold ground') +
+      '<p class="ag-note" style="margin:8px 0 0">Scores are “max within ~200 m”. Reservoirs flooding gold valleys (Cairn Curran, Eppalock) are excluded — they sit on real gold ground.</p>';
+  }
+  var wrap = document.getElementById('npiEvalWrap');
+  if (wrap) wrap.addEventListener('toggle', function () {
+    if (!wrap.open || loaded) return; loaded = true;
+    fetch('data/npi/npi-eval.json').then(function (r) { return r.json(); }).then(render)
+      .catch(function () { var b = document.getElementById('npiEvalBody'); if (b) b.innerHTML = '<p class="ag-note">Eval data unavailable offline until the heatmap is cached.</p>'; loaded = false; });
+  });
 })();
 
 // --- 3. Active Exploration Licences (EL) - red dashed outline ---

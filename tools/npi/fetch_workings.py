@@ -2,11 +2,15 @@
 """Fetch the same VicMine gold occurrence points the app uses (for workings density).
 Caches to workings.json (list of [lon,lat])."""
 import json, os, urllib.request, urllib.parse
+import regions as R
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "workings.json")
 WFS = "https://opendata.maps.vic.gov.au/geoserver/open-data-platform/wfs"
-CQL = "pri_comm LIKE 'Gold%' AND BBOX(geom,142.8,-37.8,146.9,-35.9,'EPSG:4326')"
+# Union of the fetch regions, padded a touch — single source of truth (regions.py).
+_W = min(r[1] for r in R.FETCH) - 0.1; _S = min(r[2] for r in R.FETCH) - 0.1
+_E = max(r[3] for r in R.FETCH) + 0.1; _N = max(r[4] for r in R.FETCH) + 0.1
+CQL = f"pri_comm LIKE 'Gold%' AND BBOX(geom,{_W:.2f},{_S:.2f},{_E:.2f},{_N:.2f},'EPSG:4326')"
 PAGE = 5000
 
 def page(start):
