@@ -556,6 +556,10 @@
   .npi-sheet-ok { background:#ffd54a; color:#1a1a22; border:none; border-radius:9px; padding:9px 18px;
     font:700 13px -apple-system,BlinkMacSystemFont,sans-serif; cursor:pointer; }
   .npi-sheet-ok:active { transform:scale(.96); }
+  /* v40: legal-fossicking overlay popup */
+  .legal-pop-b b { font-size:13px; color:#14532d; }
+  .legal-pop-b p { margin:6px 0 0; font-size:12px; line-height:1.5; color:#333; }
+  .legal-pop-b .cav { font-size:11px; color:#7a5b00; background:#fbf6e6; border-radius:7px; padding:6px 8px; margin-top:7px; }
   .ag-audio-pop .ev-lbl-h { font-size:11px; font-weight:700; color:#555; margin:6px 0 4px; }
   .ag-audio-pop .ev-lbls { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
   .ag-audio-pop .ev-lbl { border:1.5px solid var(--lc); background:#fff; color:var(--lc); cursor:pointer; border-radius:7px;
@@ -1400,6 +1404,9 @@ const map = L.map("map", {
 // intrinsic fill/stroke ratios because CSS opacity multiplies).
 const PANE_Z = {
   "p-sat": 200, "p-osm": 201, "p-topo": 202, "p-mag": 203, "p-hill": 204,
+  // v40: 🟢 Legal fossicking union — a translucent shade just above the base maps so every
+  // data overlay (heatmap, gold polygons, tracks, pins) still reads on top of it.
+  "p-legal": 210,
   // v32/v33: NPI heatmaps (3 detector-class variants) — above base maps, below the gold-data
   // polygons/markers so reef outlines + occurrence nuggets read on top of the tint.
   "p-npi-vlf": 288, "p-npi-pi": 289, "p-npi-zvt": 290,
@@ -2656,14 +2663,15 @@ var powerLayers = (function () {
 
   async function prefetch() {
     if (!navigator.onLine) { setLbl('Offline — can’t save now'); return; }
-    // Cache the forest-track + camping GeoJSON overlays (same-origin) so they're available
-    // offline even if the user never switched the layers on. ~7.4MB total, cached once.
+    // Cache the forest-track + camping + legal-fossicking GeoJSON overlays (same-origin) so
+    // they're available offline even if the layer was never switched on. ~12MB total, cached once.
     setLbl('Saving track + camping data…');
     try {
       var dataFiles = ['data/tracks/walking.geojson','data/tracks/fourwd.geojson',
         'data/tracks/management.geojson','data/tracks/fire.geojson',
         'data/camping_free.geojson','data/camping_caravan_parks.geojson','data/camping_paid.geojson',
-        'data/rest_areas_vic.geojson','data/parks_vic_campsites.geojson'];
+        'data/rest_areas_vic.geojson','data/parks_vic_campsites.geojson',
+        'data/legal_fossicking_vic.geojson'];
       await Promise.all(dataFiles.map(function(f){
         return fetch(f, { cache: 'reload' }).catch(function(){});
       }));
@@ -3486,6 +3494,47 @@ var powerLayers = (function () {
   // on needed (the old bug it replaces). Base maps are stackable (e.g. Topo over Sat @40%).
   // v33: which NPI variant is the default-visible heatmap (tracks the selected detector).
   var __npiDef = (typeof npiDetectorVariant === 'function') ? npiDetectorVariant() : 'vlf';
+  // === v40: 🟢 Legal fossicking (Miner's Right) — whole-of-Victoria union of fossickable
+  // public land (State Forest + Regional Parks + Castlemaine Diggings NHP + unreserved Crown),
+  // with active Mining/Retention Licences cut out. Built offline from Vic plmgen + minten
+  // (2026-07-01). Honest positive construction: freehold is absent from the source layer, so it
+  // is never shaded. Lazy-loaded, canvas-rendered, default OFF.
+  var LEGAL_SHEET_HTML =
+    '<strong>🟢 Legal fossicking — where you CAN go</strong>' +
+    '<div class="ln"><b>Green shading</b> = anywhere you can legally swing a detector with just a <b>Miner\'s Right</b> — State Forest, Regional Parks, the Castlemaine Diggings Heritage Park, and unreserved Crown land.</div>' +
+    '<div class="ln"><b>Unshaded</b> = private property, National Park, active mine, water catchment, or Restricted Crown Land — no-go without written permission.</div>' +
+    '<div class="ln">Data current as of <b>2026-07-01</b>. Boundaries are generalised — always double-check the ground boundary before you swing.</div>';
+  var LEGAL_POPUP_HTML =
+    '<div class="legal-pop-b"><b>🟢 Legal fossicking area</b>' +
+    '<p>Public land open to a detector with just a <b>Miner\'s Right</b> — State Forest, Regional Parks, Castlemaine Diggings Heritage Park &amp; unreserved Crown. Active mining &amp; retention leases are cut out.</p>' +
+    '<p class="cav">⚠️ Indicative snapshot (2026-07-01). Boundaries are generalised (~tens of metres) and small parcels may not show; excludes land within 100 m of a dwelling / Restricted Crown Land. <b>Confirm the boundary on the ground &amp; on GeoVic before you swing.</b></p></div>';
+  function showLegalSheet() {
+    var el = document.getElementById('npiSheet'); if (!el || el._legalShown) return;
+    var seen; try { seen = JSON.parse(localStorage.getItem('auragold_npi_explainer') || '{}'); } catch (e) { seen = {}; }
+    if (seen.legal) return;
+    el._legalShown = true;
+    var body = document.getElementById('npiSheetBody'); if (body) body.innerHTML = LEGAL_SHEET_HTML;
+    var dsa = document.getElementById('npiSheetDsa'); if (dsa) dsa.checked = false;
+    el.dataset.k = 'legal'; el.classList.add('show'); el.setAttribute('aria-hidden', 'false');
+  }
+  var legalLayer = L.geoJSON(null, {
+    pane: 'p-legal',
+    renderer: L.canvas({ padding: 0.5, pane: 'p-legal' }),
+    style: { color: '#17924e', weight: 0.4, opacity: 0.5, fillColor: '#2ECC71', fillOpacity: 0.9 }
+  });
+  legalLayer._loaded = false; legalLayer._loading = false;
+  legalLayer.on('add', function () {
+    setTimeout(showLegalSheet, 550);
+    if (legalLayer._loaded || legalLayer._loading) return;
+    legalLayer._loading = true;
+    fetch('data/legal_fossicking_vic.geojson').then(function (r) { return r.json(); })
+      .then(function (gj) {
+        legalLayer.addData(gj); legalLayer._loaded = true; legalLayer._loading = false;
+        legalLayer.bindPopup(LEGAL_POPUP_HTML, { maxWidth: 300, className: 'legal-pop' });
+      })
+      .catch(function (e) { legalLayer._loading = false; console.warn('[AuraGold] legal-fossicking layer load failed:', e); });
+  });
+
   var LP = [
     { grp:'Base maps' },
     { k:'sat',  pane:'p-sat',  lyr:baseSat,          name:'Satellite (Esri)',          sw:'#5b7c99', on:true,  op:100 },
@@ -3506,6 +3555,7 @@ var powerLayers = (function () {
     { k:'fire', pane:'p-fire', lyr:layerFires,       name:'Bushfire scars 2023–2025',  sw:'#fb923c', on:false, op:50 },
     { k:'sf',   pane:'p-sf',   lyr:layerStateForest, name:'State Forest (fossicking)', sw:'#22c55e', on:false, op:40 },
     { k:'rcl',  pane:'p-rcl',  lyr:layerRestricted,  name:'Restricted Crown Land',     sw:'#ef4444', on:false, op:40 },
+    { k:'legal',pane:'p-legal',lyr:legalLayer,       name:"🟢 Legal fossicking (Miner's Right)", sw:'#2ECC71', on:false, op:30 },
     { grp:'Forest tracks (DEECA)' },
     { k:'walk',    pane:'p-walk',       lyr:trackLayers.walking,    name:'Walking tracks',           sw:'#19b6e6', on:false, op:85 },
     { k:'4wd',     pane:'p-4wd',        lyr:trackLayers.fourwd,     name:'4WD / forest tracks',      sw:'#9c6b2e', on:false, op:85 },
