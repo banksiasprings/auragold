@@ -809,6 +809,104 @@
 </button>
 <div id="gpsStatus" role="status" aria-live="polite"></div>
 
+<!-- v41: 🌍 3D terrain view. A MapLibre GL sidecar (online-only, Vic-goldfields bbox). Leaflet stays
+     the offline 2D primary; this opens as a fullscreen overlay and round-trips centre+zoom. -->
+<style>
+  #btn3d { position:absolute; top:12px; right:100px; z-index:1200; display:flex; align-items:center; gap:6px;
+    background:#123244; color:#7fe3ff; border:none; border-radius:11px; padding:9px 12px;
+    box-shadow:0 2px 9px rgba(0,0,0,.32); cursor:pointer; font-weight:800; font-size:13px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  #btn3d:active { transform:translateY(1px); }
+  #view3d { position:fixed; inset:0; z-index:3000; display:none; background:#0b0f16; overscroll-behavior:none; }
+  #view3d.show { display:block; }
+  #map3d { position:absolute; inset:0; }
+  #map3d .maplibregl-ctrl-top-right { top:56px; }
+  #map3d .maplibregl-popup-content { font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    border-radius:10px; padding:10px 12px; box-shadow:0 4px 16px rgba(0,0,0,.4); }
+  .v3d-top { position:absolute; top:0; left:0; right:0; z-index:6; display:flex; align-items:flex-start;
+    justify-content:space-between; gap:10px; padding:calc(env(safe-area-inset-top) + 8px) 12px 22px;
+    pointer-events:none; background:linear-gradient(to bottom, rgba(6,9,14,.82), rgba(6,9,14,0)); }
+  .v3d-title { color:#eaf6ff; font-weight:800; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.8);
+    display:flex; align-items:center; gap:7px; padding-top:6px; }
+  .v3d-x { pointer-events:auto; background:rgba(15,20,28,.92); color:#fff; border:none; border-radius:50%;
+    width:38px; height:38px; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.5); flex:0 0 auto; }
+  .v3d-note { position:absolute; left:12px; right:12px; top:calc(env(safe-area-inset-top) + 54px); z-index:7; display:none;
+    background:rgba(176,116,20,.96); color:#fff; font-size:12px; font-weight:700; padding:8px 12px; border-radius:9px;
+    text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
+  .v3d-note.show { display:block; }
+  .v3d-bar { position:absolute; left:0; right:0; bottom:0; z-index:6; display:flex; gap:8px; overflow-x:auto;
+    padding:14px 12px calc(env(safe-area-inset-bottom) + 12px); -webkit-overflow-scrolling:touch;
+    background:linear-gradient(to top, rgba(6,9,14,.92), rgba(6,9,14,0)); scrollbar-width:none; }
+  .v3d-bar::-webkit-scrollbar { display:none; }
+  .v3d-grp { display:inline-flex; align-items:center; background:rgba(18,23,32,.94); border-radius:11px; padding:4px;
+    gap:2px; flex:0 0 auto; box-shadow:0 2px 8px rgba(0,0,0,.4);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .v3d-grp > .lbl { color:#8ea2b8; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; padding:0 5px 0 8px; }
+  .v3d-pill { border:none; background:transparent; color:#cdd8e6; font-weight:700; font-size:12px; padding:7px 11px;
+    border-radius:8px; cursor:pointer; white-space:nowrap; font-family:inherit; }
+  .v3d-pill.on { background:#2b6cff; color:#fff; }
+  .v3d-pill.npi.on { background:#d98324; color:#fff; }
+  .v3d-pill.vlf.on { background:#c9a227; color:#241a00; }
+  .v3d-pill.pi.on  { background:#ff6a00; color:#fff; }
+  .v3d-pill.zvt.on { background:#9c27b0; color:#fff; }
+  .v3d-load { position:absolute; inset:0; z-index:8; display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; background:rgba(8,11,16,.88); color:#dbe7f5; font-weight:700; font-size:13px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  #view3d.loading .v3d-load { display:flex; }
+  .v3d-spin { width:38px; height:38px; border:3px solid rgba(255,255,255,.18); border-top-color:#7fe3ff;
+    border-radius:50%; animation:v3dspin .9s linear infinite; }
+  @keyframes v3dspin { to { transform:rotate(360deg); } }
+  .v3d-mk { cursor:pointer; }
+  .v3d-pin { width:20px; height:20px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.55); }
+  .v3d-rank { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%;
+    border:2px solid #fff; font:800 11px/1 -apple-system,sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.55); }
+  .v3d-camp { font-size:17px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
+  .v3d-sub { width:11px; height:11px; border-radius:50%; background:#ffd54a; border:2px solid #7a5a00;
+    box-shadow:0 1px 3px rgba(0,0,0,.55); }
+  /* live FPS chip — shows only while the camera is moving (the load-test read), auto-hides when idle */
+  .v3d-fps { position:absolute; left:12px; bottom:calc(env(safe-area-inset-bottom) + 70px); z-index:7; display:none;
+    background:rgba(8,12,18,.82); color:#8fe38f; font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    padding:5px 8px; border-radius:7px; box-shadow:0 1px 6px rgba(0,0,0,.45); pointer-events:none; }
+  #view3d.moving .v3d-fps { display:block; }
+</style>
+<button id="btn3d" type="button" title="Open a tilted 3D terrain view of the Vic goldfields (needs data)">
+  <span style="font-size:15px">🌍</span><span>3D</span>
+</button>
+<div id="view3d" aria-hidden="true">
+  <div id="map3d"></div>
+  <div class="v3d-top">
+    <div class="v3d-title"><span>🌍</span><span id="v3dTitle">3D — Vic goldfields</span></div>
+    <button class="v3d-x" id="v3dClose" type="button" aria-label="Close 3D view">×</button>
+  </div>
+  <div class="v3d-note" id="v3dNote"></div>
+  <div class="v3d-bar" id="v3dBar">
+    <div class="v3d-grp">
+      <span class="lbl">Drape</span>
+      <button class="v3d-pill on" data-drape="sat" type="button">🛰 Satellite</button>
+      <button class="v3d-pill npi" data-drape="npi" type="button">🎯 Heatmap</button>
+    </div>
+    <div class="v3d-grp" id="v3dVarGrp" style="display:none">
+      <span class="lbl">Detector</span>
+      <button class="v3d-pill vlf" data-var="vlf" type="button">VLF</button>
+      <button class="v3d-pill pi" data-var="pi" type="button">PI</button>
+      <button class="v3d-pill zvt" data-var="zvt" type="button">ZVT</button>
+    </div>
+    <div class="v3d-grp">
+      <span class="lbl">Top-10</span>
+      <button class="v3d-pill vlf" data-top="vlf" type="button">VLF</button>
+      <button class="v3d-pill pi" data-top="pi" type="button">PI</button>
+      <button class="v3d-pill zvt" data-top="zvt" type="button">ZVT</button>
+    </div>
+    <div class="v3d-grp">
+      <span class="lbl">Relief</span>
+      <button class="v3d-pill" id="v3dExag" data-exag type="button">2×</button>
+    </div>
+  </div>
+  <div class="v3d-fps" id="v3dFps">– fps</div>
+  <div class="v3d-load"><div class="v3d-spin"></div><div id="v3dLoadTxt">Loading terrain…</div></div>
+</div>
+
 <!-- v23: unified Layers panel (top-right) — base maps + overlays + tracks + trip data, each with a live opacity slider -->
 <div id="layerPanel" aria-label="Map layers">
   <button id="lpToggle" class="lp-toggle" type="button" aria-expanded="false" title="Map layers — base maps, overlays, tracks &amp; trip">
@@ -1280,7 +1378,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v40';
+var APP_VERSION = 'v41';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -6178,6 +6276,209 @@ var powerLayers = (function () {
   setInterval(geoTick, 8000);
 
   AG.precheck = { open:open, close:close, isDetecting:function(){ return detecting; }, _geoTick:geoTick };
+})();
+</script>
+
+<!-- v41: 3D terrain view (MapLibre GL sidecar). Online-only; DEM (AWS terrarium) is fetched live and
+     never cached (SW bypass). Leaflet stays the offline 2D primary and round-trips centre+zoom. -->
+<script>
+(function v3d(){
+  var MAPLIBRE_VER = '5.24.0';
+  var DEM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+  var SAT_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  // Union of the two NPI coverage regions (Western goldfields + Chiltern), padded — matches
+  // tools/npi/regions.py FETCH extents. 3D is clipped to this box; no Australia-wide (that's later).
+  var BB = { w:142.90, s:-38.00, e:146.77, n:-36.03 };
+  var EXAG = [1, 1.5, 2, 3], exagIx = 2;               // default 2x relief (ridges pop)
+  var DOCBASE = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+
+  var view = document.getElementById('view3d');
+  var btn  = document.getElementById('btn3d');
+  var bar  = document.getElementById('v3dBar');
+  var note = document.getElementById('v3dNote');
+  var varGrp = document.getElementById('v3dVarGrp');
+  var loadTxt = document.getElementById('v3dLoadTxt');
+  if (!view || !btn) return;
+
+  var M = null;              // maplibregl.Map (null while closed — freed on every close to keep memory lean)
+  var libLoading = null;     // Promise while the CDN bundle loads (once per session)
+  var drape = 'sat';         // 'sat' | 'npi'
+  var variant = 'vlf';       // 'vlf' | 'pi' | 'zvt' — which heatmap drapes
+  var topOn = { vlf:false, pi:false, zvt:false };
+  var markers = { base:[], top:{ vlf:[], pi:[], zvt:[] } };
+  var loadTimer = null, netHandler = null;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+  function inBB(la,lo){ return lo>=BB.w && lo<=BB.e && la>=BB.s && la<=BB.n; }
+  function toast(m){ var t=document.querySelector('.ag-toast'); if(!t){ t=document.createElement('div'); t.className='ag-toast'; document.body.appendChild(t); } t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove('show'); },2800); }
+  function showNote(m){ if(!note) return; if(m){ note.textContent=m; note.classList.add('show'); } else { note.classList.remove('show'); } }
+
+  // Lazy-load MapLibre (JS+CSS) once, on first 3D open — 2D-only users never pay for it.
+  function loadLib(){
+    if (window.maplibregl) return Promise.resolve();
+    if (libLoading) return libLoading;
+    libLoading = new Promise(function(res, rej){
+      var css = document.createElement('link'); css.rel='stylesheet';
+      css.href='https://cdn.jsdelivr.net/npm/maplibre-gl@'+MAPLIBRE_VER+'/dist/maplibre-gl.css';
+      document.head.appendChild(css);
+      var s = document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/maplibre-gl@'+MAPLIBRE_VER+'/dist/maplibre-gl.js';
+      s.onload=function(){ res(); };
+      s.onerror=function(){ libLoading=null; rej(new Error('maplibre load failed')); };
+      document.head.appendChild(s);
+    });
+    return libLoading;
+  }
+
+  function styleSpec(){
+    var sources = {
+      sat: { type:'raster', tiles:[SAT_URL], tileSize:256, maxzoom:18, attribution:'Imagery © Esri' },
+      dem: { type:'raster-dem', tiles:[DEM_URL], encoding:'terrarium', tileSize:256, maxzoom:15, attribution:'Terrain © AWS Terrain Tiles' }
+    };
+    ['vlf','pi','zvt'].forEach(function(v){
+      sources['npi-'+v] = { type:'raster', tiles:[DOCBASE+'data/npi/'+v+'/{z}/{x}/{y}.png'], tileSize:256, minzoom:10, maxzoom:12, attribution:'NPI heuristic' };
+    });
+    var layers = [ { id:'sat', type:'raster', source:'sat' } ];
+    ['vlf','pi','zvt'].forEach(function(v){
+      layers.push({ id:'npi-'+v, type:'raster', source:'npi-'+v, paint:{ 'raster-opacity':0.62 }, layout:{ visibility:'none' } });
+    });
+    return { version:8, sources:sources, layers:layers };
+  }
+
+  function mk(cls, html){ var d=document.createElement('div'); d.className=cls; if(html!=null) d.innerHTML=html; return d; }
+
+  function addBaseMarkers(){
+    spots.forEach(function(s){
+      var d=mk('v3d-mk'); var pin=mk('v3d-pin'); pin.style.background=statusColors[s.status]||'#888'; d.appendChild(pin);
+      var pop=new maplibregl.Popup({offset:15, maxWidth:'240px'}).setHTML(
+        '<div style="font-weight:800;margin-bottom:2px">'+esc(s.name)+'</div>'+
+        '<div style="color:#777;font-size:11px;margin-bottom:4px">'+esc(s.land||'')+(s.day?' · '+esc(s.day):'')+'</div>'+
+        '<div>'+esc(s.desc||'')+'</div>');
+      markers.base.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M));
+    });
+    subSpots.forEach(function(s){ var d=mk('v3d-mk'); d.appendChild(mk('v3d-sub'));
+      var pop=new maplibregl.Popup({offset:10, maxWidth:'220px'}).setHTML('<div style="font-weight:700">'+esc(s.name)+'</div>');
+      markers.base.push(new maplibregl.Marker({element:d, anchor:'center'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M)); });
+    camps.forEach(function(c){ var d=mk('v3d-mk v3d-camp','⛺');
+      var pop=new maplibregl.Popup({offset:12, maxWidth:'220px'}).setHTML('<div style="font-weight:800">⛺ '+esc(c.name)+'</div><div style="color:#777;font-size:11px">'+esc(c.note||'')+'</div>');
+      markers.base.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([c.lng,c.lat]).setPopup(pop).addTo(M)); });
+  }
+
+  function buildTop(v){
+    var cfg=null; for(var i=0;i<TOP10.length;i++){ if(TOP10[i].key===v){ cfg=TOP10[i]; break; } }
+    if(!cfg) return;
+    cfg.spots.forEach(function(s){
+      var d=mk('v3d-mk'); var b=mk('v3d-rank', String(s.r)); b.style.background=cfg.bg; b.style.color=cfg.fg; d.appendChild(b);
+      var pop=new maplibregl.Popup({offset:13, maxWidth:'240px'}).setHTML(
+        '<div style="font-weight:800;color:#1a7a2e;font-size:11px">'+esc(s.badge||'')+'</div>'+
+        '<div style="font-weight:800;margin:2px 0">#'+s.r+' — '+esc(s.name)+'</div>'+
+        '<div style="font-size:11px;color:#555">'+esc(cfg.det)+' &nbsp;·&nbsp; NPI '+(s.npi!=null?s.npi:'—')+'/100 · '+esc(s.conf||'')+'</div>'+
+        '<div style="margin-top:3px">'+esc(s.drv||'')+'</div>');
+      markers.top[v].push(new maplibregl.Marker({element:d, anchor:'center'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M));
+    });
+  }
+  function setTop(v, on){
+    topOn[v]=on;
+    if(on && !markers.top[v].length) buildTop(v);
+    markers.top[v].forEach(function(m){ m.getElement().style.display = on ? '' : 'none'; });
+  }
+
+  function applyDrape(){
+    if(!M) return;
+    ['vlf','pi','zvt'].forEach(function(v){ if(M.getLayer('npi-'+v)) M.setLayoutProperty('npi-'+v,'visibility',(drape==='npi'&&v===variant)?'visible':'none'); });
+    if(varGrp) varGrp.style.display = drape==='npi' ? '' : 'none';
+    bar.querySelectorAll('[data-drape]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-drape')===drape); });
+    bar.querySelectorAll('[data-var]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-var')===variant); });
+  }
+
+  function stopLoading(){ view.classList.remove('loading'); if(loadTimer){ clearTimeout(loadTimer); loadTimer=null; } }
+
+  // Live FPS chip — only while the camera is actively moving (drag/pitch/rotate/zoom). Gives Steven a
+  // real hardware read for the load-test gate without cluttering the idle view. Green ≥30 / amber ≥20 / red.
+  var fpsEl=document.getElementById('v3dFps'), fpsRAF=null, fpsFrames=0, fpsT0=0, fpsHideT=null;
+  function fpsTick(){
+    fpsFrames++; var now=performance.now();
+    if(now-fpsT0>=500){ var f=Math.round(fpsFrames/((now-fpsT0)/1000));
+      if(fpsEl){ fpsEl.textContent=f+' fps'; fpsEl.style.color=f>=30?'#8fe38f':(f>=20?'#ffd54a':'#ff8a8a'); }
+      fpsFrames=0; fpsT0=now; }
+    fpsRAF=requestAnimationFrame(fpsTick);
+  }
+  function fpsStart(){ if(fpsHideT){ clearTimeout(fpsHideT); fpsHideT=null; } view.classList.add('moving');
+    if(!fpsRAF){ fpsFrames=0; fpsT0=performance.now(); fpsRAF=requestAnimationFrame(fpsTick); } }
+  function fpsStop(){ if(fpsHideT) clearTimeout(fpsHideT);
+    fpsHideT=setTimeout(function(){ view.classList.remove('moving'); if(fpsRAF){ cancelAnimationFrame(fpsRAF); fpsRAF=null; } }, 900); }
+  function wireFps(){ if(!M) return; M.on('movestart', fpsStart); M.on('moveend', fpsStop); }
+
+  function open3d(){
+    if(!navigator.onLine){ toast('🌍 3D needs data — reconnect to load terrain'); return; }
+    variant = (typeof npiDetectorVariant==='function') ? npiDetectorVariant() : 'vlf';
+    var c=map.getCenter(), z=map.getZoom(), lat=c.lat, lng=c.lng, outside=!inBB(lat,lng);
+    if(outside){ lat=clamp(lat,BB.s,BB.n); lng=clamp(lng,BB.w,BB.e); z=clamp(z,10,12); }
+    view.classList.add('show','loading'); view.setAttribute('aria-hidden','false');
+    if(loadTxt) loadTxt.textContent='Loading terrain…';
+    showNote(outside ? '3D coverage is the Vic goldfields only — recentred to the nearest ground.' : '');
+    try{ history.pushState({v3d:1},''); }catch(e){}
+    loadLib().then(function(){
+      M = new maplibregl.Map({
+        container:'map3d', style:styleSpec(),
+        center:[lng,lat], zoom:clamp(z,8,15), pitch:62, bearing:0,
+        minZoom:8, maxZoom:15, maxPitch:80,
+        maxBounds:[[BB.w,BB.s],[BB.e,BB.n]], attributionControl:{compact:true}, dragRotate:true
+      });
+      try{ window.__view3dMap = M; }catch(e){}   // debug hook (see window.__npiWhy et al.)
+      M.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
+      M.on('load', function(){
+        try{ M.setTerrain({ source:'dem', exaggeration:EXAG[exagIx] }); }catch(e){}
+        addBaseMarkers();
+        applyDrape();
+        // restore any Top-10 layers the user had toggled on before closing
+        ['vlf','pi','zvt'].forEach(function(v){ if(topOn[v]){ setTop(v,true); } });
+        wireFps();
+      });
+      M.once('idle', stopLoading);
+      // fallback: never leave the spinner up forever if a tile source stalls
+      loadTimer = setTimeout(stopLoading, 9000);
+      M.on('error', function(){ /* missing NPI/edge tiles are expected outside coverage — ignore */ });
+    }).catch(function(){ stopLoading(); view.classList.remove('show'); toast('🌍 Couldn’t load 3D — check your connection'); });
+  }
+
+  function close3d(){
+    if(M){
+      try{ var c=M.getCenter(), z=M.getZoom(); map.setView([c.lat,c.lng], Math.round(clamp(z,2,18)), {animate:false}); }catch(e){}
+      try{ M.remove(); }catch(e){}
+      M=null;
+    }
+    markers={ base:[], top:{ vlf:[], pi:[], zvt:[] } };
+    stopLoading();
+    if(fpsRAF){ cancelAnimationFrame(fpsRAF); fpsRAF=null; } if(fpsHideT){ clearTimeout(fpsHideT); fpsHideT=null; }
+    view.classList.remove('show','moving'); view.setAttribute('aria-hidden','true'); showNote('');
+    drape='sat';
+    bar.querySelectorAll('[data-top]').forEach(function(b){ b.classList.remove('on'); });
+    topOn={ vlf:false, pi:false, zvt:false };
+  }
+
+  // ---- wiring ----
+  btn.addEventListener('click', open3d);
+  document.getElementById('v3dClose').addEventListener('click', function(){ try{ history.back(); }catch(e){ close3d(); } });
+  window.addEventListener('popstate', function(){ if(view.classList.contains('show')) close3d(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && view.classList.contains('show')){ try{ history.back(); }catch(x){ close3d(); } } });
+
+  bar.addEventListener('click', function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    if(b.hasAttribute('data-drape')){ drape=b.getAttribute('data-drape'); applyDrape(); }
+    else if(b.hasAttribute('data-var')){ variant=b.getAttribute('data-var'); applyDrape(); }
+    else if(b.hasAttribute('data-top')){ var v=b.getAttribute('data-top'); var on=!topOn[v]; setTop(v,on); b.classList.toggle('on',on); }
+    else if(b.hasAttribute('data-exag')){ exagIx=(exagIx+1)%EXAG.length; var ev=EXAG[exagIx];
+      b.textContent=(ev%1?ev.toFixed(1):ev)+'×'; if(M){ try{ M.setTerrain({ source:'dem', exaggeration:ev }); }catch(x){} } }
+  });
+
+  // reflect offline transitions while the 3D view is open
+  netHandler=function(){ if(view.classList.contains('show')) showNote(navigator.onLine ? '' : '📴 Offline — 3D terrain won’t refresh. Reconnect or return to 2D.'); };
+  window.addEventListener('online', netHandler); window.addEventListener('offline', netHandler);
+
+  window.AuraGold = window.AuraGold || {};
+  window.AuraGold.view3d = { open:open3d, close:close3d, _bb:BB };
 })();
 </script>
 </body>

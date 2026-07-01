@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v40';
+const SHELL_VERSION = 'v41';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -60,7 +60,11 @@ const SHELL_VERSION = 'v40';
 // slope-break, confluence, bench, pressure-shadow) fold into a `stream` term so the point-bar / drop
 // out-scores the straight reaches. npi-grid.png is now 7 planes (+stream composite & sub-signals);
 // popups name the micro-feature. Re-fetched via SHELL_ASSETS on the shell-rev bump.
-const SHELL_REV = 'v40a';
+// v41: 🌍 3D terrain view (MapLibre GL sidecar, online-only, Vic-goldfields bbox). MapLibre is
+// lazy-loaded from CDN on first 3D tap (cached cross-origin like Leaflet). The AWS terrarium DEM
+// tiles are ONLINE-ONLY and explicitly NOT cached (bypass below) — 3D goes dark offline by design,
+// keeping storage lean. 2D stays fully offline-capable and unchanged.
+const SHELL_REV = 'v41a';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
@@ -165,6 +169,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
+
+  // v41: 3D terrain DEM tiles (AWS terrarium) are ONLINE-ONLY — never cache them. This is Steven's
+  // explicit ask (keeps storage lean; DEM would otherwise balloon TILE_CACHE as you pan/zoom in 3D).
+  // Pure network pass-through: offline, this rejects and MapLibre simply draws no terrain (3D is
+  // online-only by design). 2D offline behaviour is untouched.
+  if (url.hostname === 's3.amazonaws.com' && url.pathname.indexOf('elevation-tiles-prod') !== -1) {
+    event.respondWith(fetch(req));
+    return;
+  }
 
   // v29: live forecast inputs — fresh when online, last-good when offline (network-first).
   const LIVE_API_HOSTS = ['services.swpc.noaa.gov', 'api.open-meteo.com', 'visualisations.aemo.com.au'];
