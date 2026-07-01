@@ -837,6 +837,17 @@
     background:rgba(176,116,20,.96); color:#fff; font-size:12px; font-weight:700; padding:8px 12px; border-radius:9px;
     text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
   .v3d-note.show { display:block; }
+  /* v41.2: vertical tilt slider on the right edge — top = steep (85°), bottom = flat/top-down (0°).
+     Vertically centred so it clears the top-right nav control and the bottom pill bar at 375px. */
+  .v3d-pitch { position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:7;
+    display:flex; flex-direction:column; align-items:center; gap:7px; pointer-events:auto;
+    background:rgba(18,23,32,.9); border-radius:14px; padding:9px 7px; box-shadow:0 2px 10px rgba(0,0,0,.4); }
+  .v3d-pitch-cap, .v3d-pitch-val { color:#9fb2c8; font:800 9px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    text-transform:uppercase; letter-spacing:.4px; }
+  .v3d-pitch-val { color:#cdd8e6; font-size:11px; letter-spacing:0; }
+  .v3d-pitch-range { -webkit-appearance:slider-vertical; appearance:slider-vertical;
+    writing-mode:vertical-lr; direction:rtl; width:24px; height:150px; margin:0; accent-color:#2b6cff; cursor:pointer;
+    touch-action:none; }
   .v3d-bar { position:absolute; left:0; right:0; bottom:0; z-index:6; display:flex; gap:8px; overflow-x:auto;
     padding:14px 12px calc(env(safe-area-inset-bottom) + 12px); -webkit-overflow-scrolling:touch;
     background:linear-gradient(to top, rgba(6,9,14,.92), rgba(6,9,14,0)); scrollbar-width:none; }
@@ -883,6 +894,13 @@
     <button class="v3d-x" id="v3dClose" type="button" aria-label="Close 3D view">×</button>
   </div>
   <div class="v3d-note" id="v3dNote"></div>
+  <!-- v41.2: tilt slider — top = steep (85°), bottom = flat/top-down (0°). Two-finger drag also tilts. -->
+  <div class="v3d-pitch" id="v3dPitchWrap">
+    <span class="v3d-pitch-cap">Tilt</span>
+    <input class="v3d-pitch-range" id="v3dPitch" type="range" min="0" max="85" step="1" value="62"
+      orient="vertical" aria-label="Map tilt angle (0 flat to 85 steep)">
+    <span class="v3d-pitch-val" id="v3dPitchVal">62°</span>
+  </div>
   <div class="v3d-bar" id="v3dBar">
     <div class="v3d-grp">
       <span class="lbl">Drape</span>
@@ -1381,7 +1399,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41.1';
+var APP_VERSION = 'v41.2';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -6301,6 +6319,9 @@ var powerLayers = (function () {
   var note = document.getElementById('v3dNote');
   var varGrp = document.getElementById('v3dVarGrp');
   var loadTxt = document.getElementById('v3dLoadTxt');
+  var pitchEl = document.getElementById('v3dPitch');       // v41.2 tilt slider (0=flat … 85=steep)
+  var pitchVal = document.getElementById('v3dPitchVal');
+  var hiZoomWarned = false;                                 // v41.2 one-shot grainy-terrain hint
   if (!view || !btn) return;
 
   var M = null;              // maplibregl.Map (null while closed — freed on every close to keep memory lean)
@@ -6316,6 +6337,9 @@ var powerLayers = (function () {
   function inBB(la,lo){ return lo>=BB.w && lo<=BB.e && la>=BB.s && la<=BB.n; }
   function toast(m){ var t=document.querySelector('.ag-toast'); if(!t){ t=document.createElement('div'); t.className='ag-toast'; document.body.appendChild(t); } t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove('show'); },2800); }
   function showNote(m){ if(!note) return; if(m){ note.textContent=m; note.classList.add('show'); } else { note.classList.remove('show'); } }
+  // v41.2: push the map's live pitch onto the slider + degree label (setting .value doesn't fire 'input',
+  // so no feedback loop when the map is pitched via gesture, nav-control compass, or keyboard).
+  function reflectPitch(p){ var d=Math.round(p); if(pitchEl && +pitchEl.value!==d) pitchEl.value=d; if(pitchVal) pitchVal.textContent=d+'°'; }
 
   // Lazy-load MapLibre (JS+CSS) once, on first 3D open — 2D-only users never pay for it.
   function loadLib(){
@@ -6425,9 +6449,10 @@ var powerLayers = (function () {
     loadLib().then(function(){
       M = new maplibregl.Map({
         container:'map3d', style:styleSpec(),
-        center:[lng,lat], zoom:clamp(z,8,15), pitch:62, bearing:0,
-        minZoom:8, maxZoom:15, maxPitch:80,
-        maxBounds:[[BB.w,BB.s],[BB.e,BB.n]], attributionControl:{compact:true}, dragRotate:true
+        center:[lng,lat], zoom:clamp(z,8,17), pitch:62, bearing:0,
+        minZoom:8, maxZoom:17, maxPitch:85,
+        maxBounds:[[BB.w,BB.s],[BB.e,BB.n]], attributionControl:{compact:true},
+        dragRotate:true, pitchWithRotate:true, touchPitch:true, touchZoomRotate:true
       });
       try{ window.__view3dMap = M; }catch(e){}   // debug hook (see window.__npiWhy et al.)
       M.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
@@ -6438,6 +6463,12 @@ var powerLayers = (function () {
         // restore any Top-10 layers the user had toggled on before closing
         ['vlf','pi','zvt'].forEach(function(v){ if(topOn[v]){ setTop(v,true); } });
         wireFps();
+        reflectPitch(M.getPitch());                 // v41.2: sync slider to the opening pitch (62°)
+        M.on('pitch', function(){ reflectPitch(M.getPitch()); });   // keep slider live as gestures tilt
+        // one-shot hint when zooming past the SRTM DEM's native detail — terrain flattens/greys but the
+        // satellite drape + pins stay sharp (Google-Earth behaviour); we don't nag past that.
+        M.on('zoom', function(){ if(!hiZoomWarned && M.getZoom()>15.3){ hiZoomWarned=true;
+          toast('🔍 Zoomed in close — terrain detail is approximate here; satellite & pins stay sharp.'); } });
       });
       M.once('idle', stopLoading);
       // fallback: never leave the spinner up forever if a tile source stalls
@@ -6463,6 +6494,9 @@ var powerLayers = (function () {
 
   // ---- wiring ----
   btn.addEventListener('click', open3d);
+  // v41.2: drag the tilt slider → live pitch, no confirm. Label updates even before the map exists.
+  if(pitchEl){ pitchEl.addEventListener('input', function(){ var p=+pitchEl.value;
+    if(pitchVal) pitchVal.textContent=Math.round(p)+'°'; if(M){ try{ M.setPitch(p); }catch(e){} } }); }
   document.getElementById('v3dClose').addEventListener('click', function(){ try{ history.back(); }catch(e){ close3d(); } });
   window.addEventListener('popstate', function(){ if(view.classList.contains('show')) close3d(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && view.classList.contains('show')){ try{ history.back(); }catch(x){ close3d(); } } });

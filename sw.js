@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v41.1';
+const SHELL_VERSION = 'v41.2';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -66,7 +66,9 @@ const SHELL_VERSION = 'v41.1';
 // keeping storage lean. 2D stays fully offline-capable and unchanged.
 // v41.1: 🌍 3D button moved out of the crowded top-right pill row into the bottom-right action
 // stack (📍 Locate / ☰ Menu / OFF). UX-only; no cached-asset changes, just a shell-rev bump.
-const SHELL_REV = 'v41.1';
+// v41.2: 🌍 3D view gains a right-edge tilt slider (0°=flat … 85°=steep, live drag + two-finger
+// gesture) and a raised max zoom (15→17) so Steven can zoom in for site inspection. UX-only; shell-rev bump.
+const SHELL_REV = 'v41.2';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
