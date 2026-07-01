@@ -672,3 +672,24 @@ Steven's approved big-ticket ("full hog"): Google-Earth-style tilt/pitch/rotate 
 - **Motorola Edge 50 Neo real-hardware FPS/memory/startup** — headless SwiftShader is CPU-rendered (rAF-capped 60), NOT phone-representative. Handed off via the live FPS chip: open 3D at Hepburn, turn everything on (heatmap + a Top-10 layer), drag to rotate ~10 s, read the chip. If it sits <30, the fallback lever is drop terrain `maxZoom` 15→13 / tile resolution — say the word.
 
 Bumped APP_VERSION/SHELL_VERSION/SHELL_REV → v41/v41/v41a.
+
+---
+
+## v41.2 — 🌍 3D tilt slider + closer zoom — 2026-07-02
+
+Steven's feedback: 3D was great but "no slider to change your angle — can't go flatter or steeper," and it "maxed out" the zoom. Two scoped fixes to the MapLibre sidecar; 2D + NPI model untouched. Committed `df4b280`, **live v41.2 confirmed** on Pages (~30 s).
+
+- **Right-edge vertical TILT slider** (`.v3d-pitch` / `#v3dPitch`, range 0–85, default 62°). Vertically centred so it clears the top-right nav control and the bottom pill bar. `writing-mode:vertical-lr; direction:rtl` → **bottom = flat/top-down (0°), up = steeper**. Live drag, no confirm; degree label updates on input. `maxPitch` 80→85.
+- **Two-finger tilt** + drag-rotate explicitly enabled (`touchPitch/pitchWithRotate/touchZoomRotate:true`). Map pitch **reflects back** onto the slider via `M.on('pitch')` → gesture / nav compass / keyboard all keep the slider in sync (no feedback loop — setting `.value` doesn't fire `input`).
+- **maxZoom 15→17** (+ initial-zoom clamp 15→17) so Steven can zoom in for site inspection. SRTM DEM overzooms past its native z15 (terrain goes approximate) but satellite drape + pins stay sharp — Google-Earth behaviour. One-shot toast the first time zoom>15.3.
+
+### Verified ✓ (headless Chrome + SwiftShader WebGL @ 375×812 DPR2, CDP)
+- Map opens `loaded`, pitch 62°, **maxZoom 17, maxPitch 85**. Slider 0↔85 drives map pitch 0↔80; label tracks. Reflect-back: `setPitch(30)` → slider value 30 + label "30°".
+- `setZoom(17)` **succeeds** (was clamped to 15 pre-v41.2); "+" greys out at the new max.
+- **No overlap** @375: slider y305–507, nav-control ends y153, bar starts y748.
+- Screenshots (scratchpad): flat 0° (thumb bottom, top-down), steep 80° (thumb top, oblique horizon + coastline), z17 close-in (ridges/gullies/dam, drape sharp).
+- **Live v41.2 confirmed**: `APP_VERSION=v41.2`, `SHELL_REV=v41.2`, `max="85"`, `maxZoom:17`, `touchPitch:true`, `.v3d-pitch` all present on Pages.
+
+Motorola real-hardware FPS gate from v41 still stands (headless SwiftShader isn't phone-representative); the higher z17 is the one new thing worth a glance on-device.
+
+Bumped APP_VERSION/SHELL_VERSION/SHELL_REV → v41.2/v41.2/v41.2.
