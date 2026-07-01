@@ -642,3 +642,33 @@ Every derived input is now computed by a real function wired into `build_base` �
 - Popup renders full breakdown: Wedderburn "in goldfield / dense workings / favourable host / low-mag", Melbourne CBD 9/7/5 "off known ground / cover-basalt". Found + **fixed** an intermittent all-zero `getImageData` (added `willReadFrequently:true` to the grid canvas — real robustness fix, was the "screenshots render black" family).
 - Settings scorecard renders both tables + correlation/importance with pass indicators.
 - Bumped APP/SHELL/REV → **v35**; SW precaches `npi-eval.json`.
+
+---
+
+## v41 — 🌍 3D terrain view (MapLibre GL sidecar) — 2026-07-01
+
+Steven's approved big-ticket ("full hog"): Google-Earth-style tilt/pitch/rotate over the Vic goldfields. Brief: `plans/v41_3d_terrain.md`. Committed `aeb58a6`, **live v41 confirmed** on Pages (~90s).
+
+### What shipped
+- **`🌍 3D` chip** (top-right, left of the Layers toggle) → fullscreen MapLibre GL overlay, centred on the current 2D position. **Sidecar, not a rebuild** — Leaflet stays the 2D primary; every v36–v40 layer/model survives untouched and fully offline.
+- **Terrain**: AWS terrarium DEM (SRTM ~30 m, terrarium encoding), **2× exaggeration** default, cycle button 1×/1.5×/2×/3×. Esri satellite draped by default; toggle to the **NPI heatmap** drape with a VLF/PI/ZVT detector selector (defaults to `npiDetectorVariant()`).
+- **Pins at elevation**: 12 spots (status-coloured teardrops) · 12 subspots · 6 camps (⛺) always on; the 3 Top-10 detector lists toggleable — all with tap popups.
+- **Controls**: MapLibre `NavigationControl(visualizePitch)` (compass/tilt/zoom); close × → round-trips centre+zoom back to Leaflet; horizontal control bar (Drape · Detector · Top-10 · Relief).
+- **Guards**: offline → toast + view won't open; opening from outside the bbox → recenter + note; `maxBounds` clips to the NPI union bbox (Western + Chiltern); loading spinner with 9 s fallback.
+- **Live FPS chip** — shows only while the camera moves (green ≥30 / amber ≥20 / red), so Steven can read the on-device load-test without devtools.
+
+### Storage / offline discipline (Steven's asks)
+- **3D is online-only.** DEM tiles are fetched live and **never cached** — new SW bypass for `s3.amazonaws.com/elevation-tiles-prod` (pure network passthrough). 2D offline behaviour untouched.
+- **MapLibre lazy-loaded from CDN** on first 3D tap (jsdelivr `maplibre-gl@5.24.0`) — 2D-only users never download it. Bundle: ~1.03 MB minified JS (275 KB gzipped transfer) + 70 KB CSS; total app ~54 MB (<60 MB budget).
+
+### Verified ✓ (headless Chrome 149 + SwiftShader WebGL @ 393×851 DPR2, localhost:8141)
+- 🌍 button renders (x225, 68px, clear of Layers toggle). 3D opens: canvas 786×1702, **30 base markers** (12+12+6), nav control present, no page errors.
+- Heatmap drape: **5820 NPI tiles 200** / 86 sparse-edge 404s / **0 non-NPI 404s** (same errorTileUrl pattern as 2D). Default variant = VLF for Gold Monster. Top-10 VLF → 10 rank badges.
+- Offline-guard: toast, view stays closed. Out-of-bbox (NSW −33/149): recentred to Chiltern + correct note. Exaggeration cycles 2→3→1→1.5×, calls `setTerrain` each time. Marker popup opens on real tap ("Sailors Creek crossings"). FPS chip shows on move, hides ~900 ms after.
+- Screenshots (scratchpad): Wedderburn sat + heatmap@2×; Hepburn hero (hills + volcanic cone pop, VLF heatmap tracing the creek drainage). WebGL renders clean — NOT the black-screenshot family.
+- **Live v41 confirmed** on Pages: `APP_VERSION=v41`, `btn3d`, SW DEM-bypass all present.
+
+### ⚠️ Open — Steven's ship gate (can't do remotely)
+- **Motorola Edge 50 Neo real-hardware FPS/memory/startup** — headless SwiftShader is CPU-rendered (rAF-capped 60), NOT phone-representative. Handed off via the live FPS chip: open 3D at Hepburn, turn everything on (heatmap + a Top-10 layer), drag to rotate ~10 s, read the chip. If it sits <30, the fallback lever is drop terrain `maxZoom` 15→13 / tile resolution — say the word.
+
+Bumped APP_VERSION/SHELL_VERSION/SHELL_REV → v41/v41/v41a.
