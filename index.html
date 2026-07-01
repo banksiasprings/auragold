@@ -95,6 +95,23 @@
     border-radius: 5px; padding: 3px 6px; margin: 4px 0; }
   .popup-spot .coords { font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px; color: #666; margin: 4px 0 0; }
+  /* v38: Top-10 ranked-spot badges + popups */
+  .rank-pin { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.55); font: 800 13px/1 system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center; }
+  .popup-rank { min-width: 236px; max-width: 288px; }
+  .popup-rank h3 { margin: 0 0 5px; font-size: 14px; color: #1a1a1a; line-height: 1.3; }
+  .popup-rank .det { display: inline-block; font-size: 10px; font-weight: 700; color: #fff;
+    text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 7px; border-radius: 4px; margin: 0 0 5px; }
+  .popup-rank .metric { font-size: 12px; color: #222; margin: 3px 0; }
+  .popup-rank .metric b { color: #1a1a1a; }
+  .popup-rank .row { font-size: 11.5px; color: #333; margin: 3px 0; line-height: 1.4; }
+  .popup-rank .row .k { color: #777; font-weight: 600; }
+  .popup-rank .legal { font-size: 11px; font-weight: 600; color: #1f7a32; background: #eaf6ec;
+    border-radius: 5px; padding: 3px 6px; margin: 5px 0; }
+  .popup-rank .legal.soft { color: #8a5a00; background: #fdf3e0; }
+  .popup-rank .coords { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; color: #666; margin: 5px 0 0; }
 
   /* AuraGold compliance checklist panel */
   .ag-fab { position:absolute; right:12px; z-index:1000; border:none; cursor:pointer;
@@ -1213,7 +1230,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v37';
+var APP_VERSION = 'v38';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -1349,6 +1366,9 @@ const PANE_Z = {
   // trip pins always sit on top of the bulk OSM/Parks-Vic camp clusters.
   "p-camp-rest": 350, "p-camp-van": 352, "p-camp-paid": 354, "p-camp-free": 356, "p-camp-parks": 358,
   "p-route": 360, "p-subspots": 365, "p-camp": 368, "p-spots": 370,
+  // v38: Top-10 ranked spots per detector — above the 1–12 pins so the ranked
+  // badges read on top, but below the GPS dot (p-audio 375).
+  "p-top-vlf": 371, "p-top-pi": 372, "p-top-zvt": 373,
   // v24: detector-audio signal-hit markers — above every map/trip layer, below the GPS dot.
   "p-audio": 375,
 };
@@ -1393,6 +1413,18 @@ function makeSubIcon() {
     popupAnchor: [0, -7],
   });
 }
+// v38: circular numbered badge for the Top-10 ranked-spot layers (gold / orange / purple).
+// Deliberately a different shape+size from the 1–12 teardrops and the tiny gold sub-spot dots
+// so a ranked pin is pickable even with all 12+12 trip pins on the map.
+function makeRankIcon(rank, bg, fg) {
+  return L.divIcon({
+    className: "",
+    html: '<div class="rank-pin" style="background:' + bg + ';color:' + fg + '">' + rank + '</div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -14],
+  });
+}
 
 const spotGroup = L.layerGroup();
 const campGroup = L.layerGroup();
@@ -1426,6 +1458,80 @@ subSpots.forEach(sub => {
     .bindPopup('<b>' + sub.name + '</b><br><span style="font-size:11px;color:#666">Sub-spot of #' + sub.parent + '</span><br><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#666">' + sub.lat.toFixed(4) + ', ' + sub.lng.toFixed(4) + '</span>')
     .bindTooltip(sub.name, { direction: "top", offset: [0, -8] })
     .addTo(subGroup);
+});
+
+// ============================================================
+// v38: Top-10 ranked spots per detector (AuraGold v37 composite ranking).
+// Three independent, toggleable TRIP DATA layers — separate from the 1–12 pins.
+// Data is inline (offline-first, same pattern as spots/subSpots), sourced from
+// wikis/prospecting/victoria_trip.kml (📍 Top 10 … folders) + supplemented with the
+// richer per-spot drivers from reports/detector-top-10-2026-07-01.md.
+// Fields: r rank · comp composite 0–1 · npi 0–100 · conf · drv drivers ·
+// legal legality (soft=documented-only, not layer-confirmed) · camp · water · town.
+const topVlfGroup = L.layerGroup();
+const topPiGroup  = L.layerGroup();
+const topZvtGroup = L.layerGroup();
+
+const TOP10 = [
+  { key:'vlf', det:'Gold Monster 1000 (VLF)', bg:'#ffc400', fg:'#3a2600', pane:'p-top-vlf', group:topVlfGroup, spots:[
+    { r:1,  name:'Hepburn RP — Sailors Ck / Dry Diggings', lat:-37.35500, lng:144.15000, comp:0.665, npi:71, conf:'high',        drv:'high NPI + creek water + light burn',   legal:'Regional Park — public, confirmed',                camp:'Daylesford Victoria Caravan Park (1.1 km)',        water:'Sailors Creek (permanent runs)',        town:'Daylesford 1.7 km · Ballarat 35 km' },
+    { r:2,  name:'Maldon / Muckleford SF',                  lat:-37.00100, lng:144.07000, comp:0.636, npi:74, conf:'high · tie',  drv:'open SF, top NPI, camp on town',        legal:'Crown land — public, confirmed',                   camp:'Maldon Caravan & Camping Park (0.9 km)',           water:'Muckleford Creek; Loddon R nearby',     town:'Maldon 0.1 km · Bendigo 33 km' },
+    { r:3,  name:'Castlemaine Diggings NHP (Fryerstown)',   lat:-37.10000, lng:144.22000, comp:0.635, npi:75, conf:'high · tie',  drv:'designated diggings, remote',           legal:'Crown land — public, confirmed',                   camp:'2nd Castlemaine Scout Camp (3.0 km)',              water:'Forest Creek / Fryers Creek',           town:'Castlemaine 4.4 km · Bendigo 38 km' },
+    { r:4,  name:'Daylesford — Wombat Ck',                  lat:-37.34000, lng:144.14000, comp:0.609, npi:69, conf:'high · tie',  drv:'v37 stream hotspot (point-bar)',        legal:'Regional Park — public, confirmed',                camp:'Ambleside on the Lake (1.3 km)',                   water:'Wombat Creek / Jim Crow Creek',         town:'Daylesford 0.2 km · Ballarat 36 km' },
+    { r:5,  name:'Sailors Creek crossings',                 lat:-37.38500, lng:144.15000, comp:0.608, npi:70, conf:'high · tie',  drv:'exposed banks, best terrain shape',     legal:'Regional Park — public, confirmed',                camp:'Jubilee Lake Holiday Park (2.0 km)',               water:'Sailors Creek',                         town:'Daylesford 4.9 km · Ballarat 33 km' },
+    { r:6,  name:'Creswick (Creswick RP / Slaty Ck)',       lat:-37.42500, lng:143.89500, comp:0.608, npi:75, conf:'high',        drv:'deep leads, top NPI',                   legal:'Regional Park — public, confirmed',                camp:'Creswick Caravan Park & Camping Ground (0.8 km)',  water:'Creswick Creek / Slaty Creek',          town:'Creswick 0.0 km · Ballarat 16 km' },
+    { r:7,  name:'Vaughan Springs / Fryers Ck',             lat:-37.15000, lng:144.21000, comp:0.593, npi:69, conf:'med · tie', soft:1, drv:'remote, camp on site',              legal:'SF/RP/Crown/designated — documented (not auto-confirmed)', camp:'Vaughan Springs Reserve, Castlemaine Diggings NHP (1.1 km)', water:'Fryers Creek / Loddon River', town:'Castlemaine 10.0 km · Bendigo 44 km' },
+    { r:8,  name:'Guildford / Yandoit (Loddon Valley)',     lat:-37.20500, lng:144.09800, comp:0.591, npi:66, conf:'high · tie',  drv:'grid-discovered, very remote',          legal:'State Forest — public, confirmed',                 camp:'Larni Barramal Yaluk Camp (5.1 km)',              water:'Loddon River / Jim Crow Creek',         town:'Newstead 10.6 km · Ballarat 45 km' },
+    { r:9,  name:'Dunolly / Goldsborough',                  lat:-36.86500, lng:143.73500, comp:0.588, npi:58, conf:'high · tie',  drv:'nugget capital, most remote',           legal:'State Forest — public, confirmed',                 camp:'Dunolly Caravan Park (0.4 km)',                    water:'Bet Bet Creek / Burnt Creek (intermittent)', town:'Dunolly 0.6 km · Bendigo 50 km' },
+    { r:10, name:'Amherst — Avoca R',                       lat:-37.19000, lng:143.66000, comp:0.576, npi:64, conf:'med · tie',   drv:'Avoca alluvial, remote',                legal:'State Forest — public, confirmed',                 camp:'free bush camp, unnamed (3.8 km)',                 water:'Avoca River',                           town:'Talbot 4.1 km · Ballarat 45 km' },
+  ]},
+  { key:'pi', det:'GPX 6000 (PI)', bg:'#ff6a00', fg:'#ffffff', pane:'p-top-pi', group:topPiGroup, spots:[
+    { r:1,  name:'Guildford / Yandoit (Loddon Valley)',     lat:-37.20500, lng:144.09800, comp:0.745, npi:100, conf:'high',       drv:'hottest magnetic + structural ground',  legal:'State Forest — public, confirmed',                 camp:'Larni Barramal Yaluk Camp (5.1 km)',              water:'Loddon River / Jim Crow Creek',         town:'Newstead 10.6 km · Ballarat 45 km' },
+    { r:2,  name:'Hepburn RP — Sailors Ck / Dry Diggings',  lat:-37.35500, lng:144.15000, comp:0.628, npi:63, conf:'high',        drv:'reef arc, light burn',                  legal:'Regional Park — public, confirmed',                camp:'Daylesford Victoria Caravan Park (1.1 km)',        water:'Sailors Creek (permanent runs)',        town:'Daylesford 1.7 km · Ballarat 35 km' },
+    { r:3,  name:'Chewton / Golden Point',                  lat:-37.08000, lng:144.24000, comp:0.615, npi:72, conf:'high',        drv:'Forest Ck 1851 reef ground',            legal:'State Forest — public, confirmed',                 camp:'free bush camp, unnamed (2.5 km)',                 water:'Forest Creek',                          town:'Castlemaine 2.8 km · Bendigo 36 km' },
+    { r:4,  name:'Maldon / Muckleford SF',                  lat:-37.00100, lng:144.07000, comp:0.573, npi:60, conf:'high · tie',  drv:'open SF',                               legal:'Crown land — public, confirmed',                   camp:'Maldon Caravan & Camping Park (0.9 km)',           water:'Muckleford Creek; Loddon R nearby',     town:'Maldon 0.1 km · Bendigo 33 km' },
+    { r:5,  name:'Castlemaine Diggings NHP (Fryerstown)',   lat:-37.10000, lng:144.22000, comp:0.566, npi:59, conf:'high · tie',  drv:'designated diggings',                   legal:'Crown land — public, confirmed',                   camp:'2nd Castlemaine Scout Camp (3.0 km)',              water:'Forest Creek / Fryers Creek',           town:'Castlemaine 4.4 km · Bendigo 38 km' },
+    { r:6,  name:'Daylesford — Wombat Ck',                  lat:-37.34000, lng:144.14000, comp:0.544, npi:55, conf:'med · tie',   drv:'deep-lead margin',                      legal:'Regional Park — public, confirmed',                camp:'Ambleside on the Lake (1.3 km)',                   water:'Wombat Creek / Jim Crow Creek',         town:'Daylesford 0.2 km · Ballarat 36 km' },
+    { r:7,  name:'Dunolly / Goldsborough',                  lat:-36.86500, lng:143.73500, comp:0.541, npi:48, conf:'med · tie',   drv:'most remote, nugget country',           legal:'State Forest — public, confirmed',                 camp:'Dunolly Caravan Park (0.4 km)',                    water:'Bet Bet Creek / Burnt Creek (intermittent)', town:'Dunolly 0.6 km · Bendigo 50 km' },
+    { r:8,  name:'Heathcote / Costerfield / McIvor Ck',     lat:-36.92700, lng:144.70500, comp:0.518, npi:47, conf:'med · tie',   drv:'Cambrian greenstone belt',              legal:'State Forest — public, confirmed',                 camp:'Queen’s Meadow Caravan Park (0.8 km)',        water:'McIvor Creek',                          town:'Heathcote 0.8 km · Bendigo 42 km' },
+    { r:9,  name:'Inglewood / Kingower / Wehla SF',         lat:-36.56700, lng:143.87400, comp:0.509, npi:63, conf:'high · tie',  drv:'Hand-of-Faith ground',                  legal:'State Forest — public, confirmed',                 camp:'Inglewood Motel & Caravan Park (1.0 km)',          water:'intermittent creeks — carry water',     town:'Inglewood 0.7 km · Bendigo 42 km' },
+    { r:10, name:'Vaughan Springs / Fryers Ck',             lat:-37.15000, lng:144.21000, comp:0.509, npi:50, conf:'med · tie', soft:1, drv:'remote, camp on site',              legal:'SF/RP/Crown/designated — documented (not auto-confirmed)', camp:'Vaughan Springs Reserve, Castlemaine Diggings NHP (1.1 km)', water:'Fryers Creek / Loddon River', town:'Castlemaine 10.0 km · Bendigo 44 km' },
+  ]},
+  { key:'zvt', det:'GPZ 7000 (ZVT)', bg:'#9c27b0', fg:'#ffffff', pane:'p-top-zvt', group:topZvtGroup, spots:[
+    { r:1,  name:'Hepburn RP — Sailors Ck / Dry Diggings',  lat:-37.35500, lng:144.15000, comp:0.779, npi:97, conf:'high',        drv:'near-max hammered premium ground',      legal:'Regional Park — public, confirmed',                camp:'Daylesford Victoria Caravan Park (1.1 km)',        water:'Sailors Creek (permanent runs)',        town:'Daylesford 1.7 km · Ballarat 35 km' },
+    { r:2,  name:'Guildford / Yandoit (Loddon Valley)',     lat:-37.20500, lng:144.09800, comp:0.745, npi:100, conf:'high',       drv:'top NPI, remote',                       legal:'State Forest — public, confirmed',                 camp:'Larni Barramal Yaluk Camp (5.1 km)',              water:'Loddon River / Jim Crow Creek',         town:'Newstead 10.6 km · Ballarat 45 km' },
+    { r:3,  name:'Chewton / Golden Point',                  lat:-37.08000, lng:144.24000, comp:0.702, npi:92, conf:'high · tie',  drv:'dense deep-lead workings',              legal:'State Forest — public, confirmed',                 camp:'free bush camp, unnamed (2.5 km)',                 water:'Forest Creek',                          town:'Castlemaine 2.8 km · Bendigo 36 km' },
+    { r:4,  name:'Dunolly / Goldsborough',                  lat:-36.86500, lng:143.73500, comp:0.692, npi:81, conf:'high · tie',  drv:'nugget capital, most remote',           legal:'State Forest — public, confirmed',                 camp:'Dunolly Caravan Park (0.4 km)',                    water:'Bet Bet Creek / Burnt Creek (intermittent)', town:'Dunolly 0.6 km · Bendigo 50 km' },
+    { r:5,  name:'Daylesford — Wombat Ck',                  lat:-37.34000, lng:144.14000, comp:0.645, npi:77, conf:'high · tie',  drv:'Hepburn deep-lead arc',                 legal:'Regional Park — public, confirmed',                camp:'Ambleside on the Lake (1.3 km)',                   water:'Wombat Creek / Jim Crow Creek',         town:'Daylesford 0.2 km · Ballarat 36 km' },
+    { r:6,  name:'Slaty Creek (Creswick RP)',               lat:-37.38500, lng:143.88000, comp:0.634, npi:85, conf:'med · tie', soft:1, drv:'classic detecting creek',           legal:'SF/RP/Crown/designated — documented (not auto-confirmed)', camp:'Creswick Caravan Park & Camping Ground (3.8 km)',  water:'Slaty Creek',                   town:'Creswick 4.6 km · Ballarat 20 km' },
+    { r:7,  name:'Maldon / Muckleford SF',                  lat:-37.00100, lng:144.07000, comp:0.626, npi:72, conf:'high · tie',  drv:'open SF',                               legal:'Crown land — public, confirmed',                   camp:'Maldon Caravan & Camping Park (0.9 km)',           water:'Muckleford Creek; Loddon R nearby',     town:'Maldon 0.1 km · Bendigo 33 km' },
+    { r:8,  name:'Castlemaine Diggings NHP (Fryerstown)',   lat:-37.10000, lng:144.22000, comp:0.616, npi:71, conf:'high · tie',  drv:'designated diggings',                   legal:'Crown land — public, confirmed',                   camp:'2nd Castlemaine Scout Camp (3.0 km)',              water:'Forest Creek / Fryers Creek',           town:'Castlemaine 4.4 km · Bendigo 38 km' },
+    { r:9,  name:'Heathcote / Costerfield / McIvor Ck',     lat:-36.92700, lng:144.70500, comp:0.610, npi:67, conf:'high · tie',  drv:'greenstone premium ground',             legal:'State Forest — public, confirmed',                 camp:'Queen’s Meadow Caravan Park (0.8 km)',        water:'McIvor Creek',                          town:'Heathcote 0.8 km · Bendigo 42 km' },
+    { r:10, name:'Fryers Ridge / Irishtown (Castlemaine SW)', lat:-37.14500, lng:144.19000, comp:0.592, npi:63, conf:'med · tie', soft:1, drv:'ridge SF between Vaughan & Guildford', legal:'SF/RP/Crown/designated — documented (not auto-confirmed)', camp:'Vaughan Springs Reserve, Castlemaine Diggings NHP (2.7 km)', water:'Fryers Creek', town:'Castlemaine 9.8 km · Bendigo 44 km' },
+  ]},
+];
+
+TOP10.forEach(function (cfg) {
+  cfg.spots.forEach(function (s) {
+    var navlabel = (cfg.key.toUpperCase() + ' #' + s.r + ' ' + s.name).replace(/"/g, '&quot;');
+    var popupHtml =
+      '<div class="popup-rank">' +
+      '<span class="det" style="background:' + cfg.bg + ';color:' + cfg.fg + '">🎯 ' + cfg.det + '</span>' +
+      '<h3>#' + s.r + ' — ' + s.name + '</h3>' +
+      '<div class="metric">Composite <b>' + s.comp.toFixed(3) + '</b>/1.00 &nbsp;·&nbsp; NPI <b>' + s.npi + '</b>/100 &nbsp;·&nbsp; ' + s.conf + '</div>' +
+      '<div class="row"><span class="k">Why:</span> ' + s.drv + '</div>' +
+      '<div class="legal' + (s.soft ? ' soft' : '') + '">' + (s.soft ? '⚠︎ ' : '✓ ') + s.legal + '</div>' +
+      '<div class="row"><span class="k">Camp:</span> ' + s.camp + '</div>' +
+      '<div class="row"><span class="k">Water:</span> ' + s.water + '</div>' +
+      '<div class="row"><span class="k">Nearest:</span> ' + s.town + '</div>' +
+      '<div class="coords">' + s.lat.toFixed(4) + ', ' + s.lng.toFixed(4) + '</div>' +
+      '<button class="nav-btn" data-nav="' + s.lat + ',' + s.lng + '" data-navlabel="' + navlabel + '">🧭 Navigate here</button>' +
+      '</div>';
+    L.marker([s.lat, s.lng], { pane: cfg.pane, icon: makeRankIcon(s.r, cfg.bg, cfg.fg) })
+      .bindPopup(popupHtml)
+      .bindTooltip('#' + s.r + ' ' + s.name, { direction: 'top', offset: [0, -14] })
+      .addTo(cfg.group);
+  });
 });
 
 
@@ -3339,6 +3445,9 @@ var powerLayers = (function () {
     { k:'route',    pane:'p-route',    lyr:routeLine, name:'Itinerary route line', sw:'#ff9500', on:true, op:85 },
     { k:'spots',    pane:'p-spots',    lyr:spotGroup, name:'Spots (1–12)',         sw:'#d8324b', on:true, op:100 },
     { k:'subspots', pane:'p-subspots', lyr:subGroup,  name:'Sub-spots',            sw:'#ffd700', on:true, op:100 },
+    { k:'topvlf',   pane:'p-top-vlf',  lyr:topVlfGroup, name:'🎯 Top 10 VLF (Gold Monster)', sw:'#ffc400', round:true, on:false, op:100 },
+    { k:'toppi',    pane:'p-top-pi',   lyr:topPiGroup,  name:'🎯 Top 10 PI (GPX 6000)',      sw:'#ff6a00', round:true, on:false, op:100 },
+    { k:'topzvt',   pane:'p-top-zvt',  lyr:topZvtGroup, name:'🎯 Top 10 ZVT (GPZ 7000)',     sw:'#9c27b0', round:true, on:false, op:100 },
     { grp:'Camping' },
     { k:'campfree',  pane:'p-camp-free',  lyr:campLayers.campfree,  name:'🏕️ Free camps (OSM)',       sw:'#2c8b3c', on:false, op:100 },
     { k:'campvan',   pane:'p-camp-van',   lyr:campLayers.campvan,   name:'🚐 Caravan parks (OSM)',     sw:'#2563eb', on:false, op:100 },
@@ -3378,6 +3487,7 @@ var powerLayers = (function () {
     var st = lpState(c);
     var row = document.createElement('div'); row.className = 'lp-row' + (st.on?'':' off');
     var swStyle = c.img ? ('background-image:url('+c.sw+')') : ('background:'+c.sw);
+    if (c.round) swStyle += ';border-radius:50%';
     row.innerHTML =
       '<input type="checkbox"' + (st.on?' checked':'') + ' aria-label="'+c.name+'">' +
       '<span class="lp-sw'+(c.img?' img':'')+'" style="'+swStyle+'"></span>' +

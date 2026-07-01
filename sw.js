@@ -60,7 +60,7 @@ const SHELL_VERSION = 'v37';
 // slope-break, confluence, bench, pressure-shadow) fold into a `stream` term so the point-bar / drop
 // out-scores the straight reaches. npi-grid.png is now 7 planes (+stream composite & sub-signals);
 // popups name the micro-feature. Re-fetched via SHELL_ASSETS on the shell-rev bump.
-const SHELL_REV = 'v37';
+const SHELL_REV = 'v38';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
