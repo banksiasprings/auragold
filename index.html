@@ -408,7 +408,7 @@
     transition:background .25s ease, color .25s ease; }
   #audioRec.show { display:inline-flex; }
   #audioRec.pos-tl   { top:10px; left:10px; }                 /* legacy spot (overlaps zoom) */
-  #audioRec.pos-br   { right:12px; bottom:106px; }            /* default — above ☰ Menu / 📍 Locate */
+  #audioRec.pos-br   { right:12px; bottom:150px; }            /* default — above 🌍 3D / ☰ Menu / 📍 Locate (v41.1) */
   #audioRec.pos-menu { top:10px; left:10px; }                 /* shown only while ON (status pill) */
   #audioRec .dot { width:9px; height:9px; border-radius:50%; background:#8a8a8a; }
   /* OFF — greyed, calm: tap to begin */
@@ -812,7 +812,10 @@
 <!-- v41: 🌍 3D terrain view. A MapLibre GL sidecar (online-only, Vic-goldfields bbox). Leaflet stays
      the offline 2D primary; this opens as a fullscreen overlay and round-trips centre+zoom. -->
 <style>
-  #btn3d { position:absolute; top:12px; right:100px; z-index:1200; display:flex; align-items:center; gap:6px;
+  /* v41.1: moved out of the crowded top-right pill row into the bottom-right action
+     stack (📍 Locate / ☰ Menu / OFF) — the natural home for map-mode toggles. Sits at
+     bottom:106px; the conditional REC button moves up to 150px so the stack stays tight. */
+  #btn3d { position:absolute; right:12px; bottom:106px; z-index:1000; display:flex; align-items:center; gap:6px;
     background:#123244; color:#7fe3ff; border:none; border-radius:11px; padding:9px 12px;
     box-shadow:0 2px 9px rgba(0,0,0,.32); cursor:pointer; font-weight:800; font-size:13px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
@@ -1378,7 +1381,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41';
+var APP_VERSION = 'v41.1';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
