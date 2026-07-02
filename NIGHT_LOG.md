@@ -720,3 +720,33 @@ Instrumented `window.__view3dMap` and dispatched real two-finger gestures:
 - (CDP multitouch intermittently stalls under SwiftShader — a headless artifact, not the app; the definitive bleed measurements came through before it hit. Real-device feel still on Steven's Motorola gate.)
 
 Bumped APP_VERSION/SHELL_REV → v41.3/v41.3.
+
+
+## v41.4 — 🌍 3D layer parity with 2D + opacity rebalance — 2026-07-02
+
+Steven's feedback: "The heat map settings are not really that great — the satellite picture is too strong, the heat map too weak. And the nicest thing would be: whatever layers you have in 2D just come into 3D. Change them in 2D, go into 3D; or flick them on/off just in 3D." Built exactly that against the MapLibre sidecar; 2D + NPI model untouched. Kept v41.1 button stack, v41.2 tilt slider + z17 zoom, v41.3 camera lock.
+
+### 1. Opacity rebalance — heatmap is the star
+- Satellite drape muted **1.0 → 0.82** (SAT_OP); NPI heatmap boosted **0.62 → 0.80** (npiOpacity). Terrain lighting steals contrast off draped rasters, so the old defaults left the heatmap invisible under the imagery.
+- Verified at flat (pitch 0), 60° tilt and steep close-in (z13.5/78°): a vivid red PI hotspot pops over muted satellite at every angle. Satellite now reads as context, heatmap as the answer.
+
+### 2. Layer parity 2D → 3D
+- New read-only `window.AuraGold.state2d()` snapshot exposes the LIVE 2D layer state (reuses the same layer objects + pane opacity the Layers panel drives — single source of truth, no duplicated state).
+- `open3d()` calls `inherit2d()` every open, so it mirrors: basemap (satellite/topo on-off), heatmap on/off + VLF/PI/ZVT variant, green legal overlay on/off + opacity, pins (spots / sub-spots / camps), and the three Top-10 lists. Any 2D change propagates in on the next open.
+- Base / legal / heatmap are now **independent stacked layers** in the MapLibre style (2D pane order: base → legal shade → heatmap on top), replacing the old mutually-exclusive drape. Legal overlay = the whole-of-Vic geojson lazy-loaded into MapLibre on first toggle, cached across reopens (no re-download).
+
+### 3. Compact Layers panel (top-right ▤ Layers)
+- Replaces the bottom pill bar. Rows: 🛰 Basemap toggle · 🎯 Heatmap [Off/VLF/PI/ZVT] + opacity slider · 🟢 Legal fossicking toggle + opacity · Pins (Spots 1–12 / Sub-spots / Camps / Top 10 VLF·PI·ZVT) · ⛰ Terrain relief cycle. Toggle switches + segmented control, dark theme, scrollable at 375px. Tilt slider auto-hides while the panel is open so they never fight for the right edge.
+
+### 4. Session-only, no back-propagation
+- 3D changes NEVER write back to 2D. State is session-only and re-inherited fresh from 2D on each open.
+
+### Verified ✓ (headless Chrome + SwiftShader @ 375px DPR2, puppeteer-core)
+- **Inheritance:** set 2D to PI heatmap + legal ON + sub-spots OFF → 3D opened with `npi-pi` visible (satOp 0.82, piOp 0.80), `legal-fill/line` visible, panel showing PI segment active, Legal checked, Sub-spots unchecked. Exact carry-over.
+- **No back-propagation:** flipped everything in 3D (base off, ZVT on, legal off, spots off, opacity 40%) → `state2d()` byte-identical before/after (NO_BACKPROP true). Reopen re-inherited the untouched 2D state (PI on, ZVT off, legal on), NOT the 3D tweaks.
+- All 15 inline scripts pass `node --check`. Screenshots: 3D w/ inherited layers, panel open (PI+legal+sub-off), and vivid PI heatmap at flat + 60° tilt.
+
+### ⚠️ Still on Steven's Motorola gate
+Real-device FPS/memory with everything on (unchanged from v41). Headless SwiftShader is CPU-rendered, not phone-representative.
+
+Bumped APP_VERSION/SHELL_REV/SHELL_VERSION → v41.4.
