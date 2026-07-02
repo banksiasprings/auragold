@@ -750,3 +750,16 @@ Steven's feedback: "The heat map settings are not really that great — the sate
 Real-device FPS/memory with everything on (unchanged from v41). Headless SwiftShader is CPU-rendered, not phone-representative.
 
 Bumped APP_VERSION/SHELL_REV/SHELL_VERSION → v41.4.
+
+
+## v42.1 + v42 REVERTED — 2026-07-02
+
+v42.1 + v42 reverted — evolve call rolled back per user; rebuilding v42 off Fable plan with RMS-trigger replacement.
+
+Two `git revert` commits (history kept honest, no reset):
+- `50c0699` revert v42 (`8fdbc52`) — the 18-dim diagonal gate that pre-filtered the classifier (wrong slot).
+- `5b64d14` revert v42.1 (`2b3db6a`) — the "evolve" pass that added A/B logging + gate-OFF byte-identity *on top of* the wrong-slot v42.
+
+**Why:** both v42 and v42.1 built the anomaly gate as an additive layer running alongside / downstream of the crude RMS amplitude trigger. But the RMS trigger is exactly what floods on hot ground — anything downstream of it is too late. The only fix that reduces the flood is to gate the trigger itself. Steven's call (2026-07-02): roll back to v41.4 and rebuild v42 from scratch off `plans/v42_anomaly_gate_design.md`, where the gate **replaces** the RMS trigger criterion inside `maybeAutoFlag()` — fix by substitution, not addition.
+
+Post-revert tree is byte-identical to v41.4 (`4a4260b`): `git diff 4a4260b HEAD` empty; index.html / sw.js / manifest / NIGHT_LOG hashes all match; `tools/anom_test.js` removed. No pre-v42 JS test suite existed for the audio path (only the NPI `make build` eval, unrelated). Fresh v42 build follows.
