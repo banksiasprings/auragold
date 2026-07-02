@@ -577,6 +577,29 @@
   .af-opt small { color:#999; font-size:11px; }
   .af-check { display:flex; align-items:center; gap:7px; font-size:12.5px; margin:4px 2px; cursor:pointer; }
 
+  /* v42 ground-anomaly gate — baseline list + live score chip */
+  .anom-list { display:flex; flex-direction:column; gap:6px; margin:4px 0 8px; }
+  .anom-item { border:1px solid #e2e2e2; border-radius:10px; padding:7px 9px; font-size:12.5px; background:#fff; }
+  .anom-item.active { border-color:#2f9e44; background:#f2fbf4; }
+  .anom-item .ai-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .anom-item .ai-name { font-weight:700; color:#2b2b2b; }
+  .anom-item .ai-meta { color:#888; font-size:11px; margin-top:2px; }
+  .anom-item .ai-q { font-size:10.5px; padding:1px 6px; border-radius:8px; font-weight:700; }
+  .anom-item .ai-q.ok { background:#e6f4ea; color:#1e7d34; }
+  .anom-item .ai-q.warn { background:#fff4e0; color:#b06a00; }
+  .anom-item .ai-q.bad { background:#fdecea; color:#b3261e; }
+  .anom-item .ai-acts { display:flex; gap:6px; margin-top:6px; }
+  .anom-item .ai-acts button { flex:1 1 auto; font-size:11.5px; padding:4px 6px; border:1px solid #d0d0d0; border-radius:8px; background:#f7f7f7; cursor:pointer; }
+  .anom-item .ai-acts button.ai-del { color:#b3261e; }
+  .anom-empty { color:#999; font-size:12px; padding:6px 2px; }
+  #anomChip { position:absolute; z-index:1100; bottom:150px; right:12px; display:none; align-items:center; gap:6px;
+    padding:4px 9px; border-radius:14px; background:rgba(20,24,32,.82); color:#fff; font-size:11.5px; font-weight:700;
+    box-shadow:0 1px 5px rgba(0,0,0,.3); pointer-events:none; }
+  #anomChip.show { display:flex; }
+  #anomChip .ac-dot { width:9px; height:9px; border-radius:50%; background:#34c759; box-shadow:0 0 5px currentColor; }
+  #anomChip.amber .ac-dot { background:#ffcc00; }
+  #anomChip.red .ac-dot { background:#ff3b30; }
+
   .cal-bring { background:#fbf6e6; border:1px solid #ece3c6; border-radius:9px; padding:9px 11px; font-size:12.5px; line-height:1.45; margin:4px 0 10px; color:#5b5230; }
   .cal-live { display:flex; align-items:center; gap:9px; margin:4px 0 8px; }
   .cal-live > span { color:#ff3b30; font-weight:800; font-size:12px; letter-spacing:.05em; }
@@ -1046,6 +1069,7 @@
 <button id="detectBtn" type="button" title="Run the pre-detection EMI &amp; setup checklist"><span style="font-size:15px">🔍</span> Start detecting</button>
 <div id="detectFoot" role="status" aria-live="polite"><span class="df-dot">🟢</span><span>Detecting</span><span class="df-score">–</span><span class="df-best"></span><button class="df-stop" type="button" title="Stop detecting" aria-label="Stop detecting">×</button></div>
 <button id="audioRec" type="button" title="Detector audio is recording — tap to stop"><span class="dot"></span><span id="audioRecLbl">REC</span></button>
+<div id="anomChip" title="Ground-anomaly gate: how far the current sound is from this spot's quiet-ground baseline" aria-hidden="true"><span class="ac-dot"></span><span class="ac-txt">🌏</span></div>
 <div class="version-badge" id="versionBadge" aria-hidden="true"></div>
 <aside id="findsPanel" class="ag-panel" aria-hidden="true">
   <header><h2>🎯 My finds</h2><button class="ag-x" id="findsClose" aria-label="Close">×</button></header>
@@ -1138,6 +1162,15 @@
           <label class="af-opt"><input type="radio" name="afmode" value="off"><span>⚪ Off</span></label>
           <label class="af-opt"><input type="radio" name="afmode" value="amp"><span>🟡 Amplitude threshold</span></label>
           <label class="af-opt"><input type="radio" name="afmode" value="ml"><span>🧠 ML classifier <small>(needs trained model)</small></span></label>
+          <label class="af-opt"><input type="radio" name="afmode" value="anomaly"><span>🌏 Ground anomaly <small>(needs baseline)</small></span></label>
+        </div>
+        <div id="afAnomRow" style="display:none">
+          <p class="ag-note" style="margin:2px 2px 6px">Instead of firing on <i>loudness</i>, this fires when the sound <b>deviates from this spot's learned quiet ground</b> — it <b>replaces</b> the amplitude trigger. Off / Amplitude / ML modes are byte-for-byte unchanged.</p>
+          <div id="anomBaseList" class="anom-list"></div>
+          <button id="anomCalBtn" class="ag-act" type="button" style="font-weight:700">🌏 Calibrate here (18&nbsp;s)<span class="sub">Sweep normally over QUIET ground — no targets, no talking</span></button>
+          <label class="au-row"><span>Sensitivity</span>
+            <input type="range" id="anomSens" min="0" max="4" step="1" value="2"><span id="anomSensVal">Balanced</span></label>
+          <p class="ag-note" id="anomFiresHint" style="margin:0 2px 6px">Calibrate a baseline to arm the gate.</p>
         </div>
         <div id="afAmpRow" style="display:none">
           <label class="au-row"><span>Trigger at</span>
@@ -1445,7 +1478,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41.4';
+var APP_VERSION = 'v42';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -2882,9 +2915,9 @@ var powerLayers = (function () {
   window.AuraGold = window.AuraGold || {};
   var AG = window.AuraGold;
 
-  // ---------- IndexedDB (shared DB, bumped to v4: photos + trips + user waypoints + audio events + ML models) ----------
-  var DB_NAME = 'auragold_photos', DB_VER = 4;
-  var S_TRIPS = 'auragold_trips', S_UWP = 'auragold_user_waypoints', S_PHOTOS = 'photos', S_AUDIO = 'auragold_audio_events', S_MODELS = 'auragold_models';
+  // ---------- IndexedDB (shared DB, bumped to v5: photos + trips + user waypoints + audio events + ML models + v42 ground baselines) ----------
+  var DB_NAME = 'auragold_photos', DB_VER = 5;
+  var S_TRIPS = 'auragold_trips', S_UWP = 'auragold_user_waypoints', S_PHOTOS = 'photos', S_AUDIO = 'auragold_audio_events', S_MODELS = 'auragold_models', S_BASELINES = 'auragold_baselines';
   var _dbP = null;
   function openDB(){
     if (_dbP) return _dbP;
@@ -2900,6 +2933,8 @@ var powerLayers = (function () {
         if (!db.objectStoreNames.contains(S_AUDIO)) db.createObjectStore(S_AUDIO, { keyPath: 'id' });
         // v26: trained on-device ML classifiers (tf.js topology + weights + norm + meta). keyPath id.
         if (!db.objectStoreNames.contains(S_MODELS)) db.createObjectStore(S_MODELS, { keyPath: 'id' });
+        // v42: ground-baseline anomaly gate — per-spot quiet-ground covariance models. keyPath id.
+        if (!db.objectStoreNames.contains(S_BASELINES)) db.createObjectStore(S_BASELINES, { keyPath: 'id' });
       };
       req.onsuccess = function (e) { resolve(e.target.result); };
       req.onerror = function () { reject(req.error); };
@@ -4321,7 +4356,7 @@ var powerLayers = (function () {
   // ---- tunables ----
   var SR_TARGET = 16000, RING_SECONDS = 30, SNAP_SECONDS = 10;
   var DEBOUNCE_MS = 3000, DAILY_CAP = 500, RMS_WIN_MS = 500;
-  var S_AUDIO = 'auragold_audio_events';
+  var S_AUDIO = 'auragold_audio_events', S_BASELINES = 'auragold_baselines';   // v42 ground baselines
 
   // ---- persisted audio settings ----
   var AKEY = 'auragold_audio', acfg;
@@ -4566,11 +4601,9 @@ var powerLayers = (function () {
       initRing(ctx.sampleRate);
       srcNode = ctx.createMediaStreamSource(s);
       procNode = ctx.createScriptProcessor(4096, 1, 1);
-      procNode.onaudioprocess = function (e) {
-        var inp = e.inputBuffer.getChannelData(0);
-        var block = new Float32Array(inp.length); block.set(inp);
-        pushSamples(block); feedRMS(block); maybeAutoFlag();
-      };
+      // v42: pick the detection handler by mode. Not in anomaly mode ⇒ procClassic, whose body is
+      // byte-for-byte the v41.4 handler (pushSamples → feedRMS → maybeAutoFlag). See installProc().
+      installProc();
       // Route through a muted gain so the ScriptProcessor keeps firing without
       // playing the detector audio back out of the phone speaker.
       zeroGain = ctx.createGain(); zeroGain.gain.value = 0;
@@ -4612,6 +4645,501 @@ var powerLayers = (function () {
     // ml + combined: tag the just-saved event so scoreAndStore discards it if gold confidence is low
     if (mode === 'ml' && hasAnyModel() && acfg.mlCombined) { var ev = events[events.length - 1]; if (ev) ev._autoMlGate = acfg.mlThreshold; }
   }
+
+  // ============================================================================
+  //  v42 — GROUND-ANOMALY GATE.  Replaces the crude RMS amplitude trigger with a
+  //  Mahalanobis-distance test against a learned per-spot quiet-ground baseline.
+  //
+  //  ARCHITECTURE (the whole point of the v42 rebuild):
+  //   • Off / Amplitude / ML modes ⇒ procClassic is installed. Its body is
+  //     byte-for-byte the v41.4 onaudioprocess handler and it calls the UNCHANGED
+  //     maybeAutoFlag(). So gate-OFF is byte-identical v41.4 (provable by diff).
+  //   • Anomaly mode with a baseline ⇒ procGated is installed. It NEVER calls
+  //     maybeAutoFlag — the amplitude trigger is *replaced*, not run in parallel.
+  //     Windows flow into AGGate.feed → 8-dim features → D² → two-tier vote → save.
+  //   • Anomaly mode WITHOUT a baseline (none within 200 m / meyda still loading)
+  //     ⇒ procGated falls back to the verbatim maybeAutoFlag() (amplitude), never
+  //     a dead trigger. This is the only path where the amplitude check runs in
+  //     anomaly mode, and it is the documented degradation, not an additive gate.
+  //   • Manual "Got a hit" saves call saveEvent('manual') directly — never gated.
+  // ============================================================================
+
+  // v41.4 detection handler, preserved verbatim. Installed whenever anomaly gating is not active.
+  function procClassic(e) {
+    var inp = e.inputBuffer.getChannelData(0);
+    var block = new Float32Array(inp.length); block.set(inp);
+    pushSamples(block); feedRMS(block); maybeAutoFlag();
+  }
+  // v42 gated handler — identical framing, but the anomaly gate replaces maybeAutoFlag().
+  function procGated(e) {
+    var inp = e.inputBuffer.getChannelData(0);
+    var block = new Float32Array(inp.length); block.set(inp);
+    pushSamples(block); feedRMS(block); AGGate.feed(block);
+  }
+  function installProc() { if (procNode) procNode.onaudioprocess = (acfg.autoMode === 'anomaly') ? procGated : procClassic; }
+
+  /* ===ANOMCORE_START=== pure Mahalanobis math; self-contained (no outer-scope refs); mirrored into tools/anom_test.js === */
+  function makeAnomCore(dim) {
+    var D = dim || 8;
+    // χ²(k) 99th / 99.9th percentile floors (theoretical anchor for the threshold).
+    var CHI2_P99 = { 2: 9.2103, 8: 20.0902 };
+    var CHI2_P999 = { 2: 13.8155, 8: 26.1245 };
+    var chi99 = CHI2_P99[D] || (D + 2.33 * Math.sqrt(2 * D) + (4.0 / 3.0));   // Wilson–Hilferty fallback
+    var chi999 = CHI2_P999[D] || (D + 3.09 * Math.sqrt(2 * D) + (4.0 / 3.0));
+
+    function sortNum(a) { return a.slice().sort(function (x, y) { return x - y; }); }
+    function quantile(sorted, q) {
+      if (!sorted.length) return 0;
+      var idx = (sorted.length - 1) * q, lo = Math.floor(idx), hi = Math.ceil(idx);
+      if (lo === hi) return sorted[lo];
+      return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+    }
+    function stddev(col, m) { if (col.length < 2) return 0; var s = 0; for (var i = 0; i < col.length; i++) { var d = col[i] - m; s += d * d; } return Math.sqrt(s / col.length); }
+    // Per-feature robust scaling: center = median, scale = IQR/1.349 (≈σ for Gaussian), floored.
+    function robustScale(windows) {
+      var center = [], scale = [], j, i;
+      for (j = 0; j < D; j++) {
+        var col = []; for (i = 0; i < windows.length; i++) col.push(windows[i][j]);
+        col = sortNum(col);
+        var med = quantile(col, 0.5);
+        var iqr = quantile(col, 0.75) - quantile(col, 0.25);
+        var s = iqr / 1.349;
+        if (!(s > 1e-9)) s = stddev(col, med);
+        if (!(s > 1e-9)) s = 1e-6;   // constant feature → tiny floor (flagged as flat elsewhere)
+        center.push(med); scale.push(s);
+      }
+      return { center: center, scale: scale };
+    }
+    function standardize(vec, sc) { var z = []; for (var j = 0; j < D; j++) z.push((vec[j] - sc.center[j]) / sc.scale[j]); return z; }
+    function meanVec(zs) { var m = [], j, i; for (j = 0; j < D; j++) m.push(0); for (i = 0; i < zs.length; i++) for (j = 0; j < D; j++) m[j] += zs[i][j]; for (j = 0; j < D; j++) m[j] /= (zs.length || 1); return m; }
+    function covMat(zs, mean) {
+      var C = [], a, b, i; for (a = 0; a < D; a++) { var row = []; for (b = 0; b < D; b++) row.push(0); C.push(row); }
+      var n = zs.length;
+      for (i = 0; i < n; i++) for (a = 0; a < D; a++) { var da = zs[i][a] - mean[a]; for (b = 0; b < D; b++) C[a][b] += da * (zs[i][b] - mean[b]); }
+      var denom = n > 1 ? n - 1 : 1;
+      for (a = 0; a < D; a++) for (b = 0; b < D; b++) C[a][b] /= denom;
+      return C;
+    }
+    // Σ' = (1-λ)Σ + λ·diag(Σ): off-diagonals shrink toward 0, diagonal untouched.
+    function shrink(C, lambda) {
+      var S = [], a, b; for (a = 0; a < D; a++) S.push(C[a].slice());
+      for (a = 0; a < D; a++) for (b = 0; b < D; b++) if (a !== b) S[a][b] = (1 - lambda) * C[a][b];
+      return S;
+    }
+    // Lower Cholesky L (Σ = L Lᵀ); null if not positive-definite.
+    function cholesky(M) {
+      var L = [], i, j, k; for (i = 0; i < D; i++) { var row = []; for (j = 0; j < D; j++) row.push(0); L.push(row); }
+      for (i = 0; i < D; i++) for (j = 0; j <= i; j++) {
+        var sum = M[i][j]; for (k = 0; k < j; k++) sum -= L[i][k] * L[j][k];
+        if (i === j) { if (sum <= 1e-12) return null; L[i][j] = Math.sqrt(sum); }
+        else L[i][j] = sum / L[j][j];
+      }
+      return L;
+    }
+    // D² via forward-substitution: solve L y = (z-mean), D² = Σ yᵢ². No explicit inverse.
+    function mahaChol(z, mean, L) {
+      var y = [], i, k; for (i = 0; i < D; i++) { var s = z[i] - mean[i]; for (k = 0; k < i; k++) s -= L[i][k] * y[k]; y.push(s / L[i][i]); }
+      var d2 = 0; for (i = 0; i < D; i++) d2 += y[i] * y[i]; return d2;
+    }
+    function mahaDiag(z, mean, diag) { var d2 = 0, i; for (i = 0; i < D; i++) { var d = z[i] - mean[i]; var v = diag[i] > 1e-12 ? diag[i] : 1e-12; d2 += d * d / v; } return d2; }
+    function fitAt(zs, lambda) { var mean = meanVec(zs); var C = covMat(zs, mean); var S = shrink(C, lambda); var L = cholesky(S); return { ok: !!L, L: L, mean: mean }; }
+    function fitDiag(zs) { var mean = meanVec(zs); var C = covMat(zs, mean); var diag = []; for (var i = 0; i < D; i++) diag.push(C[i][i] > 1e-12 ? C[i][i] : 1e-12); return { mean: mean, diag: diag }; }
+
+    // Fit a baseline from raw feature windows. opts: {lambda, minWindows}.
+    function fit(rawWindows, opts) {
+      opts = opts || {};
+      var minW = opts.minWindows || 30;
+      var lambda0 = opts.lambda != null ? opts.lambda : 0.1;
+      var warnings = [];
+      var n = rawWindows.length;
+      if (n < minW) return { quality: 'unusable', warnings: ['too-few-windows:' + n], nWindows: n };
+      var sc = robustScale(rawWindows);
+      var flat = 0, j; for (j = 0; j < D; j++) if (!(sc.scale[j] > 1.0001e-6)) flat++;
+      var zs = rawWindows.map(function (v) { return standardize(v, sc); });
+      // Trim: fit once, drop the worst 5% by D², refit (poor-man's MCD — one stray beep won't poison it).
+      var f0 = fitAt(zs, lambda0);
+      var eval0 = f0.ok ? function (z) { return mahaChol(z, f0.mean, f0.L); } : (function () { var fd = fitDiag(zs); return function (z) { return mahaDiag(z, fd.mean, fd.diag); }; })();
+      var d2s = zs.map(function (z, i) { return { d: eval0(z), i: i }; }).sort(function (a, b) { return a.d - b.d; });
+      var keepN = Math.max(D + 1, Math.floor(n * 0.95));
+      var zsT = d2s.slice(0, keepN).map(function (o) { return zs[o.i]; });
+      // Shrinkage ladder 0.1 → 0.3 → 0.6 until Cholesky is PD.
+      var ladder = [lambda0, 0.3, 0.6], fitted = null, lam = lambda0, li;
+      for (li = 0; li < ladder.length; li++) { var f = fitAt(zsT, ladder[li]); if (f.ok) { fitted = f; lam = ladder[li]; if (li > 0) warnings.push('shrinkage-raised:' + ladder[li]); break; } }
+      var quality = 'ok', chol = null, diag = null, mean;
+      if (fitted) { chol = fitted.L; mean = fitted.mean; }
+      else { var fd2 = fitDiag(zsT); mean = fd2.mean; diag = fd2.diag; quality = 'diagonal-fallback'; warnings.push('diagonal-fallback'); }
+      var evalFn = chol ? function (z) { return mahaChol(z, mean, chol); } : function (z) { return mahaDiag(z, mean, diag); };
+      var cal = sortNum(zsT.map(evalFn));
+      var d2 = { p50: quantile(cal, 0.5), p90: quantile(cal, 0.9), p99: quantile(cal, 0.99), max: cal[cal.length - 1] };
+      if (flat >= 3) { quality = 'unusable'; warnings.push('flat-features:' + flat); }
+      else {
+        var overHi = cal.filter(function (x) { return x > chi999; }).length / cal.length;
+        if (overHi > 0.02) warnings.push('unsteady-ground');
+        if (d2.max > 12 * Math.max(d2.p50, 1e-6)) warnings.push('unsteady-ground');
+      }
+      warnings = warnings.filter(function (w, k) { return warnings.indexOf(w) === k; });
+      return { D: D, center: sc.center, scale: sc.scale, mean: mean, chol: chol, diag: diag, lambda: lam, quality: quality, warnings: warnings, d2: d2, nWindows: n };
+    }
+    function mahalanobis(rawVec, base) { var z = standardize(rawVec, base); return base.chol ? mahaChol(z, base.mean, base.chol) : mahaDiag(z, base.mean, base.diag); }
+    function topZ(rawVec, base, k) {
+      var z = standardize(rawVec, base), arr = [], i;
+      for (i = 0; i < D; i++) arr.push({ i: i, z: (z[i] - base.mean[i]) });
+      arr.sort(function (a, b) { return Math.abs(b.z) - Math.abs(a.z); });
+      return arr.slice(0, k || 2);
+    }
+    // Threshold = multiplier × calibration P99, floored at the χ² P99 (no hair-trigger on tight calibration).
+    function threshold(base, mult) { return Math.max(mult * base.d2.p99, chi99); }
+    // Stateful two-tier voter: single window > 1.5×thr fires immediately; else ≥2 of last 3 > thr.
+    function makeVoter(thr) {
+      var recent = [];
+      return {
+        push: function (d2) {
+          var immediate = d2 > 1.5 * thr;
+          recent.push(d2 > thr); if (recent.length > 3) recent.shift();
+          var vote = recent.filter(Boolean).length >= 2;
+          if (immediate || vote) { recent.length = 0; return true; }
+          return false;
+        },
+        reset: function () { recent.length = 0; }
+      };
+    }
+    return { D: D, chi99: chi99, chi999: chi999, robustScale: robustScale, standardize: standardize, meanVec: meanVec,
+      covMat: covMat, shrink: shrink, cholesky: cholesky, mahaChol: mahaChol, mahaDiag: mahaDiag,
+      fit: fit, mahalanobis: mahalanobis, topZ: topZ, threshold: threshold, makeVoter: makeVoter, quantile: quantile };
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { makeAnomCore: makeAnomCore };
+  /* ===ANOMCORE_END=== */
+
+  // ---- v42 gate controller: baseline store, live window pipeline, calibration, UI ----
+  var AGGate = (function () {
+    var CORE = makeAnomCore(8);
+    var WINDOW_MS = 256;
+    var GATE_FEATS = ['logRMS', 'centroid', 'flux', 'zcr', 'flatness', 'mfcc1', 'mfcc2', 'mfcc3'];
+    var GATE_FEAT_VER = 1;
+    var SENS_MULT = [1.0, 1.25, 1.5, 2.0, 3.0];
+    var SENS_LABEL = ['Loose', 'Relaxed', 'Balanced', 'Firm', 'Tight'];
+    var NEAR_M = 200;
+
+    var baselines = [];            // stored baseline records (in memory)
+    var activeBaseline = null;     // the record currently gating
+    var pinnedId = null;           // user "use this one" override for the session
+    var Meyda = null, meydaTried = false, meydaFailed = false;
+    var pending = [], pendingLen = 0, winTarget = 0;
+    var voter = null, voterThr = -1, liveD2 = 0, curThr = 0;
+    var lastAmpShadowTs = 0, noBaseWarned = false;
+    var driftBuf = [], driftWarned = false;
+    var stats = { fired: 0, ampShadow: 0, windows: 0, skipped: 0, armedTs: 0 };
+
+    function sensMult() { return (typeof acfg.anomSens === 'number' && acfg.anomSens > 0) ? acfg.anomSens : 1.5; }
+    function sensIdx() { var m = sensMult(), best = 2, bd = 1e9; for (var i = 0; i < SENS_MULT.length; i++) { var d = Math.abs(SENS_MULT[i] - m); if (d < bd) { bd = d; best = i; } } return best; }
+    function active() { return !!activeBaseline; }
+    function haversine(a1, o1, a2, o2) { var R = 6371000, dLat = (a2 - a1) * Math.PI / 180, dLon = (o2 - o1) * Math.PI / 180, la1 = a1 * Math.PI / 180, la2 = a2 * Math.PI / 180; var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) * Math.sin(dLon / 2); return 2 * R * Math.asin(Math.min(1, Math.sqrt(x))); }
+
+    // ---- IndexedDB store (auragold_baselines) ----
+    function baseAll() { return db().then(function (d) { return new Promise(function (res, rej) {
+      var out = [], tx = d.transaction(S_BASELINES, 'readonly'), cur = tx.objectStore(S_BASELINES).openCursor();
+      cur.onsuccess = function (e) { var c = e.target.result; if (c) { out.push(c.value); c.continue(); } else res(out); };
+      cur.onerror = function () { rej(cur.error); };
+    }); }); }
+    function basePut(v) { return db().then(function (d) { return new Promise(function (res, rej) {
+      var tx = d.transaction(S_BASELINES, 'readwrite'); tx.objectStore(S_BASELINES).put(v);
+      tx.oncomplete = function () { res(v); }; tx.onerror = function () { rej(tx.error); };
+    }); }); }
+    function baseDel(id) { return db().then(function (d) { return new Promise(function (res, rej) {
+      var tx = d.transaction(S_BASELINES, 'readwrite'); tx.objectStore(S_BASELINES).delete(id);
+      tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); };
+    }); }); }
+
+    function ensureMeyda() {
+      if (Meyda) return Promise.resolve(Meyda);
+      if (meydaFailed) return Promise.resolve(null);
+      meydaTried = true;
+      return ensureMeydaMain().then(function (M) { Meyda = M; return M; }).catch(function () { meydaFailed = true; return null; });
+    }
+
+    // ---- 8-dim feature extraction for one window (shared by live gate + calibration) ----
+    function extractWin(samples) {
+      if (!Meyda) return null;
+      var FRAME = 512, HOP = 256;
+      Meyda.sampleRate = sampleRate; Meyda.bufferSize = FRAME; Meyda.numberOfMFCCCoefficients = 13; Meyda.windowingFunction = 'hanning';
+      var nFrames = samples.length >= FRAME ? 1 + Math.floor((samples.length - FRAME) / HOP) : 0;
+      if (!nFrames) return null;
+      var rmsA = [], centA = [], zcrA = [], flatA = [], m1 = [], m2 = [], m3 = [], fluxA = [];
+      var prevSpec = null, win = new Float32Array(FRAME);
+      for (var f = 0; f < nFrames; f++) {
+        win.set(samples.subarray(f * HOP, f * HOP + FRAME));
+        var ft; try { ft = Meyda.extract(['rms', 'spectralCentroid', 'zcr', 'spectralFlatness', 'mfcc', 'amplitudeSpectrum'], win); } catch (e) { continue; }
+        if (!ft) continue;
+        rmsA.push(ft.rms || 0);
+        centA.push(isFinite(ft.spectralCentroid) ? ft.spectralCentroid : 0);
+        zcrA.push(ft.zcr || 0);
+        flatA.push(isFinite(ft.spectralFlatness) ? ft.spectralFlatness : 0);
+        if (ft.mfcc) { m1.push(ft.mfcc[1] || 0); m2.push(ft.mfcc[2] || 0); m3.push(ft.mfcc[3] || 0); }
+        if (ft.amplitudeSpectrum) {
+          if (prevSpec) { var s = 0, L = Math.min(prevSpec.length, ft.amplitudeSpectrum.length); for (var k = 0; k < L; k++) { var d = ft.amplitudeSpectrum[k] - prevSpec[k]; if (d > 0) s += d * d; } fluxA.push(Math.sqrt(s)); }
+          prevSpec = ft.amplitudeSpectrum;
+        }
+      }
+      function mean(a) { if (!a.length) return 0; var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+      var vec = [Math.log(mean(rmsA) + 1e-8), mean(centA), mean(fluxA), mean(zcrA), mean(flatA), mean(m1), mean(m2), mean(m3)];
+      for (var z = 0; z < vec.length; z++) if (!isFinite(vec[z])) vec[z] = 0;
+      return vec;
+    }
+
+    // ---- live window pipeline ----
+    function takeWindow() {
+      var w = new Float32Array(winTarget), off = 0;
+      while (off < winTarget) {
+        var head = pending[0], need = winTarget - off;
+        if (head.length <= need) { w.set(head, off); off += head.length; pending.shift(); }
+        else { w.set(head.subarray(0, need), off); pending[0] = head.subarray(need); off += need; }
+      }
+      pendingLen -= winTarget;
+      return w;
+    }
+    function driftPush(d2) {
+      var now = Date.now();
+      driftBuf.push({ t: now, d2: d2 });
+      var cut = now - 180000; while (driftBuf.length && driftBuf[0].t < cut) driftBuf.shift();
+      if (!driftWarned && activeBaseline && driftBuf.length > 40) {
+        var meds = driftBuf.map(function (o) { return o.d2; }).sort(function (a, b) { return a - b; });
+        var med = meds[Math.floor(meds.length / 2)];
+        if (med > activeBaseline.d2.p90) { driftWarned = true; toast('⚠️ Ground drifted from your baseline — recalibrate?'); }
+      }
+    }
+    function gateFire(d2, why) {
+      var t = Date.now();
+      var fresh = (t - lastFlagTs) >= DEBOUNCE_MS;
+      lastFlagTs = t;                        // shares the amplitude-path debounce
+      if (!fresh) return;
+      stats.fired++;
+      saveEvent('auto');
+      var ev = events[events.length - 1];
+      if (ev) {
+        ev.gateScore = Math.round(d2 * 100) / 100;
+        ev.gateBaselineId = activeBaseline ? activeBaseline.id : null;
+        ev.gateWhy = (why || []).map(function (o) { return { f: GATE_FEATS[o.i], z: Math.round(o.z * 100) / 100 }; });
+        // Per-event A/B log (brief §5): every gate decision carries its own audit row.
+        ev.gateLog = { timestamp: t, gate_score: ev.gateScore, gate_verdict: 'fired',
+          amplitude_value: Math.round(smoothedRMS * 1e4) / 1e4,
+          spot_id: activeBaseline ? activeBaseline.id : null,
+          calibration_id: activeBaseline ? activeBaseline.id : null };
+        if (hasAnyModel() && acfg.mlCombined) ev._autoMlGate = acfg.mlThreshold;
+        evPut(ev);   // persist the additive gate fields (saveEvent's own write predates them)
+      }
+    }
+    function decideVec(vec) {
+      stats.windows++;
+      if (!activeBaseline) return { d2: null, fired: false };
+      var d2 = CORE.mahalanobis(vec, activeBaseline);
+      if (!isFinite(d2)) { stats.skipped++; return { d2: null, fired: false }; }
+      liveD2 = d2; driftPush(d2);
+      curThr = CORE.threshold(activeBaseline, sensMult());
+      if (!voter || voterThr !== curThr) { voter = CORE.makeVoter(curThr); voterThr = curThr; }
+      var fire = voter.push(d2);
+      if (fire) gateFire(d2, CORE.topZ(vec, activeBaseline, 2));
+      return { d2: d2, thr: curThr, fired: fire };
+    }
+    function shadowAmp() {
+      // Counterfactual: count what the plain RMS trigger WOULD have fired (no clip saved). Free A/B.
+      if (!(acfg.threshold > 0 && smoothedRMS >= acfg.threshold)) return;
+      var t = Date.now(); if (t - lastAmpShadowTs < DEBOUNCE_MS) return;
+      lastAmpShadowTs = t; stats.ampShadow++;
+    }
+
+    function feed(block) {
+      // No baseline in range, or meyda unavailable ⇒ fall back to the verbatim amplitude trigger.
+      if (!activeBaseline) { maybeAutoFlag(); return; }
+      if (!Meyda) { ensureMeyda(); maybeAutoFlag(); return; }
+      try {
+        if (!winTarget) winTarget = Math.max(1, Math.round(WINDOW_MS / 1000 * sampleRate));
+        pending.push(block); pendingLen += block.length;
+        var guard = 0;
+        while (pendingLen >= winTarget && guard++ < 64) { var w = takeWindow(); var vec = extractWin(w); if (vec) decideVec(vec); else stats.skipped++; }
+        shadowAmp();
+      } catch (e) { try { console.warn('[v42] gate fault — falling back to amplitude', e); } catch (x) {} pending = []; pendingLen = 0; maybeAutoFlag(); }
+    }
+
+    // ---- baseline auto-selection (nearest within 200 m, matching detector+coil) ----
+    function currentComboKey() { return comboKeyFor({ detector: acfg.detector === 'auto-best' ? 'gold-monster-1000' : acfg.detector, coil: acfg.coil }); }
+    function selectBaseline() {
+      var fix = AG.lastFix; var combo = currentComboKey();
+      var pool = baselines.filter(function (b) { return b.quality !== 'unusable' && b.combo === combo; });
+      if (pinnedId) { var p = pool.filter(function (b) { return b.id === pinnedId; })[0]; if (p) { setActive(p); return; } }
+      if (!fix) { return; }
+      var best = null, bd = NEAR_M;
+      pool.forEach(function (b) { if (b.lat == null) return; var d = haversine(fix.lat, fix.lng, b.lat, b.lng); if (d <= bd) { bd = d; best = b; } });
+      if (best) { setActive(best); noBaseWarned = false; }
+      else {
+        setActive(null);
+        if (acfg.autoMode === 'anomaly' && running && !noBaseWarned) { noBaseWarned = true; toast('🌏 No ground baseline within 200 m — using amplitude. Calibrate here?'); }
+      }
+    }
+    function setActive(b) { if (activeBaseline !== b) { activeBaseline = b; voter = null; voterThr = -1; driftBuf = []; driftWarned = false; } }
+
+    // ---- calibration: sweep quiet ground, then fit from the ring ----
+    var calRunning = false, calEndTs = 0, calMs = 18000;
+    function calibrate(done) {
+      ensureMeyda().then(function (M) {
+        if (!M) { done({ error: 'meyda' }); return; }
+        start().then(function (ok) {
+          if (!ok) { done({ error: 'mic' }); return; }
+          calRunning = true; calEndTs = Date.now() + calMs;
+          var t = setInterval(function () {
+            var remain = calEndTs - Date.now();
+            if (remain <= 0) {
+              clearInterval(t); calRunning = false;
+              var secs = calMs / 1000;
+              var samples = snapshot(secs);
+              if (!samples || samples.length < sampleRate * 8) { done({ error: 'too-short' }); return; }
+              var wt = Math.max(1, Math.round(WINDOW_MS / 1000 * sampleRate)), windows = [];
+              for (var off = 0; off + wt <= samples.length; off += wt) { var vec = extractWin(samples.subarray(off, off + wt)); if (vec) windows.push(vec); }
+              var base = CORE.fit(windows, { minWindows: 30 });
+              done({ baseline: base, nWindows: windows.length, rawWindows: windows });
+            } else if (done.tick) { done.tick(Math.ceil(remain / 1000)); }
+          }, 250);
+        });
+      });
+    }
+    function storeFromFit(fit, rawWindows, meta) {
+      var fix = AG.lastFix || {};
+      var det = (acfg.detector === 'auto-best' ? 'gold-monster-1000' : acfg.detector);
+      var coil = det === 'gpx-6000' ? acfg.coil : null;
+      var rec = {
+        id: 'ab' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: (meta && meta.name) || ('Spot ' + (fix.lat != null ? fix.lat.toFixed(3) + ',' + fix.lng.toFixed(3) : 'no-gps') + ' — ' + new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })),
+        lat: fix.lat != null ? fix.lat : null, lng: fix.lng != null ? fix.lng : null, acc: fix.acc != null ? fix.acc : null,
+        detector: det, coil: coil, combo: comboKeyFor({ detector: det, coil: coil }), sampleRate: sampleRate,
+        createdTs: Date.now(), durationMs: (calMs), nWindows: fit.nWindows,
+        featNames: GATE_FEATS, featVersion: GATE_FEAT_VER,
+        center: fit.center, scale: fit.scale, mean: fit.mean, chol: fit.chol, diag: fit.diag,
+        lambda: fit.lambda, quality: fit.quality, warnings: fit.warnings, d2: fit.d2,
+        rawWindows: rawWindows || null, gateVersion: 1
+      };
+      return basePut(rec).then(function () { baselines.push(rec); return rec; });
+    }
+
+    function load() { return baseAll().then(function (list) { baselines = list || []; selectBaseline(); renderList(); }).catch(function () {}); }
+
+    // ---- UI: baseline list, sensitivity, chip ----
+    function qBadge(q) { return q === 'ok' ? '<span class="ai-q ok">good</span>' : q === 'unusable' ? '<span class="ai-q bad">unusable</span>' : '<span class="ai-q warn">' + q + '</span>'; }
+    function ageStr(ts) { var d = (Date.now() - ts) / 86400000; return d < 1 ? 'today' : d < 2 ? 'yesterday' : Math.floor(d) + 'd ago'; }
+    function renderList() {
+      var el = document.getElementById('anomBaseList'); if (!el) return;
+      var fix = AG.lastFix, combo = currentComboKey();
+      var mine = baselines.filter(function (b) { return b.combo === combo; });
+      if (!mine.length) { el.innerHTML = '<div class="anom-empty">No baseline for ' + comboLabel(combo) + ' yet. Calibrate over quiet ground to arm the gate.</div>'; refreshHint(); return; }
+      el.innerHTML = '';
+      mine.sort(function (a, b) { return b.createdTs - a.createdTs; }).forEach(function (b) {
+        var dist = (fix && b.lat != null) ? (haversine(fix.lat, fix.lng, b.lat, b.lng)).toFixed(0) + ' m' : '—';
+        var isActive = activeBaseline && activeBaseline.id === b.id;
+        var warns = (b.warnings && b.warnings.length && b.quality !== 'ok') ? ' · ' + b.warnings.join(', ') : '';
+        var row = document.createElement('div'); row.className = 'anom-item' + (isActive ? ' active' : '');
+        row.innerHTML = '<div class="ai-top"><span class="ai-name">' + (isActive ? '📍 ' : '') + b.name.replace(/[<>&]/g, '') + '</span>' + qBadge(b.quality) + '</div>' +
+          '<div class="ai-meta">' + dist + ' away · ' + ageStr(b.createdTs) + ' · ' + b.nWindows + ' windows' + warns + '</div>' +
+          '<div class="ai-acts"><button class="ai-use" data-id="' + b.id + '">' + (isActive ? 'Active' : 'Use here') + '</button>' +
+          '<button class="ai-ren" data-id="' + b.id + '">Rename</button><button class="ai-del" data-id="' + b.id + '">Delete</button></div>';
+        el.appendChild(row);
+      });
+      refreshHint();
+    }
+    function refreshHint() {
+      var h = document.getElementById('anomFiresHint'); if (!h) return;
+      if (!activeBaseline) { h.textContent = acfg.autoMode === 'anomaly' ? 'No baseline in range — gate falls back to the amplitude trigger.' : 'Calibrate a baseline to arm the gate.'; return; }
+      var f = stats.fired, a = stats.ampShadow;
+      h.innerHTML = '📍 <b>' + activeBaseline.name.replace(/[<>&]/g, '') + '</b> active · ' + SENS_LABEL[sensIdx()] + ' (' + sensMult() + '× P99). This session: <b>' + f + '</b> gate fires vs <b>' + a + '</b> amplitude would-fires.';
+    }
+    function updateChip() {
+      var chip = document.getElementById('anomChip'); if (!chip) return;
+      var on = running && acfg.autoMode === 'anomaly' && activeBaseline;
+      chip.classList.toggle('show', !!on);
+      chip.setAttribute('aria-hidden', on ? 'false' : 'true');
+      if (!on) return;
+      var ratio = curThr > 0 ? liveD2 / curThr : 0;
+      chip.classList.toggle('amber', ratio >= 0.6 && ratio < 1);
+      chip.classList.toggle('red', ratio >= 1);
+      var txt = chip.querySelector('.ac-txt'); if (txt) txt.textContent = '🌏 ' + (liveD2).toFixed(1) + '/' + (curThr).toFixed(0);
+    }
+
+    // ---- calibration overlay ----
+    function runCalibrationUI() {
+      if (calRunning) return;
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(15,18,24,.94);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:inherit';
+      ov.innerHTML = '<div style="font-size:44px;margin-bottom:8px">🌏</div>' +
+        '<div style="font-size:19px;font-weight:800;margin-bottom:6px">Calibrating quiet ground</div>' +
+        '<div style="font-size:14px;opacity:.85;max-width:320px;line-height:1.45">Sweep normally over ground with <b>no targets</b>. No talking, no tapping the coil. Keep moving.</div>' +
+        '<div id="calCount" style="font-size:64px;font-weight:800;margin:18px 0 6px">18</div>' +
+        '<div id="calStat" style="font-size:13px;opacity:.8">Listening…</div>' +
+        '<button id="calAbort" style="margin-top:22px;padding:9px 18px;border-radius:11px;border:1px solid #555;background:#2a2f3a;color:#fff;font-size:14px;cursor:pointer">Cancel</button>';
+      document.body.appendChild(ov);
+      var aborted = false;
+      ov.querySelector('#calAbort').addEventListener('click', function () { aborted = true; calRunning = false; document.body.removeChild(ov); });
+      var cb = function (r) {
+        if (aborted) return;
+        try { document.body.removeChild(ov); } catch (e) {}
+        if (r.error === 'meyda') { toast('🌏 Audio engine unavailable offline — open online once to cache it'); return; }
+        if (r.error === 'mic') { toast('🎙 Grant the mic first (Test capture)'); return; }
+        if (r.error === 'too-short') { toast('🌏 Not enough audio — keep REC on and retry'); return; }
+        var base = r.baseline;
+        if (base.quality === 'unusable') { toast('🌏 Calibration rejected (' + (base.warnings || []).join(', ') + ') — retry on steadier, quiet ground'); return; }
+        storeFromFit(base, r.rawWindows).then(function (rec) {
+          selectBaseline(); renderList();
+          if (base.warnings && base.warnings.length) toast('🌏 Baseline saved with a warning: ' + base.warnings.join(', '));
+          else toast('🌏 Baseline saved — ground anomaly gate armed');
+        });
+      };
+      cb.tick = function (s) { var c = ov.querySelector('#calCount'); if (c) c.textContent = s; };
+      calibrate(cb);
+    }
+
+    function init() {
+      if (typeof acfg.anomSens !== 'number') acfg.anomSens = 1.5;
+      // sensitivity slider
+      var sl = document.getElementById('anomSens'), sv = document.getElementById('anomSensVal');
+      if (sl) { sl.value = sensIdx(); if (sv) sv.textContent = SENS_LABEL[sensIdx()];
+        sl.addEventListener('input', function () { var i = Math.max(0, Math.min(4, +sl.value)); acfg.anomSens = SENS_MULT[i]; saveCfg(); if (sv) sv.textContent = SENS_LABEL[i]; voter = null; voterThr = -1; refreshHint(); }); }
+      // calibrate button
+      var cbn = document.getElementById('anomCalBtn'); if (cbn) cbn.addEventListener('click', runCalibrationUI);
+      // baseline list actions (delegated)
+      var list = document.getElementById('anomBaseList');
+      if (list) list.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return; var id = b.getAttribute('data-id');
+        if (b.classList.contains('ai-use')) { pinnedId = id; selectBaseline(); renderList(); }
+        else if (b.classList.contains('ai-ren')) { var rec = baselines.filter(function (x) { return x.id === id; })[0]; if (rec) { var nm = window.prompt('Rename baseline', rec.name); if (nm) { rec.name = nm.slice(0, 60); basePut(rec).then(function () { renderList(); }); } } }
+        else if (b.classList.contains('ai-del')) { if (window.confirm('Delete this baseline?')) { baseDel(id).then(function () { baselines = baselines.filter(function (x) { return x.id !== id; }); if (pinnedId === id) pinnedId = null; if (activeBaseline && activeBaseline.id === id) setActive(null); selectBaseline(); renderList(); }); } }
+      });
+      load();
+      // housekeeping: auto-select + chip refresh. Cheap; early-returns unless anomaly-armed while recording.
+      setInterval(function () {
+        if (acfg.autoMode !== 'anomaly') { updateChip(); return; }
+        selectBaseline();
+        updateChip();
+      }, 500);
+    }
+    function onModeChange() {
+      installProc();
+      if (acfg.autoMode === 'anomaly') { ensureMeyda(); stats = { fired: 0, ampShadow: 0, windows: 0, skipped: 0, armedTs: Date.now() }; noBaseWarned = false; selectBaseline(); }
+      renderList(); updateChip();
+    }
+
+    return {
+      init: init, feed: feed, onModeChange: onModeChange, renderList: renderList, refreshHint: refreshHint,
+      active: active, ensureMeyda: ensureMeyda, CORE: CORE, GATE_FEATS: GATE_FEATS,
+      // ---- test/automation hooks (deterministic; bypass mic + meyda) ----
+      _core: function () { return CORE; },
+      _fitStore: function (windows, meta) { var fit = CORE.fit(windows, { minWindows: (meta && meta.minWindows) || 30 }); if (fit.quality === 'unusable') return Promise.resolve({ rejected: true, fit: fit }); return storeFromFit(fit, windows, meta); },
+      _feedVec: function (vec) { return decideVec(vec); },
+      _pin: function (id) { pinnedId = id; selectBaseline(); renderList(); return activeBaseline ? activeBaseline.id : null; },
+      _activeId: function () { return activeBaseline ? activeBaseline.id : null; },
+      _activeBaseline: function () { return activeBaseline ? JSON.parse(JSON.stringify({ id: activeBaseline.id, quality: activeBaseline.quality, d2: activeBaseline.d2, combo: activeBaseline.combo })) : null; },
+      _threshold: function () { return activeBaseline ? CORE.threshold(activeBaseline, sensMult()) : null; },
+      _stats: function () { return JSON.parse(JSON.stringify(stats)); },
+      _list: function () { return baselines.map(function (b) { return { id: b.id, name: b.name, quality: b.quality, combo: b.combo, nWindows: b.nWindows, d2: b.d2 }; }); },
+      _clearAll: function () { return Promise.all(baselines.map(function (b) { return baseDel(b.id); })).then(function () { baselines = []; setActive(null); pinnedId = null; renderList(); }); },
+      _installed: function () { return procNode && procNode.onaudioprocess === procGated ? 'gated' : 'classic'; }
+    };
+  })();
 
   // ---- events model ----
   var events = [];
@@ -5345,15 +5873,18 @@ var powerLayers = (function () {
       var r = document.querySelector('input[name="afmode"][value="' + acfg.autoMode + '"]'); if (r) r.checked = true;
       var ampRow = document.getElementById('afAmpRow'); if (ampRow) ampRow.style.display = (acfg.autoMode === 'amp' || acfg.autoMode === 'ml') ? 'block' : 'none';
       var mlRow = document.getElementById('afMlRow'); if (mlRow) mlRow.style.display = acfg.autoMode === 'ml' ? 'block' : 'none';
+      var anomRow = document.getElementById('afAnomRow'); if (anomRow) anomRow.style.display = acfg.autoMode === 'anomaly' ? 'block' : 'none';
       var mt = document.getElementById('afMlThresh'); if (mt) mt.value = Math.round(acfg.mlThreshold * 100);
       var mtv = document.getElementById('afMlThreshVal'); if (mtv) mtv.textContent = '0.' + (Math.round(acfg.mlThreshold * 100) < 10 ? '0' : '') + Math.round(acfg.mlThreshold * 100);
       var cb = document.getElementById('afCombined'); if (cb) cb.checked = acfg.mlCombined;
+      if (acfg.autoMode === 'anomaly' && AGGate) { AGGate.renderList(); AGGate.refreshHint(); }
     }
     var modeWrap = document.getElementById('afMode');
-    if (modeWrap) modeWrap.addEventListener('change', function (e) { if (e.target.name === 'afmode') { acfg.autoMode = e.target.value; saveCfg(); applyAutoModeUI(); } });
+    if (modeWrap) modeWrap.addEventListener('change', function (e) { if (e.target.name === 'afmode') { acfg.autoMode = e.target.value; saveCfg(); applyAutoModeUI(); AGGate.onModeChange(); } });
     var mt = document.getElementById('afMlThresh'); if (mt) mt.addEventListener('input', function () { acfg.mlThreshold = (+mt.value) / 100; saveCfg(); applyAutoModeUI(); });
     var cb = document.getElementById('afCombined'); if (cb) cb.addEventListener('change', function () { acfg.mlCombined = cb.checked; saveCfg(); });
     applyAutoModeUI();
+    AGGate.init();
     refreshClassifierUI(); refreshCalUI();
   })();
 
@@ -5651,6 +6182,8 @@ var powerLayers = (function () {
     _deleteModel: function (combo) { return deleteModelNow(combo || DEFAULT_COMBO); },
     _scoreVec: function (vec, combo) { var m = models[combo || DEFAULT_COMBO]; return m && m.model ? inferVec(vec, m) : null; },
     _comboFor: function (ev) { return comboKeyFor(ev || {}); },
+    // ---- v42 ground-anomaly gate hooks (deterministic; bypass mic + meyda) ----
+    _gate: AGGate,
     // ---- v31 smoke-test pack hooks ----
     _loadSmokeTest: loadSmokeTest, _clearSmokeTest: clearSmokeTest, _smokeCount: smokeCount,
     // Seed N synthetic labelled events per class with SEPARABLE feature vectors (no audio) —

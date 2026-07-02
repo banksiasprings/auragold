@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v41.4';
+const SHELL_VERSION = 'v42';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -76,7 +76,7 @@ const SHELL_VERSION = 'v41.4';
 // the heatmap reads over terrain lighting. Adds a topo base + the legal geojson to the MapLibre style;
 // no new cache rules — the DEM bypass below is unchanged, and topo tiles / the legal geojson cache the
 // same way their 2D counterparts already do. UX-only; shell-rev bump.
-const SHELL_REV = 'v41.4';
+const SHELL_REV = 'v42';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 

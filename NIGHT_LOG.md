@@ -763,3 +763,32 @@ Two `git revert` commits (history kept honest, no reset):
 **Why:** both v42 and v42.1 built the anomaly gate as an additive layer running alongside / downstream of the crude RMS amplitude trigger. But the RMS trigger is exactly what floods on hot ground — anything downstream of it is too late. The only fix that reduces the flood is to gate the trigger itself. Steven's call (2026-07-02): roll back to v41.4 and rebuild v42 from scratch off `plans/v42_anomaly_gate_design.md`, where the gate **replaces** the RMS trigger criterion inside `maybeAutoFlag()` — fix by substitution, not addition.
 
 Post-revert tree is byte-identical to v41.4 (`4a4260b`): `git diff 4a4260b HEAD` empty; index.html / sw.js / manifest / NIGHT_LOG hashes all match; `tools/anom_test.js` removed. No pre-v42 JS test suite existed for the audio path (only the NPI `make build` eval, unrelated). Fresh v42 build follows.
+
+
+## v42 — 🌏 Ground-anomaly gate that REPLACES the RMS trigger — 2026-07-02
+
+Rebuilt from scratch off `plans/v42_anomaly_gate_design.md` (Fable 5). The gate learns a per-spot "quiet ground" baseline and fires on **Mahalanobis deviation**, not loudness. It **replaces** the crude RMS amplitude trigger inside the detection path — it does not run in parallel, does not pre-filter the classifier, does not add saves on top. That substitution (not addition) was the whole point of rolling back v42/v42.1.
+
+### The architecture (how substitution is guaranteed)
+- **Dual handlers.** `procClassic(e)` is the v41.4 `onaudioprocess` body **verbatim** (`pushSamples → feedRMS → maybeAutoFlag`). `procGated(e)` is the same framing but `AGGate.feed(block)` replaces `maybeAutoFlag`. `installProc()` picks by mode.
+- **Gate OFF (off/amp/ml) ⇒ procClassic** — byte-for-byte v41.4. `maybeAutoFlag`, `feedRMS`, `pushSamples`, `snapshot`, `saveEvent`, `encodeWAV`, `initRing`, `guanoFor` are all **untouched** (proven by an AST-body diff against `4a4260b` in the test harness).
+- **Gate ON (anomaly + baseline) ⇒ procGated** — `maybeAutoFlag` is **never called**; the amplitude trigger is gone from the path. Windows → 8-dim features → D² → two-tier vote (single >1.5×thr, else 2-of-3) → `saveEvent('auto')`.
+- **No baseline in range / meyda still loading ⇒** procGated falls back to the verbatim `maybeAutoFlag` (amplitude), never a dead trigger. Only path where amplitude runs in anomaly mode; the documented degradation, not an additive gate.
+- **Manual "Got a hit" ⇒** `saveEvent('manual')` directly, never gated.
+
+### The math (`makeAnomCore`, delimited block, mirrored into the Node test)
+8 features/256 ms window: log-RMS, spectral centroid, flux, ZCR, flatness, MFCC 1–3. Robust-standardize (median/IQR) → full-covariance → 5% MCD-style trim → shrinkage ladder (0.1→0.3→0.6) → Cholesky → D² by forward-substitution. Threshold = **1.5× calibration P99** (Balanced), floored at χ²₈ P99 (20.09). Diagonal fallback on a constant feature; `unusable` on <30 windows or ≥3 flat; `unsteady-ground` warn on a noisy calibration. Drift = **detect-don't-adapt** (rolling live-median > baseline P90 → recalibrate banner; threshold never moves).
+
+### Storage / UX
+- New IndexedDB store `auragold_baselines`, **DB_VER 4→5** (additive `contains()`-guarded upgrade — safe for existing users). Baselines tagged per (detector, coil) like v32 models; auto-select nearest within 200 m matching the active combo.
+- Settings: new `🌏 Ground anomaly` af-mode radio + card (baseline list w/ quality badge · distance · age, 18 s guided calibration overlay, Loose→Tight sensitivity, live "N gate fires vs N amplitude would-fires" A/B hint). Live D² chip near the REC pill (green→amber→red).
+- **Per-event A/B log** on every fired event: `gateLog {timestamp, gate_score, gate_verdict, amplitude_value, spot_id, calibration_id}` + `gateScore/gateBaselineId/gateWhy` (top-2 |z| features). Session shadow counter tallies what the plain RMS trigger *would* have fired. Every gate-mode field session is a free amp-vs-gate A/B.
+
+### Verified ✓
+- **`tools/anom_test.js`: 36/36 green.** Extracts the shipped `AnomCore` from index.html (tests the real code): Cholesky reconstruction, correlated-feature distance, fit quality tiers, threshold floor, two-tier voter, the **loud-but-normal window is VETOED** while amplitude would fire (substitution proof), calibration reject/warn. **Byte-identity:** the 8 v41.4 detection functions + the handler body === `procClassic` body, diffed against `4a4260b`.
+- **Headless Chrome (CDP, DPR2 390px), 0 console errors/warnings:** anomaly radio+card+chip render; baseline fit+store `quality:ok`; pin → active; `_feedVec(loudNormal)` → **not fired** (D² < thr); anomalous window → **fired**, event saved with `gateLog` carrying exactly the 6 required fields + verdict `fired` + matching `gateBaselineId`; **manual save bypasses the gate**; `procClassic` installed when not recording. Screenshot: `qa_v42/qa_v42_anom_settings.png`.
+
+### ⚠️ Standing caveats (unchanged from v24/v26/v32)
+Nothing audio is "verified" until Steven's real GPX 6000 hardware test. Synthetic separation is optimistic; the field abandon criterion is any Steven-labelled **gold** whose gateScore fell below Balanced. **Ships gate OFF by default** (needs a calibration; opt-in + shadow logging *is* the A/B). The diagonal-vs-full-covariance question stays open until real audio; full-covariance is the default per the plan. Meyda main-thread path is SW-precached (`sw.js`), so calibration works offline after first online load.
+
+Bumped APP_VERSION/SHELL_REV/SHELL_VERSION → v42.
