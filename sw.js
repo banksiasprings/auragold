@@ -68,7 +68,9 @@ const SHELL_VERSION = 'v41.2';
 // stack (📍 Locate / ☰ Menu / OFF). UX-only; no cached-asset changes, just a shell-rev bump.
 // v41.2: 🌍 3D view gains a right-edge tilt slider (0°=flat … 85°=steep, live drag + two-finger
 // gesture) and a raised max zoom (15→17) so Steven can zoom in for site inspection. UX-only; shell-rev bump.
-const SHELL_REV = 'v41.2';
+// v41.3: 🌍 3D camera stability — lock bearing north-up, tilt via slider only (kill touchPitch/rotate
+// gesture bleed that teleported the camera), compass-less zoom buttons. UX-only; shell-rev bump.
+const SHELL_REV = 'v41.3';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 

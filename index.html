@@ -833,6 +833,12 @@
     display:flex; align-items:center; gap:7px; padding-top:6px; }
   .v3d-x { pointer-events:auto; background:rgba(15,20,28,.92); color:#fff; border:none; border-radius:50%;
     width:38px; height:38px; font-size:22px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.5); flex:0 0 auto; }
+  /* v41.4: slim Layers button in the top bar (left of ×) — opens the compact 3D layers panel. */
+  .v3d-topbtns { pointer-events:auto; display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+  .v3d-layers-btn { pointer-events:auto; background:rgba(15,20,28,.92); color:#dbe7f5; border:none; border-radius:19px;
+    height:38px; padding:0 14px; font:800 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .v3d-layers-btn.on { background:#2b6cff; color:#fff; }
   .v3d-note { position:absolute; left:12px; right:12px; top:calc(env(safe-area-inset-top) + 54px); z-index:7; display:none;
     background:rgba(176,116,20,.96); color:#fff; font-size:12px; font-weight:700; padding:8px 12px; border-radius:9px;
     text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.45); }
@@ -848,21 +854,44 @@
   .v3d-pitch-range { -webkit-appearance:slider-vertical; appearance:slider-vertical;
     writing-mode:vertical-lr; direction:rtl; width:24px; height:150px; margin:0; accent-color:#2b6cff; cursor:pointer;
     touch-action:none; }
-  .v3d-bar { position:absolute; left:0; right:0; bottom:0; z-index:6; display:flex; gap:8px; overflow-x:auto;
-    padding:14px 12px calc(env(safe-area-inset-bottom) + 12px); -webkit-overflow-scrolling:touch;
-    background:linear-gradient(to top, rgba(6,9,14,.92), rgba(6,9,14,0)); scrollbar-width:none; }
-  .v3d-bar::-webkit-scrollbar { display:none; }
-  .v3d-grp { display:inline-flex; align-items:center; background:rgba(18,23,32,.94); border-radius:11px; padding:4px;
-    gap:2px; flex:0 0 auto; box-shadow:0 2px 8px rgba(0,0,0,.4);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  .v3d-grp > .lbl { color:#8ea2b8; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; padding:0 5px 0 8px; }
-  .v3d-pill { border:none; background:transparent; color:#cdd8e6; font-weight:700; font-size:12px; padding:7px 11px;
-    border-radius:8px; cursor:pointer; white-space:nowrap; font-family:inherit; }
-  .v3d-pill.on { background:#2b6cff; color:#fff; }
-  .v3d-pill.npi.on { background:#d98324; color:#fff; }
-  .v3d-pill.vlf.on { background:#c9a227; color:#241a00; }
-  .v3d-pill.pi.on  { background:#ff6a00; color:#fff; }
-  .v3d-pill.zvt.on { background:#9c27b0; color:#fff; }
+  /* v41.4: while the Layers panel is open, hide the right-edge tilt slider so the panel has clear room. */
+  #view3d.panelopen .v3d-pitch { display:none; }
+  /* v41.4: compact Layers panel (top-right) — flick 3D layers on/off; mirrors the 2D layers on open. */
+  .v3d-panel { position:absolute; top:calc(env(safe-area-inset-top) + 54px); right:10px; z-index:9;
+    width:min(262px, calc(100vw - 20px)); max-height:calc(100vh - env(safe-area-inset-top) - 130px);
+    display:none; flex-direction:column; background:rgba(14,19,27,.97); border-radius:14px;
+    box-shadow:0 8px 26px rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.06);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; }
+  #view3d.panelopen .v3d-panel { display:flex; }
+  .v3d-panel-h { display:flex; align-items:center; justify-content:space-between; padding:11px 13px 9px;
+    color:#eaf6ff; font-weight:800; font-size:14px; border-bottom:1px solid rgba(255,255,255,.07); }
+  .v3d-panel-h button { background:none; border:none; color:#9fb2c8; font-size:20px; line-height:1; cursor:pointer; padding:0 2px; }
+  .v3d-panel-body { overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 4px 10px; }
+  .v3d-psec { padding:8px 11px 4px; border-top:1px solid rgba(255,255,255,.06); }
+  .v3d-plbl { color:#8ea2b8; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; margin:0 0 7px 2px; }
+  .v3d-prow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 11px; min-height:34px; }
+  .v3d-psec .v3d-prow { padding:5px 0 5px 2px; }
+  .v3d-prow > span { color:#dbe7f5; font-size:13px; font-weight:600; }
+  /* toggle switch */
+  .v3d-sw { position:relative; display:inline-block; width:40px; height:23px; flex:0 0 auto; cursor:pointer; }
+  .v3d-sw input { position:absolute; opacity:0; width:0; height:0; }
+  .v3d-sw > span { position:absolute; inset:0; background:#39424f; border-radius:23px; transition:background .15s; }
+  .v3d-sw > span::before { content:""; position:absolute; left:3px; top:3px; width:17px; height:17px; border-radius:50%;
+    background:#fff; transition:transform .15s; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .v3d-sw input:checked + span { background:#2b6cff; }
+  .v3d-sw input:checked + span::before { transform:translateX(17px); }
+  /* segmented heatmap control [Off | VLF | PI | ZVT] */
+  .v3d-seg { display:flex; gap:3px; background:rgba(0,0,0,.28); border-radius:9px; padding:3px; }
+  .v3d-seg button { flex:1; border:none; background:transparent; color:#cdd8e6; font:700 12px/1 inherit;
+    padding:7px 0; border-radius:7px; cursor:pointer; }
+  .v3d-seg button.on { background:#2b6cff; color:#fff; }
+  .v3d-seg button[data-npi=vlf].on { background:#c9a227; color:#241a00; }
+  .v3d-seg button[data-npi=pi].on  { background:#ff6a00; color:#fff; }
+  .v3d-seg button[data-npi=zvt].on { background:#9c27b0; color:#fff; }
+  .v3d-oprow { display:flex; align-items:center; gap:9px; padding:8px 2px 3px; }
+  .v3d-oprow input[type=range] { flex:1; accent-color:#2b6cff; margin:0; }
+  .v3d-oprow span { color:#9fb2c8; font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace; width:34px; text-align:right; }
+  .v3d-exagbtn { border:none; background:#2b6cff; color:#fff; font:800 12px/1 inherit; padding:8px 13px; border-radius:8px; cursor:pointer; }
   .v3d-load { position:absolute; inset:0; z-index:8; display:none; align-items:center; justify-content:center;
     flex-direction:column; gap:14px; background:rgba(8,11,16,.88); color:#dbe7f5; font-weight:700; font-size:13px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
@@ -1399,7 +1428,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41.2';
+var APP_VERSION = 'v41.3';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -3754,6 +3783,20 @@ var powerLayers = (function () {
     if (on) { if (!map.hasLayer(e.c.lyr)) e.c.lyr.addTo(map); } else if (map.hasLayer(e.c.lyr)) map.removeLayer(e.c.lyr);
     e.cb.checked = !!on; e.row.classList.toggle('off', !on);
     lpSave(k, { on: !!on });
+  };
+
+  // v41.4: read-only snapshot of the live 2D layer state the 🌍 3D view inherits on open
+  // (Steven: "whatever layers you have in 2D, just come into 3D"). Reads the SAME layer objects
+  // + pane opacity the panel drives — no duplicated state, no back-propagation. 3D never writes here.
+  window.AuraGold.state2d = function () {
+    function paneOp(id) { var p = map.getPane(id); var o = p && p.style.opacity; return (o === '' || o == null) ? 1 : +o; }
+    return {
+      base:  map.hasLayer(baseSat) ? 'sat' : (map.hasLayer(baseTopo) ? 'topo' : (map.hasLayer(baseOSM) ? 'osm' : null)),
+      npi:   { vlf: map.hasLayer(NPI_LAYERS.vlf), pi: map.hasLayer(NPI_LAYERS.pi), zvt: map.hasLayer(NPI_LAYERS.zvt) },
+      legal: { on: map.hasLayer(legalLayer), op: paneOp('p-legal') },
+      spots: map.hasLayer(spotGroup), subspots: map.hasLayer(subGroup), camps: map.hasLayer(campGroup),
+      top:   { vlf: map.hasLayer(topVlfGroup), pi: map.hasLayer(topPiGroup), zvt: map.hasLayer(topZvtGroup) }
+    };
   };
 
   // Dynamic user-data toggles (resolved lazily; rebuilt when the panel opens).
@@ -6452,11 +6495,26 @@ var powerLayers = (function () {
         center:[lng,lat], zoom:clamp(z,8,17), pitch:62, bearing:0,
         minZoom:8, maxZoom:17, maxPitch:85,
         maxBounds:[[BB.w,BB.s],[BB.e,BB.n]], attributionControl:{compact:true},
-        dragRotate:true, pitchWithRotate:true, touchPitch:true, touchZoomRotate:true
+        // v41.3 camera-stability fix (Steven: "repositions to a whole new camera shot").
+        // Root cause: a two-finger vertical swipe fired touchPitch and slammed pitch 62→85°
+        // mid-pinch — at high tilt that swings the visible centre to the horizon, so the SAME
+        // spot reads as a totally new location. Touch-rotate/dragRotate likewise let an imperfect
+        // pinch twist the bearing. Kill all three: bearing is locked north-up and tilt is driven
+        // ONLY by the v41.2 slider. Pinch = pure zoom, one-finger drag = pure pan. Nothing fights.
+        dragRotate:false, pitchWithRotate:false, touchPitch:false,
+        dragPan:true, touchZoomRotate:true, boxZoom:false
       });
       try{ window.__view3dMap = M; }catch(e){}   // debug hook (see window.__npiWhy et al.)
-      M.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
+      // Zoom +/- buttons only — no compass. The old visualizePitch compass reset pitch AND bearing
+      // to 0 on a single tap (resetNorthPitch), another way to lose your camera. Buttons ease-zoom
+      // and preserve pitch/bearing, so tapping them can't teleport either.
+      M.addControl(new maplibregl.NavigationControl({showCompass:false, showZoom:true}), 'top-right');
       M.on('load', function(){
+        // Belt-and-braces: hard-disable the rotate/pitch gesture handlers even if a constructor
+        // flag is ignored by a future MapLibre. disableRotation() keeps pinch-zoom, drops the twist.
+        try{ M.touchZoomRotate.disableRotation(); }catch(e){}
+        try{ M.dragRotate.disable(); }catch(e){}
+        try{ M.touchPitch.disable(); }catch(e){}
         try{ M.setTerrain({ source:'dem', exaggeration:EXAG[exagIx] }); }catch(e){}
         addBaseMarkers();
         applyDrape();

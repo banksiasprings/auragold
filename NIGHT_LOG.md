@@ -693,3 +693,30 @@ Steven's feedback: 3D was great but "no slider to change your angle — can't go
 Motorola real-hardware FPS gate from v41 still stands (headless SwiftShader isn't phone-representative); the higher z17 is the one new thing worth a glance on-device.
 
 Bumped APP_VERSION/SHELL_VERSION/SHELL_REV → v41.2/v41.2/v41.2.
+
+---
+
+## v41.3 — 🌍 3D camera stability (no more teleports) — 2026-07-02
+
+Steven's feedback: the 3D angle "works really well… really happy," but zooming in "sometimes repositions to a whole new camera shot in a different spot," and pan/zoom is "not very smooth, sometimes it jumps." Reproduced + fixed against the MapLibre sidecar; 2D + NPI model untouched. Kept the v41.2 tilt slider and z17 max zoom and the v41.1 button stack.
+
+### Reproduced (headless Chrome + SwiftShader, CDP multitouch @ 390×844 DPR2)
+Instrumented `window.__view3dMap` and dispatched real two-finger gestures:
+- **Root cause CONFIRMED — `touchPitch` bleed.** A two-finger vertical swipe (which a real pinch/reposition constantly does) fired `touchPitch` and **slammed pitch 62° → 85°** (maxed out) with *zero* zoom change. At high tilt the visible centre swings to the horizon, so the *same* coordinate reads as a totally different place — exactly Steven's "whole new camera shot in a different spot."
+- **Over-eager rotate handlers.** `touchZoomRotate` rotation + `dragRotate` were both live, so any imperfect (twisting) pinch wandered the bearing.
+- **Compass landmine.** `NavigationControl({visualizePitch:true})` → a single compass tap calls `resetNorthPitch()` = pitch AND bearing to 0. One stray tap flattens the whole view.
+- Terrain exag 2× amplifies any center re-anchor on zoom (secondary).
+
+### Fix — lock the camera to zoom + pan + slider
+- Constructor: `dragRotate:false, pitchWithRotate:false, touchPitch:false, boxZoom:false` (kept `dragPan:true, touchZoomRotate:true`). Belt-and-braces on load: `touchZoomRotate.disableRotation()` (keeps pinch-zoom, drops the twist) + `dragRotate.disable()` + `touchPitch.disable()`.
+- NavigationControl → `{showCompass:false, showZoom:true}` — zoom +/- only (they ease-zoom preserving pitch/bearing), no compass reset landmine.
+- Result: **pinch = pure zoom, one-finger drag = pure pan, tilt = the v41.2 slider only, bearing locked north-up.** Nothing fights. (Two-finger tilt is gone — the slider was already the primary tilt control and was never the problem.)
+
+### Verified ✓ (same headless CDP rig)
+- Gesture config: `touchPitch:false`, `dragRotate:false`, `touchZoomRotate:true` (zoom kept), `dragPan:true`, **no compass in the DOM**, zoom buttons present.
+- **Two-finger vertical swipe → dPitch = 0°** (was +23° pre-fix). Teleport source dead.
+- **Twisting pinch → dBearing = 0°, dZoom = +1.64** — rotation bleed killed, pinch-zoom still works.
+- Pan holds pitch/bearing at 62°/0°. Canvas renders clean (780×1688), **0 non-tile console errors**. Screenshot: terrain + satellite draped in 3D, tilt slider @62°, zoom-only nav control, pins all present.
+- (CDP multitouch intermittently stalls under SwiftShader — a headless artifact, not the app; the definitive bleed measurements came through before it hit. Real-device feel still on Steven's Motorola gate.)
+
+Bumped APP_VERSION/SHELL_REV → v41.3/v41.3.
