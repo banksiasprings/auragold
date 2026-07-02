@@ -76,7 +76,7 @@ const SHELL_VERSION = 'v41.4';
 // the heatmap reads over terrain lighting. Adds a topo base + the legal geojson to the MapLibre style;
 // no new cache rules — the DEM bypass below is unchanged, and topo tiles / the legal geojson cache the
 // same way their 2D counterparts already do. UX-only; shell-rev bump.
-const SHELL_REV = 'v41.4';
+const SHELL_REV = 'v42';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 

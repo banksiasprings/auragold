@@ -750,3 +750,26 @@ Steven's feedback: "The heat map settings are not really that great — the sate
 Real-device FPS/memory with everything on (unchanged from v41). Headless SwiftShader is CPU-rendered, not phone-representative.
 
 Bumped APP_VERSION/SHELL_REV/SHELL_VERSION → v41.4.
+
+
+## v42 — 🎯 Baseline anomaly gate (learn quiet ground → only classify deviations) — 2026-07-02
+
+Steven approved a baseline anomaly-detection layer on top of the v26 ML classifier (inspired by nickvellios/metal-detector-ai). Goal: run the GPX 6000 **hotter** without drowning in false positives — first learn "quiet ground for THIS spot", then only send windows that *deviate* from it to the classifier. **Purely additive: gate OFF ⇒ classic v26 behaviour** (regression escape hatch).
+
+### The two stages
+1. **Calibrate a baseline** (Settings → 🎯 Baseline anomaly gate → *Calibrate baseline here*): records ~25 s of quiet ground at the current GPS, slices it into ~250 ms windows, and learns the mean+variance of an **18-dim per-window feature vector** (rms, spectral centroid, rolloff, flux, zcr, + 13 MFCC). Stored in the **existing `auragold_models` store** (id-prefixed `auragold-baseline-…`) — no new object store, no DB-version bump. Auto-selects the nearest baseline within 100 m of current GPS; a manual **Set active** pin overrides; none in range ⇒ gate inert (falls back to v26) + a one-time nudge.
+2. **Gate** (live loop, ~5 Hz): each rolling ~250 ms ring-snapshot is scored against the active baseline with a **diagonal-covariance Mahalanobis distance**, then mapped through its **χ² null distribution to a normal-σ scale** so "3.0σ" genuinely means the ~99.7 % (two-sided) surprise level for *any* dimensionality. σ > threshold (debounced, shared with the amp auto-flag) ⇒ capture the surrounding clip → normal v26 4-class classify. Sensitivity slider **1.5σ (loose) … 3.0σ (default) … 5σ (tight)**. Live **🎯 σ chip** on the map shows `0.8σ / gate 3.0σ` (green) → red when over, for tuning.
+
+### Why χ²→σ (the subtle bug avoided)
+Raw diagonal-Mahalanobis for D dims centres near √D on normal ground (√18 ≈ 4.2), so a bare "3.0" threshold would fire on **everything**. Mapping the distance through its χ²_k null and back to a normal quantile keeps quiet ground at ≈0.67σ and puts "3σ = 99.7 %" exactly where the slider label claims. Diagonal covariance is deliberate (brief-blessed for speed; no matrix inversion ⇒ no ill-conditioning). Graceful fallbacks: variance ridge so a near-constant feature can't explode the z-score / divide by zero; χ² underflow clamp; NaN features → baseline mean; degenerate baseline → per-feature max-z.
+
+### Verified ✓
+- **Node stats harness** (`scratchpad/test_math.js`, 31/31): probit vs known quantiles, χ² survival vs known values, and the key one — an **empirical FP@3σ = 0.265 %** on 300 k Gaussian quiet-ground windows (theory 0.27 %). Confirms the calibration is honest, not the naive-Mahalanobis trap.
+- **Real Chrome (preview @ v42, 0 console errors):** in-browser math byte-identical to Node; `windowVec` → real 18-dim meyda vectors; baseline built (100 windows, self-σ 0.573) → persisted → **survives reload** → **does NOT leak into the classifier registry** (store isolation clean).
+- **Home-calibration confusion matrix** (baseline = 25 s synthetic quiet; 15 held-out clips/class): at **3.0σ** — quiet **0 %** trigger (mean max-σ 1.85, never crossed 3), gold/junk **100 %** (σ≈8), hotRock **100 %** (σ≈11.5). Clean gap; threshold sits in it. (At 2.0σ quiet climbs to 27 %; at 4.0σ still 0 % / 100 %.)
+- UI wired (slider labels, gate toggle, auto-nearest, pin/delete), **no 375 px overflow**, chip normal/hot states correct. v26/v30/v31 surface intact (5 combo cards, calibration, smoke-test, detector setup, auto-flag radios).
+
+### Honest verdict
+On the synthetic fixture the gate is a clean **~100 %→0 % false-fire reduction on quiet ground at 100 % target sensitivity** — but that separation is **optimistic** (same caveat as every synthetic audio result since v26; real detector audio is messier). The downstream *classifier*-FP reduction scales with how often v26 mislabels ground chatter, which is unmeasurable until real detector audio (still gated on the v24 mic→USB-C hardware bridge). Two limitations logged for the scheduled Opus-4.8 stats review: (a) the χ²_k calibration assumes independent dims — MFCCs are DCT-decorrelated but the 5 scalar bands retain correlation, so effective DOF < k and the σ scale is slightly optimistic on correlated real audio; (b) a draft design doc (`plans/v42_anomaly_gate_design.md`, Fable-5, *unapproved*) proposes a leaner 8-dim **full-covariance-with-shrinkage** variant instead of this brief-faithful 18-dim diagonal — the review should adjudicate which wins.
+
+Bumped APP_VERSION/SHELL_REV → v42.

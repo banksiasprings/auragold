@@ -616,6 +616,31 @@
   .ml-cm td.off { background:#fdeaea; color:#9b2b22; }
   .ml-cm-key { font-size:10.5px; color:#999; text-align:center; margin-top:4px; }
 
+  /* ===== v42 — baseline anomaly gate ===== */
+  .ag-vtag { font-size:10px; font-weight:800; color:#8a6d1f; background:#f6edcf; border:1px solid #e2d19a; border-radius:8px; padding:1px 6px; vertical-align:middle; margin-left:5px; letter-spacing:.03em; }
+  .anom-scale { display:flex; justify-content:space-between; font-size:10px; color:#9aa; margin-top:2px; }
+  .anom-sigval { font-weight:800; color:#8a6d1f; font-variant-numeric:tabular-nums; }
+  .anom-baselist { display:flex; flex-direction:column; gap:6px; margin:2px 0 8px; }
+  .anom-b { display:flex; align-items:center; gap:8px; border:1px solid #e7e0cf; border-radius:10px; padding:7px 9px; background:#fcfaf4; }
+  .anom-b.active { border-color:#c9b27a; background:#fbf6e0; }
+  .anom-b-m { flex:1 1 auto; min-width:0; }
+  .anom-b-m b { display:block; font-size:12.5px; color:#5a4f33; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .anom-b-m small { display:block; font-size:10.5px; color:#8a8168; }
+  .anom-b-act { display:flex; gap:5px; flex:0 0 auto; }
+  .anom-b-act button { border:1px solid #d9cfa6; background:#fff; border-radius:8px; padding:5px 8px; font-size:11px; font-weight:700; color:#5a4f33; cursor:pointer; }
+  .anom-b-act .anom-pin.on { background:#caa53a; color:#fff; border-color:#caa53a; }
+  .anom-b-act .anom-del { color:#b3261e; }
+  .anom-cal { border:1px dashed #c9b27a; border-radius:10px; padding:9px 11px; margin:6px 0; background:rgba(202,165,58,.06); }
+  .anom-cal #anomCalTimer { color:#e67e22; font-weight:800; font-size:12px; letter-spacing:.04em; }
+  .anom-summary { border:1px solid #bfe6bf; border-radius:10px; padding:8px 11px; margin:6px 0; background:#f4fbf4; font-size:13px; color:#1f5a2c; }
+  .au-anom-badge { font-size:10px; font-weight:700; padding:1px 6px; border-radius:9px; background:#fbf0d3; color:#8a6d1f; white-space:nowrap; }
+  #anomChip { position:fixed; left:50%; bottom:16px; transform:translateX(-50%) translateY(8px); z-index:1200;
+    background:rgba(31,36,48,.9); color:#eafbef; font:700 12.5px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:8px 13px; border-radius:20px; letter-spacing:.02em; box-shadow:0 3px 14px rgba(0,0,0,.3); white-space:nowrap;
+    opacity:0; pointer-events:none; transition:opacity .18s, transform .18s, background .18s; font-variant-numeric:tabular-nums; }
+  #anomChip.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #anomChip.hot { background:rgba(179,38,30,.94); color:#fff; }
+
   /* ===== v27 — universal delete-confirmation modal (AG.confirmDelete) ===== */
   .cd-ov { position:fixed; inset:0; z-index:2600; background:rgba(20,18,10,.58); display:none;
     align-items:center; justify-content:center; padding:20px; -webkit-tap-highlight-color:transparent; }
@@ -1183,6 +1208,31 @@
     </div>
 
     <div class="ag-sec">
+      <h3>🎯 Baseline anomaly gate <span class="ag-vtag">v42</span></h3>
+      <div class="ag-card">
+        <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">Learn what <b>quiet ground</b> sounds like at a spot, then only flag hits that <b>deviate</b> from it. Run your detector hotter without drowning in false positives — ground chatter stays below the line, real targets stand out. On-device; nothing uploads.</p>
+        <label class="af-check"><input type="checkbox" id="anomGateOn"><span>Use anomaly gate <small>(off = classic v26 — every amplitude / manual hit is classified)</small></span></label>
+        <div class="au-row" style="align-items:flex-start;margin-top:4px"><span>Sensitivity</span>
+          <div style="flex:1 1 auto">
+            <input type="range" id="anomSigma" min="15" max="50" step="5" value="30" style="width:100%">
+            <div class="anom-scale"><span>1.5σ looser</span><span id="anomSigmaVal" class="anom-sigval">3.0σ</span><span>5σ tighter</span></div>
+            <p class="ag-note" id="anomSigmaHint" style="margin:2px 2px 0"></p>
+          </div></div>
+        <div class="ml-sub">Baselines</div>
+        <div id="anomBaseList" class="anom-baselist"></div>
+        <button id="anomCalBtn" class="ag-act" type="button" style="font-weight:700">🎯 Calibrate baseline here<span class="sub">Records ~25&nbsp;s of quiet ground at your GPS and learns its signature</span></button>
+        <div id="anomCalActive" class="anom-cal" style="display:none">
+          <div class="cal-live"><span id="anomCalTimer">● learning 25s</span><div class="au-meter cal"><div id="anomCalMeter"></div></div></div>
+          <p class="ag-note" style="margin:6px 2px">Hold the detector over <b>quiet, blank ground</b> and sweep normally — don't pass over any target. Learning the noise floor…</p>
+          <button id="anomCalCancel" class="ag-act" type="button" style="color:#b3261e">Cancel</button>
+        </div>
+        <div id="anomCalSummary" class="anom-summary" style="display:none"></div>
+        <label class="af-check" style="margin-top:6px"><input type="checkbox" id="anomAutoNearest" checked><span>Auto-use the nearest baseline within 100&nbsp;m <small>(otherwise use the one you pin)</small></span></label>
+        <p class="ag-note" style="margin:8px 2px 2px">With the gate on and a baseline in range, only deviations above the line are auto-captured and sent to the 🧠 classifier. No baseline in range → falls back to classic behaviour. Watch the live <b>🎯 σ chip</b> while sweeping to tune the slider.</p>
+      </div>
+    </div>
+
+    <div class="ag-sec">
       <h3>🧠 Smart classifier</h3>
       <div class="ag-card">
         <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">On-device classifier learns from your labels. A <b>separate model is trained per detector + coil</b> (their audio &amp; ground coverage differ). Run Home Calibration with known gold + junk before the trip. All data stays on this device — nothing uploads.</p>
@@ -1263,7 +1313,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v39</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v42</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -1445,7 +1495,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41.4';
+var APP_VERSION = 'v42';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -4338,6 +4388,11 @@ var powerLayers = (function () {
   if (['gold-monster-1000', 'gpx-6000', 'gpz-7000', 'auto-best'].indexOf(acfg.detector) < 0) acfg.detector = 'gold-monster-1000'; // Steven swings the Monster more
   if (['11in-mono', '14in-dd', '17in'].indexOf(acfg.coil) < 0) acfg.coil = '11in-mono';  // GPX 6000 default coil
   if (typeof acfg.askBeforeCapture !== 'boolean') acfg.askBeforeCapture = false;  // confirm detector+coil when arming
+  // v42 baseline anomaly gate — learn "quiet ground for this spot", then only classify deviations.
+  if (typeof acfg.anomalyGate !== 'boolean') acfg.anomalyGate = false;                 // gate OFF = classic v26 behaviour
+  if (typeof acfg.anomalySigma !== 'number' || acfg.anomalySigma < 1.5 || acfg.anomalySigma > 5) acfg.anomalySigma = 3.0; // ~99.7%
+  if (typeof acfg.baselineAutoNearest !== 'boolean') acfg.baselineAutoNearest = true;   // auto-use nearest baseline within 100 m
+  if (typeof acfg.pinnedBaselineId !== 'string') acfg.pinnedBaselineId = '';            // manual override of auto-nearest
   function saveCfg() { try { localStorage.setItem(AKEY, JSON.stringify(acfg)); } catch (e) {} }
 
   // ---- v32 detector + coil model ----
@@ -4369,6 +4424,11 @@ var powerLayers = (function () {
     var d = DETECTORS[det]; if (!d) return '';
     var txt = d.short + (det === 'gpx-6000' && ev.coil ? ' ' + (COILS[ev.coil] || ev.coil) : '');
     return '<span class="au-det-badge" title="' + d.label + (ev.coil ? ' · ' + (COILS[ev.coil] || ev.coil) : '') + '">🛰 ' + txt + '</span>';
+  }
+  // v42: chip showing the baseline-deviation sigma that triggered an auto-capture.
+  function anomBadge(ev) {
+    if (ev == null || ev.anomalyScore == null) return '';
+    return '<span class="au-anom-badge" title="Passed the baseline anomaly gate at this deviation">🎯 ' + (+ev.anomalyScore).toFixed(1) + 'σ</span>';
   }
 
   // ---- IndexedDB store helpers (reuse the shared connection) ----
@@ -4679,7 +4739,7 @@ var powerLayers = (function () {
     var badge = lab ? '<span class="ev-b ok" style="background:' + LABEL_META[lab].c + '">' + LABEL_META[lab].e + ' ' + LABEL_META[lab].t + '</span>'
       : '<span class="ev-b">' + (ev.type === 'auto' ? '🔔 Auto-flag' : '🎯 Manual hit') + '</span>';
     d.innerHTML = '<b>' + (lab ? LABEL_META[lab].e : '🎵') + ' Signal hit</b> ' + badge + srcTag +
-      '<div class="ev-meta">' + fmtTs(ev.timestamp) + (ev.durationMs ? ' · ' + (ev.durationMs / 1000).toFixed(1) + 's' : '') + '</div>' +
+      '<div class="ev-meta">' + fmtTs(ev.timestamp) + (ev.durationMs ? ' · ' + (ev.durationMs / 1000).toFixed(1) + 's' : '') + ' ' + anomBadge(ev) + '</div>' +
       '<div class="ev-coords">' + (ev.lat != null ? ev.lat.toFixed(5) + ', ' + ev.lng.toFixed(5) : 'no GPS fix') + (ev.acc ? ' · ±' + Math.round(ev.acc) + 'm' : '') + '</div>';
     var mlb = mlBadgeHTML(ev); if (mlb) { var mr = document.createElement('div'); mr.className = 'ev-ml'; mr.innerHTML = '🧠 model: ' + mlb; d.appendChild(mr); }
     if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'metadata'; au.style.cssText = 'width:100%;margin:6px 0;height:34px'; au.src = blobURL(ev); d.appendChild(au); }
@@ -4728,6 +4788,8 @@ var powerLayers = (function () {
       durationMs: dur, sr: sampleRate, type: type, source: opts.source || 'field',
       label: opts.label || null, confirmed: opts.label === 'gold' ? true : null,
       detector: det, coil: coil,   // v32: which detector + coil swung this hit
+      anomalyScore: (opts.anomalyScore != null ? opts.anomalyScore : null),   // v42: baseline-deviation sigma that triggered this (auto)
+      baselineId: opts.baselineId || null,
       features: null, mlConfidence: null, mlTop: null, mlModelCombo: null, notes: '', photoIds: [], detScore: null };
     // v29: stamp the detection-window score at capture, so post-trip you can correlate
     // "did the score predict where the gold was?" (the feedback loop that personalises the model).
@@ -4797,7 +4859,7 @@ var powerLayers = (function () {
       var detChip = (ev.detScore != null) ? ' <span class="au-det" title="Detection-window score when this was captured">🌙 ' + ev.detScore + '</span>' : '';
       var row = document.createElement('div'); row.className = 'au-ev';
       row.innerHTML = '<span class="e">' + (lab ? LABEL_META[lab].e : '🎵') + '</span>' +
-        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + ' ' + detBadge(ev) + detChip + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
+        '<div class="m"><b>' + fmtTs(ev.timestamp) + '</b><small>' + coords + ' · ' + (ev.durationMs / 1000).toFixed(1) + 's ' + tag + ' ' + detBadge(ev) + anomBadge(ev) + detChip + '</small>' + (mlb ? '<small>' + mlb + '</small>' : '') + '</div>';
       if (ev.audioBlob) { var au = document.createElement('audio'); au.controls = true; au.preload = 'none'; au.src = blobURL(ev); row.appendChild(au); }
       row.querySelector('.m').addEventListener('click', function () { if (ev.lat != null) { aOpen(false); map.setView([ev.lat, ev.lng], Math.max(map.getZoom(), 15)); if (ev._marker) ev._marker.openPopup(); } });
       el.appendChild(row);
@@ -5225,6 +5287,336 @@ var powerLayers = (function () {
   function modelPut(rec) { return db().then(function (d) { return new Promise(function (res, rej) { var tx = d.transaction(S_MODELS, 'readwrite'); tx.objectStore(S_MODELS).put(rec); tx.oncomplete = function () { res(rec); }; tx.onerror = function () { rej(tx.error); }; }); }); }
   function modelGet(id) { return db().then(function (d) { return new Promise(function (res, rej) { var tx = d.transaction(S_MODELS, 'readonly'); var rq = tx.objectStore(S_MODELS).get(id); rq.onsuccess = function () { res(rq.result || null); }; rq.onerror = function () { rej(rq.error); }; }); }); }
   function modelDel(id) { return db().then(function (d) { return new Promise(function (res, rej) { var tx = d.transaction(S_MODELS, 'readwrite'); tx.objectStore(S_MODELS).delete(id); tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); }; }); }); }
+  // v42: iterate every record in the models store (used to load baselines, which share the store).
+  function modelAll() { return db().then(function (d) { return new Promise(function (res, rej) {
+    var out = [], tx = d.transaction(S_MODELS, 'readonly'), cur = tx.objectStore(S_MODELS).openCursor();
+    cur.onsuccess = function (e) { var c = e.target.result; if (c) { out.push(c.value); c.continue(); } else res(out); };
+    cur.onerror = function () { rej(cur.error); };
+  }); }); }
+
+  // ============================================================================
+  // v42: BASELINE ANOMALY GATE — learn "quiet ground for this spot", then only send
+  // deviations to the v26 classifier so Steven can run the detector hotter without
+  // drowning in false positives. PURELY ADDITIVE: gate OFF ⇒ classic v26 behaviour.
+  //   Stage 1 (calibrate): record ~25 s of quiet ground → learn the feature distribution
+  //           of an 18-dim per-window vector (rms, centroid, rolloff, flux, zcr, 13 MFCC).
+  //   Stage 2 (gate): during detection, score each rolling ~250 ms window against the
+  //           nearest baseline with a DIAGONAL-covariance Mahalanobis distance, mapped
+  //           through its χ² null distribution to a normal-σ scale. σ > threshold ⇒
+  //           capture the surrounding clip → normal v26 4-class classify.
+  // Baselines live in the existing S_MODELS store (id-prefixed) → no new object store,
+  // no DB-version bump. Stats are Node-verified (scratchpad/test_math.js) incl. an
+  // empirical FP@3σ = 0.27 % calibration on Gaussian quiet ground.
+  // ============================================================================
+
+  // ---- statistics (Node-verified) ----
+  function _invNorm(p) {   // inverse standard-normal CDF (probit) — Acklam, |err| < 1.15e-9
+    if (p <= 0) return -Infinity; if (p >= 1) return Infinity;
+    var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+    var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+    var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+    var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+    var plow = 0.02425, phigh = 1 - plow, q, r;
+    if (p < plow) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p <= phigh) { q = p - 0.5; r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+    q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  function _gammaln(x) {   // Lanczos
+    var g = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, tmp = x + 5.5; tmp -= (x + 0.5) * Math.log(tmp); var ser = 1.000000000190015;
+    for (var j = 0; j < 6; j++) { y++; ser += g[j] / y; }
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function _gser(a, x) {   // regularized lower incomplete gamma via series (x < a+1)
+    if (x <= 0) return 0; var gln = _gammaln(a), ap = a, sum = 1 / a, del = sum;
+    for (var n = 0; n < 300; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-14) break; }
+    return sum * Math.exp(-x + a * Math.log(x) - gln);
+  }
+  function _gcf(a, x) {    // regularized upper incomplete gamma via continued fraction (x >= a+1)
+    var gln = _gammaln(a), FPMIN = 1e-300, b = x + 1 - a, c = 1 / FPMIN, d = 1 / b, h = d;
+    for (var i = 1; i <= 300; i++) { var an = -i * (i - a); b += 2; d = an * d + b; if (Math.abs(d) < FPMIN) d = FPMIN; c = b + an / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d; var del = d * c; h *= del; if (Math.abs(del - 1) < 1e-14) break; }
+    return Math.exp(-x + a * Math.log(x) - gln) * h;
+  }
+  function _regUpperGamma(a, x) { if (x < 0 || a <= 0) return 1; if (x < a + 1) return 1 - _gser(a, x); return _gcf(a, x); }
+  function chiSqSurvival(x, k) { if (x <= 0) return 1; return _regUpperGamma(k / 2, x / 2); }   // P(χ²_k > x)
+  // Effective per-dim variance: sample variance + a small per-dim ridge, so a near-constant
+  // feature can't explode the z-score and we never divide by zero (matrix-free ⇒ no ill-conditioning).
+  var ANOM_RIDGE_FRAC = 0.05;
+  function _effVar(meanI, varI) { var v = varI > 0 ? varI : 0; var scale = Math.max(Math.abs(meanI), Math.sqrt(v), 1e-6); return v + Math.pow(ANOM_RIDGE_FRAC * scale, 2) + 1e-12; }
+  // Anomaly score: diagonal Mahalanobis → χ² tail → two-sided-normal σ. Raw Mahalanobis for D dims
+  // centres near √D on normal ground, so a bare threshold would fire on everything; mapping through the
+  // null χ²_k makes "3.0σ" genuinely the ~99.7 % surprise level for any D (quiet ground ≈ 0.67σ).
+  // HONEST LIMITATION (for the overseer stats review): the χ²_k calibration assumes the k dims are
+  // independent. The 13 MFCCs are DCT-decorrelated (≈independent), but the 5 scalar bands (rms/centroid/
+  // rolloff/flux/zcr) retain mutual correlation, so the effective DOF is < k and the σ scale is slightly
+  // optimistic on correlated real audio (true FP@3σ ≥ the nominal 0.27 %). Diagonal is deliberate — the
+  // brief blessed it for speed and it needs no matrix inversion (⇒ no ill-conditioning). A whitened
+  // full-covariance variant (fewer, shrinkage-regularised dims) is the natural upgrade if the review wants it.
+  function mahalSigma(vec, base) {
+    var mean = base.mean, varr = base.var, D = Math.min(vec.length, mean.length), k = 0, m2 = 0, maxZ = 0;
+    for (var i = 0; i < D; i++) {
+      var ev = _effVar(mean[i], varr[i]); if (!(ev > 0)) continue;
+      var x = vec[i]; if (!isFinite(x)) x = mean[i];
+      var z = (x - mean[i]) / Math.sqrt(ev); if (!isFinite(z)) continue;
+      m2 += z * z; k++; var az = Math.abs(z); if (az > maxZ) maxZ = az;
+    }
+    if (k === 0) return { sigma: 0, m2: 0, k: 0, maxZ: 0, method: 'degenerate' };
+    var p = chiSqSurvival(m2, k); if (!(p > 0)) p = 1e-15; if (p > 1) p = 1;
+    var sigma = _invNorm(1 - p / 2);
+    if (!isFinite(sigma)) return { sigma: Math.min(maxZ, 12), m2: m2, k: k, maxZ: maxZ, method: 'maxz-fallback' };   // graceful fallback
+    sigma = Math.max(0, Math.min(sigma, 12));
+    return { sigma: sigma, m2: m2, k: k, maxZ: maxZ, method: 'mahal' };
+  }
+  function baselineStats(vecs) {   // sample mean + variance (n-1) of a list of window vectors
+    var n = vecs.length; if (!n) return null;
+    var dim = vecs[0].length, mean = [], varr = [], i, j;
+    for (i = 0; i < dim; i++) { mean[i] = 0; varr[i] = 0; }
+    for (j = 0; j < n; j++) for (i = 0; i < dim; i++) mean[i] += vecs[j][i];
+    for (i = 0; i < dim; i++) mean[i] /= n;
+    for (j = 0; j < n; j++) for (i = 0; i < dim; i++) { var dd = vecs[j][i] - mean[i]; varr[i] += dd * dd; }
+    var denom = n > 1 ? n - 1 : 1; for (i = 0; i < dim; i++) varr[i] /= denom;
+    return { mean: mean, var: varr, n: n, dim: dim };
+  }
+
+  // ---- per-window feature vector (18-dim), self-contained (mirrors extractFeatures' framing) ----
+  var ANOM_WIN_MS = 250, ANOM_TICK_MS = 200, BASELINE_SECONDS = 25, BASELINE_RADIUS_M = 100;
+  var ANOM_FEAT_NAMES = (function () { var a = ['rms', 'centroid', 'rolloff', 'flux', 'zcr']; for (var i = 0; i < 13; i++) a.push('mfcc' + i); return a; })();
+  function windowVec(Meyda, samples, sr) {
+    var FRAME = 512, HOP = 256, N_MFCC = 13;
+    function mean(a) { if (!a.length) return 0; var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+    Meyda.sampleRate = sr; Meyda.bufferSize = FRAME; Meyda.numberOfMFCCCoefficients = N_MFCC; Meyda.windowingFunction = 'hanning';
+    var rmsA = [], centA = [], rollA = [], zcrA = [], fluxA = [], mf = []; for (var c = 0; c < N_MFCC; c++) mf.push([]);
+    var win = new Float32Array(FRAME), prevSpec = null;
+    var nFrames = samples.length >= FRAME ? 1 + Math.floor((samples.length - FRAME) / HOP) : 0;
+    for (var f = 0; f < nFrames; f++) {
+      win.set(samples.subarray(f * HOP, f * HOP + FRAME));
+      var ft; try { ft = Meyda.extract(['rms', 'spectralCentroid', 'spectralRolloff', 'zcr', 'mfcc', 'amplitudeSpectrum'], win); } catch (e) { continue; }
+      if (!ft) continue;
+      rmsA.push(ft.rms || 0);
+      centA.push(isFinite(ft.spectralCentroid) ? ft.spectralCentroid : 0);
+      rollA.push(isFinite(ft.spectralRolloff) ? ft.spectralRolloff : 0);
+      zcrA.push(ft.zcr || 0);
+      if (ft.mfcc) for (var i = 0; i < N_MFCC; i++) mf[i].push(ft.mfcc[i] || 0);
+      if (ft.amplitudeSpectrum) {
+        if (prevSpec) { var s = 0, L = Math.min(prevSpec.length, ft.amplitudeSpectrum.length); for (var b = 0; b < L; b++) { var dd = (ft.amplitudeSpectrum[b] || 0) - (prevSpec[b] || 0); s += dd * dd; } fluxA.push(Math.sqrt(s)); }
+        prevSpec = Array.prototype.slice.call(ft.amplitudeSpectrum);
+      }
+    }
+    var vec = [mean(rmsA), mean(centA), mean(rollA), mean(fluxA), mean(zcrA)];
+    for (var m = 0; m < N_MFCC; m++) vec.push(mean(mf[m]));
+    for (var z = 0; z < vec.length; z++) if (!isFinite(vec[z])) vec[z] = 0;
+    return vec;
+  }
+  function buildBaselineFromSamples(Meyda, samples, sr) {
+    var wlen = Math.max(512, Math.floor(ANOM_WIN_MS / 1000 * sr)), vecs = [];
+    for (var off = 0; off + wlen <= samples.length; off += wlen) vecs.push(windowVec(Meyda, samples.subarray(off, off + wlen), sr));
+    var stats = baselineStats(vecs); if (!stats) return null;
+    // self-consistency: mean σ of the baseline's own windows against itself (expect ~0.7-0.8; sanity flag).
+    var ss = 0; vecs.forEach(function (v) { ss += mahalSigma(v, stats).sigma; });
+    stats.selfSigma = vecs.length ? ss / vecs.length : 0;
+    return stats;
+  }
+  // Score a whole clip: slide non-overlapping ~250 ms windows, take the MAX σ (the gate fires on
+  // the strongest window in the clip). Returns {maxSigma, meanSigma, windows, pass}.
+  function gateClipSamples(Meyda, samples, sr, base, threshold) {
+    var wlen = Math.max(512, Math.floor(ANOM_WIN_MS / 1000 * sr)), maxS = 0, sum = 0, nn = 0;
+    for (var off = 0; off + wlen <= samples.length; off += wlen) { var r = mahalSigma(windowVec(Meyda, samples.subarray(off, off + wlen), sr), base); if (r.sigma > maxS) maxS = r.sigma; sum += r.sigma; nn++; }
+    return { maxSigma: maxS, meanSigma: nn ? sum / nn : 0, windows: nn, pass: maxS > (threshold != null ? threshold : acfg.anomalySigma) };
+  }
+
+  // ---- baseline registry (shares S_MODELS; id-prefixed so model machinery never touches it) ----
+  var BASELINE_PREFIX = 'auragold-baseline-';
+  var baselines = [];
+  function haversineM(aLat, aLng, bLat, bLng) {
+    var R = 6371000, toR = Math.PI / 180, dLat = (bLat - aLat) * toR, dLng = (bLng - aLng) * toR;
+    var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(aLat * toR) * Math.cos(bLat * toR) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+  }
+  function autoNearestBaseline() {
+    var f = AG.lastFix; if (!f) return null;
+    var best = null, bd = BASELINE_RADIUS_M;
+    baselines.forEach(function (b) { if (b.lat == null || b.lng == null) return; var d = haversineM(f.lat, f.lng, b.lat, b.lng); if (d <= bd) { bd = d; best = b; best._distM = d; } });
+    return best;
+  }
+  // Which baseline scores live windows: a manual pin wins; else the nearest within 100 m; else none (gate inert).
+  function activeBaseline() {
+    if (acfg.pinnedBaselineId) { var p = baselines.filter(function (x) { return x.id === acfg.pinnedBaselineId; })[0]; if (p) return p; }
+    if (acfg.baselineAutoNearest) return autoNearestBaseline();
+    return null;
+  }
+  function loadBaselines() {
+    return modelAll().then(function (recs) {
+      baselines = (recs || []).filter(function (r) { return r && r.kind === 'baseline' && r.mean && r.var; });
+      if (acfg.pinnedBaselineId && !baselines.filter(function (x) { return x.id === acfg.pinnedBaselineId; }).length) { acfg.pinnedBaselineId = ''; saveCfg(); }
+      refreshAnomUI();
+    }).catch(function (e) { try { console.warn('[v42] baseline load failed', e); } catch (x) {} });
+  }
+  function saveBaseline(rec) { return modelPut(rec).then(function () { baselines.push(rec); refreshAnomUI(); return rec; }); }
+  function deleteBaseline(id) {
+    baselines = baselines.filter(function (b) { return b.id !== id; });
+    if (acfg.pinnedBaselineId === id) { acfg.pinnedBaselineId = ''; saveCfg(); }
+    return modelDel(id).then(function () { refreshAnomUI(); });
+  }
+
+  // ---- calibration capture (UI-driven ~25 s countdown) ----
+  var calibrating = false, anomCalIv = null;
+  function calibrateBaseline() {
+    if (calibrating) return;
+    ensureMeydaMain();
+    start().then(function (ok) {
+      if (!ok) { toast('🎙 Microphone unavailable — grant the mic (Test capture) first'); return; }
+      calibrating = true;
+      var a = document.getElementById('anomCalActive'); if (a) a.style.display = 'block';
+      var btn = document.getElementById('anomCalBtn'); if (btn) btn.style.display = 'none';
+      var sum = document.getElementById('anomCalSummary'); if (sum) sum.style.display = 'none';
+      var t0 = Date.now();
+      anomCalIv = setInterval(function () {
+        var left = Math.max(0, BASELINE_SECONDS - (Date.now() - t0) / 1000);
+        var tm = document.getElementById('anomCalTimer'); if (tm) tm.textContent = '● learning ' + left.toFixed(0) + 's';
+        var mb = document.getElementById('anomCalMeter'); if (mb) mb.style.width = (running ? Math.min(100, Math.round(smoothedRMS * 100)) : 0) + '%';
+        if (left <= 0) { clearInterval(anomCalIv); anomCalIv = null; finishCalibration(); }
+      }, 150);
+    });
+  }
+  function cancelCalibration() {
+    if (anomCalIv) { clearInterval(anomCalIv); anomCalIv = null; }
+    calibrating = false;
+    var a = document.getElementById('anomCalActive'); if (a) a.style.display = 'none';
+    var btn = document.getElementById('anomCalBtn'); if (btn) btn.style.display = '';
+  }
+  function finishCalibration() {
+    calibrating = false;
+    var a = document.getElementById('anomCalActive'); if (a) a.style.display = 'none';
+    var btn = document.getElementById('anomCalBtn'); if (btn) btn.style.display = '';
+    var samples = snapshot(BASELINE_SECONDS);
+    if (!samples || samples.length < sampleRate * 3) { toast('Not enough quiet audio captured — try again'); return; }
+    ensureMeydaMain().then(function (M) {
+      var stats = buildBaselineFromSamples(M, samples, sampleRate);
+      if (!stats || !stats.n) { toast('Baseline build failed'); return; }
+      var ts = Date.now(), fx = fixAt(ts - BASELINE_SECONDS * 500);
+      var rec = { id: BASELINE_PREFIX + uid(), kind: 'baseline', version: 1,
+        label: 'Baseline · ' + fmtTs(ts), lat: fx ? fx.lat : null, lng: fx ? fx.lng : null, acc: fx ? fx.acc : null,
+        timestamp: ts, combo: currentCombo(), sr: sampleRate, dim: stats.dim, n: stats.n,
+        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var,
+        meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0], durationS: Math.round(samples.length / sampleRate) } };
+      // Without a GPS fix, auto-nearest can't find it — pin it so it's immediately usable.
+      if (rec.lat == null) { acfg.pinnedBaselineId = rec.id; saveCfg(); }
+      saveBaseline(rec).then(function () { showCalSummary(rec); toast('🎯 Baseline learned · ' + rec.n + ' windows'); });
+    });
+  }
+  function showCalSummary(rec) {
+    var el = document.getElementById('anomCalSummary'); if (!el) return;
+    var coords = rec.lat != null ? rec.lat.toFixed(5) + ', ' + rec.lng.toFixed(5) : 'no GPS fix (pinned as active)';
+    el.style.display = 'block';
+    el.innerHTML = '<b>🎯 Baseline learned</b><div class="ag-note" style="margin:4px 2px">' + rec.n + ' quiet-ground windows · ' + coords +
+      '<br>noise floor RMS ' + (rec.meta.rmsMean).toFixed(4) + ' · self-check ' + (rec.meta.selfSigma).toFixed(2) + 'σ (≈0.75 is healthy)</div>';
+  }
+
+  // ---- live scoring loop + gate ----
+  var anomLiveSigma = null, anomPromptShown = false, anomChipEl = null, meydaKick = false;
+  function panelVisible() {
+    var sp = document.getElementById('settingsPanel'), ap = document.getElementById('audioPanel');
+    return (sp && sp.classList.contains('open')) || (ap && ap.classList.contains('open'));
+  }
+  function anomalyTrigger(sigma, base) {
+    var t = Date.now(), fresh = (t - lastFlagTs) >= DEBOUNCE_MS;   // share the amp auto-flag debounce so triggers merge
+    lastFlagTs = t; if (!fresh) return;
+    saveEvent('auto', { anomalyScore: Math.round(sigma * 100) / 100, baselineId: base.id });
+  }
+  function anomalyLoop() {
+    try {
+      var base = running ? activeBaseline() : null;
+      var wantCompute = !!base && (acfg.anomalyGate || panelVisible());
+      if (wantCompute && window.Meyda) {
+        var block = snapshot(ANOM_WIN_MS / 1000);
+        if (block && block.length >= 512) {
+          var v = windowVec(window.Meyda, block, sampleRate);
+          var r = mahalSigma(v, base);
+          anomLiveSigma = r.sigma;
+          if (acfg.anomalyGate && r.sigma > acfg.anomalySigma) anomalyTrigger(r.sigma, base);
+        }
+      } else if (wantCompute && !window.Meyda) {
+        if (!meydaKick) { meydaKick = true; ensureMeydaMain().then(function () {}).catch(function () {}); }
+        anomLiveSigma = null;
+      } else {
+        anomLiveSigma = null;
+        // gate armed but no baseline in range → behave as v26-only, nudge once per session.
+        if (running && acfg.anomalyGate && !base && !anomPromptShown) { anomPromptShown = true; toast('🎯 No baseline within 100 m — calibrate one (Settings) or the gate stays inactive here'); }
+      }
+      updateAnomChip();
+    } catch (e) {}
+    setTimeout(anomalyLoop, ANOM_TICK_MS);
+  }
+  function updateAnomChip() {
+    if (!anomChipEl) { anomChipEl = document.createElement('div'); anomChipEl.id = 'anomChip'; anomChipEl.className = 'anom-chip'; document.body.appendChild(anomChipEl); }
+    var base = running ? activeBaseline() : null;
+    var show = !!base && anomLiveSigma != null && (acfg.anomalyGate || panelVisible());
+    if (!show) { anomChipEl.classList.remove('show'); return; }
+    var over = anomLiveSigma > acfg.anomalySigma;
+    anomChipEl.className = 'anom-chip show' + (over ? ' hot' : '');
+    anomChipEl.textContent = '🎯 ' + anomLiveSigma.toFixed(1) + 'σ / gate ' + acfg.anomalySigma.toFixed(1) + 'σ' + (acfg.anomalyGate ? '' : ' · gate off');
+  }
+
+  // ---- Anomaly-gate settings UI ----
+  function anomEsc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'; }); }
+  var ANOM_SIGMA_HINTS = [
+    { max: 2.0, t: 'Very loose — most swings trigger' },
+    { max: 3.0, t: 'Balanced (recommended)' },
+    { max: 4.0, t: 'Tight — only clear deviations' },
+    { max: 99, t: 'Very tight — only strong targets' }
+  ];
+  function setSigmaLabel() {
+    var v = acfg.anomalySigma;
+    var val = document.getElementById('anomSigmaVal'); if (val) val.textContent = v.toFixed(1) + 'σ';
+    var hint = document.getElementById('anomSigmaHint');
+    if (hint) { for (var i = 0; i < ANOM_SIGMA_HINTS.length; i++) if (v <= ANOM_SIGMA_HINTS[i].max) { hint.textContent = ANOM_SIGMA_HINTS[i].t; break; } }
+  }
+  function refreshAnomUI() {
+    var on = document.getElementById('anomGateOn'); if (on) on.checked = acfg.anomalyGate;
+    var an = document.getElementById('anomAutoNearest'); if (an) an.checked = acfg.baselineAutoNearest;
+    var sl = document.getElementById('anomSigma'); if (sl) sl.value = Math.round(acfg.anomalySigma * 10);
+    setSigmaLabel();
+    var list = document.getElementById('anomBaseList');
+    if (list) {
+      if (!baselines.length) { list.innerHTML = '<div class="ag-note" style="padding:6px 2px;color:#8a9199">No baselines yet. Stand on quiet, blank ground and tap <b>Calibrate baseline here</b>.</div>'; }
+      else {
+        var act = activeBaseline();
+        list.innerHTML = baselines.slice().sort(function (a, b) { return b.timestamp - a.timestamp; }).map(function (b) {
+          var isActive = act && act.id === b.id, isPinned = acfg.pinnedBaselineId === b.id;
+          var coords = b.lat != null ? b.lat.toFixed(4) + ', ' + b.lng.toFixed(4) : 'no GPS';
+          var dist = (isActive && b._distM != null) ? ' · ' + Math.round(b._distM) + 'm away' : '';
+          return '<div class="anom-b' + (isActive ? ' active' : '') + '">' +
+            '<div class="anom-b-m"><b>' + (isActive ? '🎯 ' : '') + anomEsc(b.label || 'Baseline') + '</b>' +
+            '<small>' + coords + dist + ' · ' + b.n + ' windows · ' + comboLabel(b.combo) + '</small></div>' +
+            '<div class="anom-b-act">' +
+            '<button type="button" class="anom-pin' + (isPinned ? ' on' : '') + '" data-id="' + b.id + '">' + (isPinned ? '📌 Pinned' : 'Set active') + '</button>' +
+            '<button type="button" class="anom-del" data-id="' + b.id + '" title="Delete baseline">🗑</button>' +
+            '</div></div>';
+        }).join('');
+      }
+    }
+    updateAnomChip();
+  }
+  (function wireAnomaly() {
+    var on = document.getElementById('anomGateOn');
+    if (on) on.addEventListener('change', function () { acfg.anomalyGate = on.checked; saveCfg(); anomPromptShown = false; if (on.checked) ensureMeydaMain(); refreshAnomUI(); });
+    var an = document.getElementById('anomAutoNearest');
+    if (an) an.addEventListener('change', function () { acfg.baselineAutoNearest = an.checked; saveCfg(); refreshAnomUI(); });
+    var sl = document.getElementById('anomSigma');
+    if (sl) sl.addEventListener('input', function () { acfg.anomalySigma = (+sl.value) / 10; saveCfg(); setSigmaLabel(); updateAnomChip(); });
+    var cb = document.getElementById('anomCalBtn'); if (cb) cb.addEventListener('click', calibrateBaseline);
+    var cc = document.getElementById('anomCalCancel'); if (cc) cc.addEventListener('click', cancelCalibration);
+    var list = document.getElementById('anomBaseList');
+    if (list) list.addEventListener('click', function (e) {
+      var pin = e.target.closest('.anom-pin');
+      if (pin) { var id = pin.getAttribute('data-id'); acfg.pinnedBaselineId = (acfg.pinnedBaselineId === id ? '' : id); saveCfg(); refreshAnomUI(); return; }
+      var del = e.target.closest('.anom-del');
+      if (del) { var did = del.getAttribute('data-id'); var b = baselines.filter(function (x) { return x.id === did; })[0];
+        window.AuraGold.confirmDelete({ title: 'Delete this baseline?', message: 'Removes “' + anomEsc(b ? b.label : '') + '”. The anomaly gate will fall back to the nearest remaining baseline (or classic mode).', onConfirm: function () { deleteBaseline(did).then(function () { toast('Baseline deleted'); }); } }); }
+    });
+    setSigmaLabel();
+  })();
+  setTimeout(anomalyLoop, 1200);   // start the live-scoring loop (self-guards on `running`)
 
   // ---- Smart classifier UI (v32: one card per detector+coil combo) ----
   function renderConfusionInto(elId, conf) {
@@ -5615,6 +6007,7 @@ var powerLayers = (function () {
     tryAutoStart();
     // Load every per-combo model trained earlier (so new + backfilled events get scored), then backfill features.
     loadSavedModels().then(function () { refreshClassifierUI(); rerenderAllMarkers(); renderListIfOpen(); return backfillFeatures(); });
+    loadBaselines();   // v42: restore saved anomaly baselines (from the shared models store)
   }).catch(function (e) { try { console.warn('[v26] load events failed', e); } catch (x) {} });
 
   // poll GPS into the fix history while capturing
@@ -5651,6 +6044,47 @@ var powerLayers = (function () {
     _deleteModel: function (combo) { return deleteModelNow(combo || DEFAULT_COMBO); },
     _scoreVec: function (vec, combo) { var m = models[combo || DEFAULT_COMBO]; return m && m.model ? inferVec(vec, m) : null; },
     _comboFor: function (ev) { return comboKeyFor(ev || {}); },
+    // ---- v42 anomaly-gate hooks (drive the full gate offline, no mic) ----
+    _anomMath: { invNorm: _invNorm, chiSqSurvival: chiSqSurvival, mahalSigma: mahalSigma, effVar: _effVar, baselineStats: baselineStats },
+    _windowVec: function (samples, sr) { return ensureMeydaMain().then(function (M) { return windowVec(M, samples, sr || sampleRate); }); },
+    _anomScore: function (vec, baselineId) { var b = baselineId ? baselines.filter(function (x) { return x.id === baselineId; })[0] : activeBaseline(); return b ? mahalSigma(vec, b) : null; },
+    // Build + persist a baseline directly from a PCM buffer (bypasses the 25s live capture).
+    _buildBaseline: function (samples, sr, meta) { return ensureMeydaMain().then(function (M) {
+      var stats = buildBaselineFromSamples(M, samples, sr || sampleRate); if (!stats) return null;
+      meta = meta || {}; var ts = Date.now();
+      var rec = { id: BASELINE_PREFIX + uid(), kind: 'baseline', version: 1, label: meta.label || ('Baseline · ' + fmtTs(ts)),
+        lat: meta.lat != null ? meta.lat : null, lng: meta.lng != null ? meta.lng : null, acc: meta.acc || null,
+        timestamp: ts, combo: currentCombo(), sr: sr || sampleRate, dim: stats.dim, n: stats.n,
+        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var, meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0] } };
+      if (meta.pin || rec.lat == null) { acfg.pinnedBaselineId = rec.id; saveCfg(); }
+      return saveBaseline(rec).then(function () { return { id: rec.id, n: rec.n, selfSigma: stats.selfSigma, mean: stats.mean, var: stats.var }; });
+    }); },
+    // Score a raw clip against a baseline (build a window vec per ~250ms slice, take the MAX σ — the
+    // gate fires on the strongest window in the clip). Returns {maxSigma, meanSigma, pass}.
+    _gateClip: function (samples, sr, baselineId, threshold) {
+      return ensureMeydaMain().then(function (M) {
+        var b = baselineId ? baselines.filter(function (x) { return x.id === baselineId; })[0] : activeBaseline(); if (!b) return null;
+        return gateClipSamples(M, samples, sr || sampleRate, b, threshold);
+      });
+    },
+    // Run the gate over a stored event's decoded clip (used to eval against the smoke-test pack).
+    _eventGate: function (id, baselineId, threshold) {
+      var ev = events.filter(function (e) { return e.id === id; })[0]; if (!ev || !ev.audioBlob) return Promise.resolve(null);
+      return Promise.all([ensureMeydaMain(), ev.audioBlob.arrayBuffer()]).then(function (a) {
+        var M = a[0], dec = decodeWAV(a[1]); if (!dec) return null;
+        var b = baselineId ? baselines.filter(function (x) { return x.id === baselineId; })[0] : activeBaseline(); if (!b) return null;
+        var r = gateClipSamples(M, dec.samples, dec.sr, b, threshold);
+        return { id: id, label: effLabel(ev), source: ev.source, maxSigma: r.maxSigma, meanSigma: r.meanSigma, pass: r.pass };
+      });
+    },
+    _eventIds: function (source) { return events.filter(function (e) { return !source || e.source === source; }).map(function (e) { return { id: e.id, label: effLabel(e), source: e.source }; }); },
+    _baselines: function () { return baselines.map(function (b) { return { id: b.id, label: b.label, lat: b.lat, lng: b.lng, n: b.n, combo: b.combo, selfSigma: b.meta && b.meta.selfSigma, active: activeBaseline() && activeBaseline().id === b.id }; }); },
+    _activeBaseline: function () { var b = activeBaseline(); return b ? b.id : null; },
+    _setActiveBaseline: function (id) { acfg.pinnedBaselineId = id || ''; saveCfg(); refreshAnomUI(); return acfg.pinnedBaselineId; },
+    _deleteBaseline: function (id) { return deleteBaseline(id); },
+    _liveSigma: function () { return anomLiveSigma; },
+    _setGate: function (on) { acfg.anomalyGate = !!on; saveCfg(); refreshAnomUI(); return acfg.anomalyGate; },
+    _setSigma: function (s) { acfg.anomalySigma = s; saveCfg(); setSigmaLabel(); return acfg.anomalySigma; },
     // ---- v31 smoke-test pack hooks ----
     _loadSmokeTest: loadSmokeTest, _clearSmokeTest: clearSmokeTest, _smokeCount: smokeCount,
     // Seed N synthetic labelled events per class with SEPARABLE feature vectors (no audio) —
