@@ -920,37 +920,54 @@
   <div id="map3d"></div>
   <div class="v3d-top">
     <div class="v3d-title"><span>🌍</span><span id="v3dTitle">3D — Vic goldfields</span></div>
-    <button class="v3d-x" id="v3dClose" type="button" aria-label="Close 3D view">×</button>
+    <div class="v3d-topbtns">
+      <!-- v41.4: opens the compact 3D layers panel (mirrors the 2D layers you had on). -->
+      <button class="v3d-layers-btn" id="v3dLayersBtn" type="button" aria-label="3D map layers" aria-expanded="false">▤ Layers</button>
+      <button class="v3d-x" id="v3dClose" type="button" aria-label="Close 3D view">×</button>
+    </div>
   </div>
   <div class="v3d-note" id="v3dNote"></div>
-  <!-- v41.2: tilt slider — top = steep (85°), bottom = flat/top-down (0°). Two-finger drag also tilts. -->
+  <!-- v41.2: tilt slider — top = steep (85°), bottom = flat/top-down (0°). Driven by the slider only (v41.3). -->
   <div class="v3d-pitch" id="v3dPitchWrap">
     <span class="v3d-pitch-cap">Tilt</span>
     <input class="v3d-pitch-range" id="v3dPitch" type="range" min="0" max="85" step="1" value="62"
       orient="vertical" aria-label="Map tilt angle (0 flat to 85 steep)">
     <span class="v3d-pitch-val" id="v3dPitchVal">62°</span>
   </div>
-  <div class="v3d-bar" id="v3dBar">
-    <div class="v3d-grp">
-      <span class="lbl">Drape</span>
-      <button class="v3d-pill on" data-drape="sat" type="button">🛰 Satellite</button>
-      <button class="v3d-pill npi" data-drape="npi" type="button">🎯 Heatmap</button>
-    </div>
-    <div class="v3d-grp" id="v3dVarGrp" style="display:none">
-      <span class="lbl">Detector</span>
-      <button class="v3d-pill vlf" data-var="vlf" type="button">VLF</button>
-      <button class="v3d-pill pi" data-var="pi" type="button">PI</button>
-      <button class="v3d-pill zvt" data-var="zvt" type="button">ZVT</button>
-    </div>
-    <div class="v3d-grp">
-      <span class="lbl">Top-10</span>
-      <button class="v3d-pill vlf" data-top="vlf" type="button">VLF</button>
-      <button class="v3d-pill pi" data-top="pi" type="button">PI</button>
-      <button class="v3d-pill zvt" data-top="zvt" type="button">ZVT</button>
-    </div>
-    <div class="v3d-grp">
-      <span class="lbl">Relief</span>
-      <button class="v3d-pill" id="v3dExag" data-exag type="button">2×</button>
+  <!-- v41.4: compact Layers panel. Each control is session-only 3D state; opening re-inherits the 2D layers. -->
+  <div class="v3d-panel" id="v3dPanel" aria-hidden="true">
+    <div class="v3d-panel-h"><span>Layers</span><button id="v3dPanelX" type="button" aria-label="Close layers">×</button></div>
+    <div class="v3d-panel-body">
+      <div class="v3d-prow">
+        <span id="v3dBaseLbl">🛰 Satellite</span>
+        <label class="v3d-sw"><input type="checkbox" id="v3dBase"><span></span></label>
+      </div>
+      <div class="v3d-psec">
+        <div class="v3d-plbl">🎯 Nugget heatmap</div>
+        <div class="v3d-seg" id="v3dNpiSeg">
+          <button data-npi="off" type="button">Off</button>
+          <button data-npi="vlf" type="button">VLF</button>
+          <button data-npi="pi" type="button">PI</button>
+          <button data-npi="zvt" type="button">ZVT</button>
+        </div>
+        <div class="v3d-oprow"><input type="range" id="v3dNpiOp" min="10" max="100" step="5" value="80" aria-label="Heatmap opacity"><span id="v3dNpiOpV">80%</span></div>
+      </div>
+      <div class="v3d-psec">
+        <div class="v3d-prow"><span>🟢 Legal fossicking</span><label class="v3d-sw"><input type="checkbox" id="v3dLegal"><span></span></label></div>
+        <div class="v3d-oprow"><input type="range" id="v3dLegalOp" min="0" max="100" step="5" value="30" aria-label="Legal overlay opacity"><span id="v3dLegalOpV">30%</span></div>
+      </div>
+      <div class="v3d-psec">
+        <div class="v3d-plbl">Pins</div>
+        <div class="v3d-prow"><span>📍 Spots 1–12</span><label class="v3d-sw"><input type="checkbox" id="v3dPinSpots"><span></span></label></div>
+        <div class="v3d-prow"><span>· Sub-spots</span><label class="v3d-sw"><input type="checkbox" id="v3dPinSub"><span></span></label></div>
+        <div class="v3d-prow"><span>⛺ Camps</span><label class="v3d-sw"><input type="checkbox" id="v3dPinCamps"><span></span></label></div>
+        <div class="v3d-prow"><span>🏅 Top 10 VLF</span><label class="v3d-sw"><input type="checkbox" data-top="vlf"><span></span></label></div>
+        <div class="v3d-prow"><span>🏅 Top 10 PI</span><label class="v3d-sw"><input type="checkbox" data-top="pi"><span></span></label></div>
+        <div class="v3d-prow"><span>🏅 Top 10 ZVT</span><label class="v3d-sw"><input type="checkbox" data-top="zvt"><span></span></label></div>
+      </div>
+      <div class="v3d-psec">
+        <div class="v3d-prow"><span>⛰ Terrain relief</span><button class="v3d-exagbtn" id="v3dExag" data-exag type="button">2×</button></div>
+      </div>
     </div>
   </div>
   <div class="v3d-fps" id="v3dFps">– fps</div>
@@ -1428,7 +1445,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v41.3';
+var APP_VERSION = 'v41.4';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -6350,17 +6367,19 @@ var powerLayers = (function () {
   var MAPLIBRE_VER = '5.24.0';
   var DEM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
   var SAT_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  var TOPO_URL = 'https://a.tile.opentopomap.org/{z}/{x}/{y}.png';   // v41.4: topo base (mirrors 2D baseTopo)
   // Union of the two NPI coverage regions (Western goldfields + Chiltern), padded — matches
   // tools/npi/regions.py FETCH extents. 3D is clipped to this box; no Australia-wide (that's later).
   var BB = { w:142.90, s:-38.00, e:146.77, n:-36.03 };
   var EXAG = [1, 1.5, 2, 3], exagIx = 2;               // default 2x relief (ridges pop)
   var DOCBASE = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+  // v41.4 opacity balance (Steven: "satellite too strong, heatmap too weak"). Terrain lighting steals
+  // contrast from draped rasters, so the base is muted and the heatmap boosted — heatmap is the star.
+  var SAT_OP = 0.82;
 
   var view = document.getElementById('view3d');
   var btn  = document.getElementById('btn3d');
-  var bar  = document.getElementById('v3dBar');
   var note = document.getElementById('v3dNote');
-  var varGrp = document.getElementById('v3dVarGrp');
   var loadTxt = document.getElementById('v3dLoadTxt');
   var pitchEl = document.getElementById('v3dPitch');       // v41.2 tilt slider (0=flat … 85=steep)
   var pitchVal = document.getElementById('v3dPitchVal');
@@ -6369,10 +6388,16 @@ var powerLayers = (function () {
 
   var M = null;              // maplibregl.Map (null while closed — freed on every close to keep memory lean)
   var libLoading = null;     // Promise while the CDN bundle loads (once per session)
-  var drape = 'sat';         // 'sat' | 'npi'
-  var variant = 'vlf';       // 'vlf' | 'pi' | 'zvt' — which heatmap drapes
+  // v41.4: independent 3D layer state. Re-inherited from the 2D layers on every open (state2d),
+  // session-only, and it NEVER writes back to 2D. Opacity knobs (npiOpacity, exagIx) are 3D-tuned.
+  var baseOn = true, baseKind = 'sat';   // 'sat' | 'topo'
+  var npiOn = false, variant = 'vlf';    // 'vlf' | 'pi' | 'zvt' — which heatmap drapes
+  var npiOpacity = 0.80;                 // 3D default — deliberately hotter than 2D's 0.62 (see SAT_OP note)
+  var legalOn = false, legalOpacity = 0.30;
+  var pins = { spots:true, subspots:true, camps:true };
   var topOn = { vlf:false, pi:false, zvt:false };
-  var markers = { base:[], top:{ vlf:[], pi:[], zvt:[] } };
+  var markers = { spots:[], subspots:[], camps:[], top:{ vlf:[], pi:[], zvt:[] } };
+  var legalGeo = null, legalLoading = false;   // cached geojson (survives close/reopen — no re-download)
   var loadTimer = null, netHandler = null;
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -6403,15 +6428,24 @@ var powerLayers = (function () {
 
   function styleSpec(){
     var sources = {
-      sat: { type:'raster', tiles:[SAT_URL], tileSize:256, maxzoom:18, attribution:'Imagery © Esri' },
-      dem: { type:'raster-dem', tiles:[DEM_URL], encoding:'terrarium', tileSize:256, maxzoom:15, attribution:'Terrain © AWS Terrain Tiles' }
+      sat:  { type:'raster', tiles:[SAT_URL],  tileSize:256, maxzoom:18, attribution:'Imagery © Esri' },
+      topo: { type:'raster', tiles:[TOPO_URL], tileSize:256, maxzoom:17, attribution:'© OpenTopoMap' },
+      dem:  { type:'raster-dem', tiles:[DEM_URL], encoding:'terrarium', tileSize:256, maxzoom:15, attribution:'Terrain © AWS Terrain Tiles' },
+      // v41.4: green legal-fossicking overlay, mirrored from the 2D layer. Loaded on demand (see loadLegal).
+      legal:{ type:'geojson', data: legalGeo || { type:'FeatureCollection', features:[] } }
     };
     ['vlf','pi','zvt'].forEach(function(v){
       sources['npi-'+v] = { type:'raster', tiles:[DOCBASE+'data/npi/'+v+'/{z}/{x}/{y}.png'], tileSize:256, minzoom:10, maxzoom:12, attribution:'NPI heuristic' };
     });
-    var layers = [ { id:'sat', type:'raster', source:'sat' } ];
+    // Draw order mirrors the 2D pane z-order: base → legal shade → heatmap on top (markers sit above all).
+    var layers = [
+      { id:'sat',  type:'raster', source:'sat',  paint:{ 'raster-opacity':SAT_OP }, layout:{ visibility:'none' } },
+      { id:'topo', type:'raster', source:'topo', layout:{ visibility:'none' } },
+      { id:'legal-fill', type:'fill', source:'legal', paint:{ 'fill-color':'#2ECC71', 'fill-opacity':legalOpacity }, layout:{ visibility:'none' } },
+      { id:'legal-line', type:'line', source:'legal', paint:{ 'line-color':'#17924e', 'line-width':0.5, 'line-opacity':0.55 }, layout:{ visibility:'none' } }
+    ];
     ['vlf','pi','zvt'].forEach(function(v){
-      layers.push({ id:'npi-'+v, type:'raster', source:'npi-'+v, paint:{ 'raster-opacity':0.62 }, layout:{ visibility:'none' } });
+      layers.push({ id:'npi-'+v, type:'raster', source:'npi-'+v, paint:{ 'raster-opacity':npiOpacity }, layout:{ visibility:'none' } });
     });
     return { version:8, sources:sources, layers:layers };
   }
@@ -6425,14 +6459,20 @@ var powerLayers = (function () {
         '<div style="font-weight:800;margin-bottom:2px">'+esc(s.name)+'</div>'+
         '<div style="color:#777;font-size:11px;margin-bottom:4px">'+esc(s.land||'')+(s.day?' · '+esc(s.day):'')+'</div>'+
         '<div>'+esc(s.desc||'')+'</div>');
-      markers.base.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M));
+      markers.spots.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M));
     });
     subSpots.forEach(function(s){ var d=mk('v3d-mk'); d.appendChild(mk('v3d-sub'));
       var pop=new maplibregl.Popup({offset:10, maxWidth:'220px'}).setHTML('<div style="font-weight:700">'+esc(s.name)+'</div>');
-      markers.base.push(new maplibregl.Marker({element:d, anchor:'center'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M)); });
+      markers.subspots.push(new maplibregl.Marker({element:d, anchor:'center'}).setLngLat([s.lng,s.lat]).setPopup(pop).addTo(M)); });
     camps.forEach(function(c){ var d=mk('v3d-mk v3d-camp','⛺');
       var pop=new maplibregl.Popup({offset:12, maxWidth:'220px'}).setHTML('<div style="font-weight:800">⛺ '+esc(c.name)+'</div><div style="color:#777;font-size:11px">'+esc(c.note||'')+'</div>');
-      markers.base.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([c.lng,c.lat]).setPopup(pop).addTo(M)); });
+      markers.camps.push(new maplibregl.Marker({element:d, anchor:'bottom'}).setLngLat([c.lng,c.lat]).setPopup(pop).addTo(M)); });
+  }
+  // v41.4: show/hide the always-built pin groups (spots / sub-spots / camps) from the panel toggles.
+  function applyPins(){
+    ['spots','subspots','camps'].forEach(function(k){
+      markers[k].forEach(function(m){ m.getElement().style.display = pins[k] ? '' : 'none'; });
+    });
   }
 
   function buildTop(v){
@@ -6454,12 +6494,35 @@ var powerLayers = (function () {
     markers.top[v].forEach(function(m){ m.getElement().style.display = on ? '' : 'none'; });
   }
 
-  function applyDrape(){
+  // v41.4: granular appliers — one per inherited layer. Base, heatmap and legal are independent now
+  // (2D-style stacking), not the old mutually-exclusive drape. Each is safe to call before/after load.
+  function applyBase(){
     if(!M) return;
-    ['vlf','pi','zvt'].forEach(function(v){ if(M.getLayer('npi-'+v)) M.setLayoutProperty('npi-'+v,'visibility',(drape==='npi'&&v===variant)?'visible':'none'); });
-    if(varGrp) varGrp.style.display = drape==='npi' ? '' : 'none';
-    bar.querySelectorAll('[data-drape]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-drape')===drape); });
-    bar.querySelectorAll('[data-var]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-var')===variant); });
+    if(M.getLayer('sat'))  M.setLayoutProperty('sat', 'visibility', (baseOn && baseKind==='sat')  ? 'visible':'none');
+    if(M.getLayer('topo')) M.setLayoutProperty('topo','visibility', (baseOn && baseKind==='topo') ? 'visible':'none');
+  }
+  function applyNpi(){
+    if(!M) return;
+    ['vlf','pi','zvt'].forEach(function(v){
+      if(!M.getLayer('npi-'+v)) return;
+      M.setLayoutProperty('npi-'+v,'visibility',(npiOn && v===variant)?'visible':'none');
+      M.setPaintProperty('npi-'+v,'raster-opacity',npiOpacity);
+    });
+  }
+  function applyLegal(){
+    if(!M) return;
+    if(legalOn && !legalGeo && !legalLoading) loadLegal();
+    ['legal-fill','legal-line'].forEach(function(id){ if(M.getLayer(id)) M.setLayoutProperty(id,'visibility',legalOn?'visible':'none'); });
+    if(M.getLayer('legal-fill')) M.setPaintProperty('legal-fill','fill-opacity',legalOpacity);
+  }
+  // Fetch the whole-of-Vic legal-fossicking geojson once (same file the 2D layer uses); cache across reopens.
+  function loadLegal(){
+    if(legalLoading || legalGeo) return;
+    legalLoading = true;
+    fetch(DOCBASE+'data/legal_fossicking_vic.geojson').then(function(r){ return r.json(); }).then(function(gj){
+      legalGeo = gj; legalLoading = false;
+      if(M && M.getSource('legal')){ try{ M.getSource('legal').setData(gj); }catch(e){} applyLegal(); }
+    }).catch(function(){ legalLoading = false; });
   }
 
   function stopLoading(){ view.classList.remove('loading'); if(loadTimer){ clearTimeout(loadTimer); loadTimer=null; } }
@@ -6480,9 +6543,58 @@ var powerLayers = (function () {
     fpsHideT=setTimeout(function(){ view.classList.remove('moving'); if(fpsRAF){ cancelAnimationFrame(fpsRAF); fpsRAF=null; } }, 900); }
   function wireFps(){ if(!M) return; M.on('movestart', fpsStart); M.on('moveend', fpsStop); }
 
+  // ---- v41.4 Layers panel + 2D→3D inheritance ----
+  var panel = document.getElementById('v3dPanel');
+  var layersBtn = document.getElementById('v3dLayersBtn');
+  var baseCb = document.getElementById('v3dBase'), baseLbl = document.getElementById('v3dBaseLbl');
+  var npiSeg = document.getElementById('v3dNpiSeg');
+  var npiOpEl = document.getElementById('v3dNpiOp'), npiOpV = document.getElementById('v3dNpiOpV');
+  var legalCb = document.getElementById('v3dLegal'), legalOpEl = document.getElementById('v3dLegalOp'), legalOpV = document.getElementById('v3dLegalOpV');
+  var pinSpots = document.getElementById('v3dPinSpots'), pinSub = document.getElementById('v3dPinSub'), pinCamps = document.getElementById('v3dPinCamps');
+  var exagBtn = document.getElementById('v3dExag');
+
+  // Read the live 2D layer state and copy it into the 3D session vars. Runs on every open, so any 2D
+  // change propagates in. npiOpacity/exagIx are 3D-tuned knobs with no 2D source — left untouched.
+  function inherit2d(){
+    var s=null; try{ s=(window.AuraGold && window.AuraGold.state2d) ? window.AuraGold.state2d() : null; }catch(e){ s=null; }
+    if(s){
+      baseOn   = !!s.base;
+      baseKind = (s.base==='topo') ? 'topo' : 'sat';   // osm/sat/null all drape satellite in 3D
+      npiOn    = !!(s.npi.vlf || s.npi.pi || s.npi.zvt);
+      variant  = s.npi.pi ? 'pi' : (s.npi.zvt ? 'zvt' : (s.npi.vlf ? 'vlf' : ((typeof npiDetectorVariant==='function')?npiDetectorVariant():'vlf')));
+      legalOn  = !!s.legal.on;
+      legalOpacity = (s.legal.op!=null) ? +s.legal.op : 0.30;
+      pins  = { spots:!!s.spots, subspots:!!s.subspots, camps:!!s.camps };
+      topOn = { vlf:!!s.top.vlf, pi:!!s.top.pi, zvt:!!s.top.zvt };
+    } else {
+      baseOn=true; baseKind='sat'; npiOn=false;
+      variant=(typeof npiDetectorVariant==='function')?npiDetectorVariant():'vlf';
+      legalOn=false; legalOpacity=0.30; pins={spots:true,subspots:true,camps:true}; topOn={vlf:false,pi:false,zvt:false};
+    }
+  }
+
+  // Reflect the current 3D vars onto the static panel controls (checkboxes / segmented / sliders / relief).
+  function syncPanel(){
+    if(baseLbl) baseLbl.textContent = (baseKind==='topo') ? '🗺 Topographic' : '🛰 Satellite';
+    if(baseCb) baseCb.checked = baseOn;
+    if(npiSeg) npiSeg.querySelectorAll('[data-npi]').forEach(function(b){ var k=b.getAttribute('data-npi');
+      b.classList.toggle('on', k==='off' ? !npiOn : (npiOn && k===variant)); });
+    if(npiOpEl) npiOpEl.value=Math.round(npiOpacity*100); if(npiOpV) npiOpV.textContent=Math.round(npiOpacity*100)+'%';
+    if(legalCb) legalCb.checked=legalOn;
+    if(legalOpEl) legalOpEl.value=Math.round(legalOpacity*100); if(legalOpV) legalOpV.textContent=Math.round(legalOpacity*100)+'%';
+    if(pinSpots) pinSpots.checked=pins.spots; if(pinSub) pinSub.checked=pins.subspots; if(pinCamps) pinCamps.checked=pins.camps;
+    if(panel) panel.querySelectorAll('input[data-top]').forEach(function(cb){ cb.checked=!!topOn[cb.getAttribute('data-top')]; });
+    if(exagBtn){ var ev=EXAG[exagIx]; exagBtn.textContent=(ev%1?ev.toFixed(1):ev)+'×'; }
+  }
+  function setPanel(open){
+    view.classList.toggle('panelopen', open);
+    if(panel) panel.setAttribute('aria-hidden', open?'false':'true');
+    if(layersBtn){ layersBtn.classList.toggle('on', open); layersBtn.setAttribute('aria-expanded', open?'true':'false'); }
+  }
+
   function open3d(){
     if(!navigator.onLine){ toast('🌍 3D needs data — reconnect to load terrain'); return; }
-    variant = (typeof npiDetectorVariant==='function') ? npiDetectorVariant() : 'vlf';
+    inherit2d(); syncPanel(); setPanel(false);   // v41.4: mirror the 2D layers you had on
     var c=map.getCenter(), z=map.getZoom(), lat=c.lat, lng=c.lng, outside=!inBB(lat,lng);
     if(outside){ lat=clamp(lat,BB.s,BB.n); lng=clamp(lng,BB.w,BB.e); z=clamp(z,10,12); }
     view.classList.add('show','loading'); view.setAttribute('aria-hidden','false');
@@ -6517,8 +6629,8 @@ var powerLayers = (function () {
         try{ M.touchPitch.disable(); }catch(e){}
         try{ M.setTerrain({ source:'dem', exaggeration:EXAG[exagIx] }); }catch(e){}
         addBaseMarkers();
-        applyDrape();
-        // restore any Top-10 layers the user had toggled on before closing
+        applyBase(); applyNpi(); applyLegal(); applyPins();   // v41.4: paint the inherited layer state
+        // restore any Top-10 layers inherited from 2D (or toggled during the session)
         ['vlf','pi','zvt'].forEach(function(v){ if(topOn[v]){ setTop(v,true); } });
         wireFps();
         reflectPitch(M.getPitch());                 // v41.2: sync slider to the opening pitch (62°)
@@ -6541,13 +6653,13 @@ var powerLayers = (function () {
       try{ M.remove(); }catch(e){}
       M=null;
     }
-    markers={ base:[], top:{ vlf:[], pi:[], zvt:[] } };
+    // v41.4: 3D layer state is session-only and never back-propagates — it's simply re-inherited from
+    // 2D on the next open3d(), so there's nothing to write back here. Just tear down the view.
+    markers={ spots:[], subspots:[], camps:[], top:{ vlf:[], pi:[], zvt:[] } };
     stopLoading();
     if(fpsRAF){ cancelAnimationFrame(fpsRAF); fpsRAF=null; } if(fpsHideT){ clearTimeout(fpsHideT); fpsHideT=null; }
-    view.classList.remove('show','moving'); view.setAttribute('aria-hidden','true'); showNote('');
-    drape='sat';
-    bar.querySelectorAll('[data-top]').forEach(function(b){ b.classList.remove('on'); });
-    topOn={ vlf:false, pi:false, zvt:false };
+    view.classList.remove('show','moving','panelopen'); view.setAttribute('aria-hidden','true'); showNote('');
+    setPanel(false);
   }
 
   // ---- wiring ----
@@ -6557,16 +6669,30 @@ var powerLayers = (function () {
     if(pitchVal) pitchVal.textContent=Math.round(p)+'°'; if(M){ try{ M.setPitch(p); }catch(e){} } }); }
   document.getElementById('v3dClose').addEventListener('click', function(){ try{ history.back(); }catch(e){ close3d(); } });
   window.addEventListener('popstate', function(){ if(view.classList.contains('show')) close3d(); });
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && view.classList.contains('show')){ try{ history.back(); }catch(x){ close3d(); } } });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && view.classList.contains('show')){
+    if(view.classList.contains('panelopen')){ setPanel(false); return; }   // Esc closes the panel first
+    try{ history.back(); }catch(x){ close3d(); } } });
 
-  bar.addEventListener('click', function(e){
-    var b=e.target.closest('button'); if(!b) return;
-    if(b.hasAttribute('data-drape')){ drape=b.getAttribute('data-drape'); applyDrape(); }
-    else if(b.hasAttribute('data-var')){ variant=b.getAttribute('data-var'); applyDrape(); }
-    else if(b.hasAttribute('data-top')){ var v=b.getAttribute('data-top'); var on=!topOn[v]; setTop(v,on); b.classList.toggle('on',on); }
-    else if(b.hasAttribute('data-exag')){ exagIx=(exagIx+1)%EXAG.length; var ev=EXAG[exagIx];
-      b.textContent=(ev%1?ev.toFixed(1):ev)+'×'; if(M){ try{ M.setTerrain({ source:'dem', exaggeration:ev }); }catch(x){} } }
-  });
+  // v41.4 Layers panel wiring — each control mutates a session var then re-applies. No 2D write-back.
+  if(layersBtn) layersBtn.addEventListener('click', function(){ setPanel(!view.classList.contains('panelopen')); });
+  var panelX = document.getElementById('v3dPanelX'); if(panelX) panelX.addEventListener('click', function(){ setPanel(false); });
+  if(baseCb) baseCb.addEventListener('change', function(){ baseOn=baseCb.checked; applyBase(); });
+  if(npiSeg) npiSeg.addEventListener('click', function(e){ var b=e.target.closest('[data-npi]'); if(!b) return;
+    var k=b.getAttribute('data-npi');
+    if(k==='off'){ npiOn=false; } else { npiOn=true; variant=k; }
+    applyNpi(); syncPanel(); });
+  if(npiOpEl) npiOpEl.addEventListener('input', function(){ npiOpacity=(+npiOpEl.value)/100;
+    if(npiOpV) npiOpV.textContent=(+npiOpEl.value)+'%'; applyNpi(); });
+  if(legalCb) legalCb.addEventListener('change', function(){ legalOn=legalCb.checked; applyLegal(); });
+  if(legalOpEl) legalOpEl.addEventListener('input', function(){ legalOpacity=(+legalOpEl.value)/100;
+    if(legalOpV) legalOpV.textContent=(+legalOpEl.value)+'%'; applyLegal(); });
+  if(pinSpots) pinSpots.addEventListener('change', function(){ pins.spots=pinSpots.checked; applyPins(); });
+  if(pinSub) pinSub.addEventListener('change', function(){ pins.subspots=pinSub.checked; applyPins(); });
+  if(pinCamps) pinCamps.addEventListener('change', function(){ pins.camps=pinCamps.checked; applyPins(); });
+  if(panel) panel.querySelectorAll('input[data-top]').forEach(function(cb){ cb.addEventListener('change', function(){
+    setTop(cb.getAttribute('data-top'), cb.checked); }); });
+  if(exagBtn) exagBtn.addEventListener('click', function(){ exagIx=(exagIx+1)%EXAG.length; var ev=EXAG[exagIx];
+    exagBtn.textContent=(ev%1?ev.toFixed(1):ev)+'×'; if(M){ try{ M.setTerrain({ source:'dem', exaggeration:ev }); }catch(x){} } });
 
   // reflect offline transitions while the 3D view is open
   netHandler=function(){ if(view.classList.contains('show')) showNote(navigator.onLine ? '' : '📴 Offline — 3D terrain won’t refresh. Reconnect or return to 2D.'); };

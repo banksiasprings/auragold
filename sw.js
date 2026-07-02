@@ -13,7 +13,7 @@
  * offline maps survive app updates (only bump it if the tile strategy changes).
  */
 // Keep this in lockstep with APP_VERSION in index.html (the on-screen version badge).
-const SHELL_VERSION = 'v41.2';
+const SHELL_VERSION = 'v41.4';
 // Build revision — bumped on every deploy so already-installed clients re-fetch the shell.
 // v30: audio recording UX overhaul. Capture no longer auto-starts on app open (opt-in toggle,
 // default OFF); the mic is fully released when the app is backgrounded so other apps (e.g. Dispatch)
@@ -70,7 +70,13 @@ const SHELL_VERSION = 'v41.2';
 // gesture) and a raised max zoom (15→17) so Steven can zoom in for site inspection. UX-only; shell-rev bump.
 // v41.3: 🌍 3D camera stability — lock bearing north-up, tilt via slider only (kill touchPitch/rotate
 // gesture bleed that teleported the camera), compass-less zoom buttons. UX-only; shell-rev bump.
-const SHELL_REV = 'v41.3';
+// v41.4: 🌍 3D layer parity + opacity — 3D now inherits the 2D layers on open (basemap, heatmap+variant,
+// legal overlay, pins, Top-10), exposed via a compact top-right Layers panel that flicks each on/off
+// session-only (no back-propagation to 2D). Satellite drape muted to 0.82 + heatmap boosted to 0.80 so
+// the heatmap reads over terrain lighting. Adds a topo base + the legal geojson to the MapLibre style;
+// no new cache rules — the DEM bypass below is unchanged, and topo tiles / the legal geojson cache the
+// same way their 2D counterparts already do. UX-only; shell-rev bump.
+const SHELL_REV = 'v41.4';
 const SHELL_CACHE = 'auragold-shell-' + SHELL_REV;
 const TILE_CACHE = 'auragold-tiles-v1';
 
