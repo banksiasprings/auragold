@@ -640,14 +640,6 @@
     opacity:0; pointer-events:none; transition:opacity .18s, transform .18s, background .18s; font-variant-numeric:tabular-nums; }
   #anomChip.show { opacity:1; transform:translateX(-50%) translateY(0); }
   #anomChip.hot { background:rgba(179,38,30,.94); color:#fff; }
-  /* v42 A/B session readout + drift banner + calibration-quality badge */
-  .anom-ab { font-size:11.5px; color:#5a4f33; background:#f6f2e6; border:1px solid #e7e0cf; border-radius:9px; padding:6px 9px; margin:6px 0 2px; font-variant-numeric:tabular-nums; }
-  .anom-ab b { color:#3d3623; }
-  .anom-ab-win { color:#1f7a3c; font-weight:700; margin-left:4px; }
-  .anom-drift { font-size:12px; color:#7a3b12; background:#fdf1e3; border:1px solid #f0c89a; border-radius:9px; padding:7px 9px; margin:6px 0 2px; line-height:1.4; }
-  .anom-drift .anom-drift-btn { border:1px solid #e08b3a; background:#e08b3a; color:#fff; border-radius:8px; padding:3px 9px; font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; }
-  .anom-drift .anom-drift-x { border:1px solid #d9cfa6; background:#fff; color:#7a6f52; border-radius:8px; padding:3px 9px; font-size:11px; font-weight:700; cursor:pointer; margin-left:4px; }
-  .anom-qbadge { color:#b8860b; font-size:11px; cursor:help; }
 
   /* ===== v27 — universal delete-confirmation modal (AG.confirmDelete) ===== */
   .cd-ov { position:fixed; inset:0; z-index:2600; background:rgba(20,18,10,.58); display:none;
@@ -1220,8 +1212,6 @@
       <div class="ag-card">
         <p class="ag-note" style="margin:6px 2px 8px;font-style:italic">Learn what <b>quiet ground</b> sounds like at a spot, then only flag hits that <b>deviate</b> from it. Run your detector hotter without drowning in false positives — ground chatter stays below the line, real targets stand out. On-device; nothing uploads.</p>
         <label class="af-check"><input type="checkbox" id="anomGateOn"><span>Use anomaly gate <small>(off = classic v26 — every amplitude / manual hit is classified)</small></span></label>
-        <div id="anomDrift" class="anom-drift" style="display:none"></div>
-        <div id="anomAB" class="anom-ab" style="display:none"></div>
         <div class="au-row" style="align-items:flex-start;margin-top:4px"><span>Sensitivity</span>
           <div style="flex:1 1 auto">
             <input type="range" id="anomSigma" min="15" max="50" step="5" value="30" style="width:100%">
@@ -1323,7 +1313,7 @@
     <div class="ag-sec">
       <h3>App version</h3>
       <div class="ag-card">
-        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v42.1</span></b>.</p>
+        <p style="margin:8px 0 2px">You're running <b><span id="setVersion">v42</span></b>.</p>
         <button id="forceUpdateBtn" class="ag-btn" type="button" style="width:100%;box-sizing:border-box;border:none;cursor:pointer;text-align:center">⬇ Force fresh download</button>
         <p class="ag-note" style="margin:8px 0 2px">Re-downloads the latest app from scratch and reloads. Use this if a new version isn't showing up. Your saved offline maps are kept.</p>
       </div>
@@ -1505,7 +1495,7 @@
 <script>
 // App version shown in the on-screen badge (bottom-left of the map).
 // BUMP THIS IN LOCKSTEP with SHELL_VERSION in sw.js on every deploy.
-var APP_VERSION = 'v42.1';
+var APP_VERSION = 'v42';
 (function () {
   var panel = document.getElementById('checklistPanel');
   var openBtn = document.getElementById('checklistBtn');
@@ -4649,7 +4639,6 @@ var powerLayers = (function () {
       s.getAudioTracks().forEach(function (tr) { tr.onended = function () { stop(); toast('🎙 Audio input disconnected'); }; });
       running = true; startingP = null; denied = false;
       startRecTimer(); setIndicator();
-      resetGateAB(); resetDrift(); refreshAnomAB(); armAnomLoop();   // v42: fresh A/B session; wake the gate loop if armed
       return true;
     }).catch(function (err) {
       startingP = null; running = false; stopRecTimer(); setIndicator();
@@ -4671,24 +4660,6 @@ var powerLayers = (function () {
 
   // ---- auto-flag (debounced) — modes: off | amp | ml ----
   var lastFlagTs = 0;
-
-  // v42 A/B log — every *field session with the gate armed* becomes a free amp-vs-gate comparison.
-  // `fired`   = clips the anomaly gate actually captured this session.
-  // `shadowAmp` = clips the plain RMS trigger *would* have captured (counterfactual — nothing saved).
-  // Reset on each capture start(). Per-event detail is stamped into ev.gateLog (see buildGateLog).
-  var gateAB = { fired: 0, shadowAmp: 0 }, shadowLastTs = 0;
-  function resetGateAB() { gateAB.fired = 0; gateAB.shadowAmp = 0; shadowLastTs = 0; }
-  // ~11 m grid cell from the current fix — a stable per-spot key for grouping the A/B log, no new data model.
-  function nearestSpotId() { var f = AG.lastFix; return (f && f.lat != null) ? (f.lat.toFixed(4) + ',' + f.lng.toFixed(4)) : null; }
-  // Per-event A/B record. verdict ∈ {'gate-fired','manual-ungated'}. Never vetoes anything — logging only.
-  function buildGateLog(verdict, sigma, base) {
-    var gs = (sigma != null && isFinite(sigma)) ? Math.round(sigma * 100) / 100
-           : (anomLiveSigma != null && isFinite(anomLiveSigma)) ? Math.round(anomLiveSigma * 100) / 100 : null;
-    var cal = base ? base.id : (typeof activeBaseline === 'function' && activeBaseline() ? activeBaseline().id : null);
-    return { timestamp: Date.now(), gate_score: gs, gate_verdict: verdict,
-      shadow_rms_value: Math.round(smoothedRMS * 1e4) / 1e4, spot_id: nearestSpotId(), calibration_id: cal };
-  }
-
   function maybeAutoFlag() {
     var mode = acfg.autoMode || (acfg.threshold > 0 ? 'amp' : 'off');
     if (mode === 'off') return;
@@ -4819,8 +4790,6 @@ var powerLayers = (function () {
       detector: det, coil: coil,   // v32: which detector + coil swung this hit
       anomalyScore: (opts.anomalyScore != null ? opts.anomalyScore : null),   // v42: baseline-deviation sigma that triggered this (auto)
       baselineId: opts.baselineId || null,
-      gateLog: opts.gateLog || null,   // v42 A/B: {timestamp,gate_score,gate_verdict,shadow_rms_value,spot_id,calibration_id} — null on legacy/amp-off saves
-
       features: null, mlConfidence: null, mlTop: null, mlModelCombo: null, notes: '', photoIds: [], detScore: null };
     // v29: stamp the detection-window score at capture, so post-trip you can correlate
     // "did the score predict where the gold was?" (the feedback loop that personalises the model).
@@ -4858,7 +4827,7 @@ var powerLayers = (function () {
   // ---- audio-events list panel ----
   var aPanel = document.getElementById('audioPanel');
   var curFilter = 'all', curSort = 'time';   // sort: 'time' | 'conf'
-  function aOpen(o) { if (!aPanel) return; aPanel.classList.toggle('open', o); aPanel.setAttribute('aria-hidden', o ? 'false' : 'true'); if (o) { renderList(); armAnomLoop(); } }
+  function aOpen(o) { if (!aPanel) return; aPanel.classList.toggle('open', o); aPanel.setAttribute('aria-hidden', o ? 'false' : 'true'); if (o) renderList(); }
   function matchFilter(ev) {
     var l = effLabel(ev), ml = mlTopOf(ev);
     switch (curFilter) {
@@ -5438,37 +5407,14 @@ var powerLayers = (function () {
     for (var z = 0; z < vec.length; z++) if (!isFinite(vec[z])) vec[z] = 0;
     return vec;
   }
-  var ANOM_MIN_WINDOWS = 30;   // below this a diagonal baseline's variance is too noisy to trust
-  function _pctile(sorted, p) { if (!sorted.length) return 0; var i = Math.min(sorted.length - 1, Math.max(0, Math.round(p * (sorted.length - 1)))); return sorted[i]; }
   function buildBaselineFromSamples(Meyda, samples, sr) {
     var wlen = Math.max(512, Math.floor(ANOM_WIN_MS / 1000 * sr)), vecs = [];
     for (var off = 0; off + wlen <= samples.length; off += wlen) vecs.push(windowVec(Meyda, samples.subarray(off, off + wlen), sr));
     var stats = baselineStats(vecs); if (!stats) return null;
-    // self-consistency: σ of every baseline window against the fitted baseline (expect a tight low band).
-    var sig = []; vecs.forEach(function (v) { sig.push(mahalSigma(v, stats).sigma); });
-    var sorted = sig.slice().sort(function (a, b) { return a - b; });
-    var ss = 0; sig.forEach(function (x) { ss += x; });
-    stats.selfSigma = sig.length ? ss / sig.length : 0;
-    // v42: calibration σ anchors — drift detection compares the live rolling median against p90.
-    stats.d2 = { p50: _pctile(sorted, 0.5), p90: _pctile(sorted, 0.9), p99: _pctile(sorted, 0.99), max: sorted.length ? sorted[sorted.length - 1] : 0 };
-    stats.quality = assessBaselineQuality(stats);
+    // self-consistency: mean σ of the baseline's own windows against itself (expect ~0.7-0.8; sanity flag).
+    var ss = 0; vecs.forEach(function (v) { ss += mahalSigma(v, stats).sigma; });
+    stats.selfSigma = vecs.length ? ss / vecs.length : 0;
     return stats;
-  }
-  // v42 calibration-quality gate. reject ⇒ don't save (retry on quieter ground). warn ⇒ save but badge it.
-  function assessBaselineQuality(stats) {
-    var warns = [], verdict = 'ok';
-    if (!stats || !stats.n) return { verdict: 'reject', warnings: ['no windows captured'] };
-    if (stats.n < ANOM_MIN_WINDOWS) { verdict = 'reject'; warns.push('too few windows (' + stats.n + ' < ' + ANOM_MIN_WINDOWS + ') — hold ~25 s of steady sweeping'); }
-    // dead-signal detector: a feature with (near) zero variance ⇒ silence / muted mic / clipped input.
-    var deadFeats = 0; for (var i = 0; i < stats.var.length; i++) { if (!(stats.var[i] > 1e-12)) deadFeats++; }
-    if (deadFeats >= 3) { verdict = 'reject'; warns.push(deadFeats + ' flat features — mic may be muted or the ground was silent'); }
-    // noise-floor sanity: rms mean implausibly low (no signal) or high (calibrated over something loud/a target).
-    var rms = stats.mean[0];
-    if (rms < 1e-4) { if (verdict !== 'reject') verdict = 'warn'; warns.push('very low noise floor (RMS ' + rms.toExponential(1) + ') — check the mic is live'); }
-    else if (rms > 0.25) { if (verdict !== 'reject') verdict = 'warn'; warns.push('high noise floor (RMS ' + rms.toFixed(3) + ') — was the ground actually quiet?'); }
-    // internal consistency: baseline windows should sit in a tight low σ band against their own fit.
-    if (stats.selfSigma > 1.5 || (stats.d2 && stats.d2.p99 > 4.0)) { if (verdict !== 'reject') verdict = 'warn'; warns.push('ground wasn\'t steady during capture (self-check ' + stats.selfSigma.toFixed(2) + 'σ) — a beep, knock or talking may have leaked in'); }
-    return { verdict: verdict, warnings: warns };
   }
   // Score a whole clip: slide non-overlapping ~250 ms windows, take the MAX σ (the gate fires on
   // the strongest window in the clip). Returns {maxSigma, meanSigma, windows, pass}.
@@ -5547,34 +5493,23 @@ var powerLayers = (function () {
     ensureMeydaMain().then(function (M) {
       var stats = buildBaselineFromSamples(M, samples, sampleRate);
       if (!stats || !stats.n) { toast('Baseline build failed'); return; }
-      var q = stats.quality || { verdict: 'ok', warnings: [] };
-      // Structurally-unusable calibration (too few windows / dead mic) → refuse and prompt a retry.
-      if (q.verdict === 'reject') { showCalReject(q); toast('⚠ Calibration rejected — ' + (q.warnings[0] || 'unusable')); return; }
       var ts = Date.now(), fx = fixAt(ts - BASELINE_SECONDS * 500);
       var rec = { id: BASELINE_PREFIX + uid(), kind: 'baseline', version: 1,
         label: 'Baseline · ' + fmtTs(ts), lat: fx ? fx.lat : null, lng: fx ? fx.lng : null, acc: fx ? fx.acc : null,
         timestamp: ts, combo: currentCombo(), sr: sampleRate, dim: stats.dim, n: stats.n,
-        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var, d2: stats.d2,
-        meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0], durationS: Math.round(samples.length / sampleRate), quality: q.verdict, warnings: q.warnings } };
+        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var,
+        meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0], durationS: Math.round(samples.length / sampleRate) } };
       // Without a GPS fix, auto-nearest can't find it — pin it so it's immediately usable.
       if (rec.lat == null) { acfg.pinnedBaselineId = rec.id; saveCfg(); }
-      saveBaseline(rec).then(function () { showCalSummary(rec); toast(q.verdict === 'warn' ? '🎯 Baseline saved (with warnings) · ' + rec.n + ' windows' : '🎯 Baseline learned · ' + rec.n + ' windows'); });
+      saveBaseline(rec).then(function () { showCalSummary(rec); toast('🎯 Baseline learned · ' + rec.n + ' windows'); });
     });
-  }
-  function showCalReject(q) {
-    var el = document.getElementById('anomCalSummary'); if (!el) return;
-    el.style.display = 'block';
-    el.innerHTML = '<b style="color:#b3261e">⚠ Calibration rejected</b><div class="ag-note" style="margin:4px 2px">' +
-      q.warnings.map(function (w) { return '• ' + anomEsc(w); }).join('<br>') + '<br>Stand on quiet, blank ground and try again.</div>';
   }
   function showCalSummary(rec) {
     var el = document.getElementById('anomCalSummary'); if (!el) return;
     var coords = rec.lat != null ? rec.lat.toFixed(5) + ', ' + rec.lng.toFixed(5) : 'no GPS fix (pinned as active)';
-    var warns = (rec.meta.quality === 'warn' && rec.meta.warnings && rec.meta.warnings.length)
-      ? '<br><span style="color:#b8860b">⚠ ' + rec.meta.warnings.map(anomEsc).join('; ') + '</span>' : '';
     el.style.display = 'block';
-    el.innerHTML = '<b>🎯 Baseline learned' + (rec.meta.quality === 'warn' ? ' (check warnings)' : '') + '</b><div class="ag-note" style="margin:4px 2px">' + rec.n + ' quiet-ground windows · ' + coords +
-      '<br>noise floor RMS ' + (rec.meta.rmsMean).toFixed(4) + ' · self-check ' + (rec.meta.selfSigma).toFixed(2) + 'σ (≈0.75 is healthy)' + warns + '</div>';
+    el.innerHTML = '<b>🎯 Baseline learned</b><div class="ag-note" style="margin:4px 2px">' + rec.n + ' quiet-ground windows · ' + coords +
+      '<br>noise floor RMS ' + (rec.meta.rmsMean).toFixed(4) + ' · self-check ' + (rec.meta.selfSigma).toFixed(2) + 'σ (≈0.75 is healthy)</div>';
   }
 
   // ---- live scoring loop + gate ----
@@ -5586,27 +5521,11 @@ var powerLayers = (function () {
   function anomalyTrigger(sigma, base) {
     var t = Date.now(), fresh = (t - lastFlagTs) >= DEBOUNCE_MS;   // share the amp auto-flag debounce so triggers merge
     lastFlagTs = t; if (!fresh) return;
-    gateAB.fired++;
-    saveEvent('auto', { anomalyScore: Math.round(sigma * 100) / 100, baselineId: base.id, gateLog: buildGateLog('gate-fired', sigma, base) });
+    saveEvent('auto', { anomalyScore: Math.round(sigma * 100) / 100, baselineId: base.id });
   }
-  // v42 byte-identity: the loop only runs while it can do useful work — the gate armed AND capturing,
-  // or a panel open (live σ chip for tuning). Otherwise it PARKS (no timer scheduled). So in the normal
-  // swinging state with the gate OFF, the detection path is exactly v26 — onaudioprocess → feedRMS →
-  // maybeAutoFlag and nothing else; zero anomaly code executes. Re-armed by armAnomLoop() on the events
-  // that make it wanted (gate toggled on, capture started, a panel opened).
-  var anomLoopTimer = null;
-  function anomLoopWanted() { return (acfg.anomalyGate && running) || panelVisible(); }
-  function armAnomLoop() { if (anomLoopTimer == null && anomLoopWanted()) anomLoopTimer = setTimeout(anomalyLoop, ANOM_TICK_MS); }
   function anomalyLoop() {
-    anomLoopTimer = null;
     try {
       var base = running ? activeBaseline() : null;
-      // A/B shadow tally: how many times the plain RMS trigger WOULD have fired this session (debounced
-      // exactly like maybeAutoFlag) — counterfactual only, no clip saved. Only while the gate is the trigger.
-      if (running && acfg.anomalyGate) {
-        var sThr = acfg.threshold > 0 ? acfg.threshold : 0.3, nowT = Date.now();
-        if (smoothedRMS >= sThr && (nowT - shadowLastTs) >= DEBOUNCE_MS) { shadowLastTs = nowT; gateAB.shadowAmp++; refreshAnomAB(); }
-      }
       var wantCompute = !!base && (acfg.anomalyGate || panelVisible());
       if (wantCompute && window.Meyda) {
         var block = snapshot(ANOM_WIN_MS / 1000);
@@ -5614,7 +5533,6 @@ var powerLayers = (function () {
           var v = windowVec(window.Meyda, block, sampleRate);
           var r = mahalSigma(v, base);
           anomLiveSigma = r.sigma;
-          if (base.d2) trackDrift(r.sigma, base);   // v42: detect-don't-adapt ground drift
           if (acfg.anomalyGate && r.sigma > acfg.anomalySigma) anomalyTrigger(r.sigma, base);
         }
       } else if (wantCompute && !window.Meyda) {
@@ -5627,7 +5545,7 @@ var powerLayers = (function () {
       }
       updateAnomChip();
     } catch (e) {}
-    if (anomLoopWanted()) anomLoopTimer = setTimeout(anomalyLoop, ANOM_TICK_MS);
+    setTimeout(anomalyLoop, ANOM_TICK_MS);
   }
   function updateAnomChip() {
     if (!anomChipEl) { anomChipEl = document.createElement('div'); anomChipEl.id = 'anomChip'; anomChipEl.className = 'anom-chip'; document.body.appendChild(anomChipEl); }
@@ -5637,42 +5555,6 @@ var powerLayers = (function () {
     var over = anomLiveSigma > acfg.anomalySigma;
     anomChipEl.className = 'anom-chip show' + (over ? ' hot' : '');
     anomChipEl.textContent = '🎯 ' + anomLiveSigma.toFixed(1) + 'σ / gate ' + acfg.anomalySigma.toFixed(1) + 'σ' + (acfg.anomalyGate ? '' : ' · gate off');
-  }
-  // v42 A/B readout in the settings card — the free amp-vs-gate comparison for this session.
-  function refreshAnomAB() {
-    var el = document.getElementById('anomAB'); if (!el) return;
-    if (!acfg.anomalyGate) { el.style.display = 'none'; return; }
-    var f = gateAB.fired, s = gateAB.shadowAmp;
-    el.style.display = 'block';
-    el.innerHTML = '📊 This session — gate captured <b>' + f + '</b> · amplitude would have captured <b>' + s + '</b>' +
-      (s > f ? ' <span class="anom-ab-win">' + Math.round((s - f) / s * 100) + '% fewer</span>' : '');
-  }
-
-  // ---- v42 drift detection (detect-don't-adapt) ----
-  // Watch a rolling ~2.5 min median of live σ. If it sits above the baseline's own calibration P90,
-  // the ground (or detector settings) have changed — surface a one-time recalibrate banner. The
-  // threshold itself NEVER moves: silent adaptation would blind the gate exactly where it matters.
-  var DRIFT_WINDOW_MS = 150000, DRIFT_MIN_SPAN_MS = 120000;
-  var driftBuf = [], driftBannerFor = null, driftBaseId = null;
-  function resetDrift() { driftBuf = []; driftBannerFor = null; driftBaseId = null; }
-  function trackDrift(sigma, base) {
-    if (!base || !base.d2 || base.d2.p90 == null || !isFinite(sigma)) return;
-    if (base.id !== driftBaseId) { driftBuf = []; driftBannerFor = null; driftBaseId = base.id; }   // baseline changed → fresh window
-    var now = Date.now();
-    driftBuf.push({ t: now, s: sigma });
-    while (driftBuf.length && now - driftBuf[0].t > DRIFT_WINDOW_MS) driftBuf.shift();
-    if (driftBuf.length < 8 || (now - driftBuf[0].t) < DRIFT_MIN_SPAN_MS) return;   // need sustained coverage first
-    var arr = driftBuf.map(function (x) { return x.s; }).sort(function (a, b) { return a - b; });
-    var med = arr[arr.length >> 1];
-    if (med > base.d2.p90 && driftBannerFor !== base.id) { driftBannerFor = base.id; showDriftBanner(base, med); }
-  }
-  function showDriftBanner(base, med) {
-    var el = document.getElementById('anomDrift'); if (!el) return;
-    el.style.display = 'block';
-    el.innerHTML = '⚠ Ground no longer matches “' + anomEsc(base.label || 'baseline') + '” (live ' + med.toFixed(1) + 'σ vs calibration P90 ' + (+base.d2.p90).toFixed(1) + 'σ). Recalibrate here? ' +
-      '<button type="button" id="anomDriftCal" class="anom-drift-btn">Calibrate</button><button type="button" id="anomDriftX" class="anom-drift-x">Dismiss</button>';
-    var cb = document.getElementById('anomDriftCal'); if (cb) cb.onclick = function () { el.style.display = 'none'; calibrateBaseline(); };
-    var xb = document.getElementById('anomDriftX'); if (xb) xb.onclick = function () { el.style.display = 'none'; };
   }
 
   // ---- Anomaly-gate settings UI ----
@@ -5703,9 +5585,8 @@ var powerLayers = (function () {
           var isActive = act && act.id === b.id, isPinned = acfg.pinnedBaselineId === b.id;
           var coords = b.lat != null ? b.lat.toFixed(4) + ', ' + b.lng.toFixed(4) : 'no GPS';
           var dist = (isActive && b._distM != null) ? ' · ' + Math.round(b._distM) + 'm away' : '';
-          var qb = (b.meta && b.meta.quality === 'warn') ? ' <span class="anom-qbadge" title="' + anomEsc((b.meta.warnings || []).join('; ')) + '">⚠</span>' : '';
           return '<div class="anom-b' + (isActive ? ' active' : '') + '">' +
-            '<div class="anom-b-m"><b>' + (isActive ? '🎯 ' : '') + anomEsc(b.label || 'Baseline') + qb + '</b>' +
+            '<div class="anom-b-m"><b>' + (isActive ? '🎯 ' : '') + anomEsc(b.label || 'Baseline') + '</b>' +
             '<small>' + coords + dist + ' · ' + b.n + ' windows · ' + comboLabel(b.combo) + '</small></div>' +
             '<div class="anom-b-act">' +
             '<button type="button" class="anom-pin' + (isPinned ? ' on' : '') + '" data-id="' + b.id + '">' + (isPinned ? '📌 Pinned' : 'Set active') + '</button>' +
@@ -5714,12 +5595,11 @@ var powerLayers = (function () {
         }).join('');
       }
     }
-    refreshAnomAB();
     updateAnomChip();
   }
   (function wireAnomaly() {
     var on = document.getElementById('anomGateOn');
-    if (on) on.addEventListener('change', function () { acfg.anomalyGate = on.checked; saveCfg(); anomPromptShown = false; if (on.checked) { ensureMeydaMain(); armAnomLoop(); } refreshAnomUI(); });
+    if (on) on.addEventListener('change', function () { acfg.anomalyGate = on.checked; saveCfg(); anomPromptShown = false; if (on.checked) ensureMeydaMain(); refreshAnomUI(); });
     var an = document.getElementById('anomAutoNearest');
     if (an) an.addEventListener('change', function () { acfg.baselineAutoNearest = an.checked; saveCfg(); refreshAnomUI(); });
     var sl = document.getElementById('anomSigma');
@@ -5736,10 +5616,7 @@ var powerLayers = (function () {
     });
     setSigmaLabel();
   })();
-  // v42: DON'T perpetually spin the loop. It's parked until armAnomLoop() is called by the events that
-  // make it wanted (gate armed + capturing, or a panel open). Gate OFF + no panel ⇒ zero anomaly code
-  // runs, so the detection path stays byte-identical v26. This one call arms it if a panel is already open.
-  setTimeout(armAnomLoop, 1200);
+  setTimeout(anomalyLoop, 1200);   // start the live-scoring loop (self-guards on `running`)
 
   // ---- Smart classifier UI (v32: one card per detector+coil combo) ----
   function renderConfusionInto(elId, conf) {
@@ -5915,7 +5792,7 @@ var powerLayers = (function () {
   // arm capture (if already permitted) when Settings opens, so the meter is live
   if (sPanelEl) {
     var mo = new MutationObserver(function () {
-      if (sPanelEl.classList.contains('open')) { populateDevices(); refreshDetectorUI(); armAnomLoop(); if (!running && !denied) tryAutoStart(); }
+      if (sPanelEl.classList.contains('open')) { populateDevices(); refreshDetectorUI(); if (!running && !denied) tryAutoStart(); }
     });
     mo.observe(sPanelEl, { attributes: true, attributeFilter: ['class'] });
   }
@@ -6004,9 +5881,7 @@ var powerLayers = (function () {
   var hitBtn = document.getElementById('hitBtn');
   if (hitBtn) hitBtn.addEventListener('click', function () {
     if (!hasGUM || denied) return;                       // GPS-only fallback already handled elsewhere
-    // v42: manual hits are NEVER gated — the gate can only add auto-saves, never veto a user hit.
-    // When the gate is armed we still stamp the A/B log (verdict 'manual-ungated') so the record is complete.
-    if (running) { saveEvent('manual', acfg.anomalyGate ? { gateLog: buildGateLog('manual-ungated', null, null) } : undefined); }
+    if (running) { saveEvent('manual'); }
     else { toast('🎙 Tap REC first or enable auto-start in Settings'); }   // v30: no surprise mic grab
   });
 
@@ -6174,22 +6049,16 @@ var powerLayers = (function () {
     _windowVec: function (samples, sr) { return ensureMeydaMain().then(function (M) { return windowVec(M, samples, sr || sampleRate); }); },
     _anomScore: function (vec, baselineId) { var b = baselineId ? baselines.filter(function (x) { return x.id === baselineId; })[0] : activeBaseline(); return b ? mahalSigma(vec, b) : null; },
     // Build + persist a baseline directly from a PCM buffer (bypasses the 25s live capture).
-    // opts.force keeps a reject-verdict baseline anyway (tests exercise both paths).
     _buildBaseline: function (samples, sr, meta) { return ensureMeydaMain().then(function (M) {
       var stats = buildBaselineFromSamples(M, samples, sr || sampleRate); if (!stats) return null;
-      meta = meta || {}; var q = stats.quality || { verdict: 'ok', warnings: [] };
-      if (q.verdict === 'reject' && !meta.force) return { rejected: true, quality: q };
-      var ts = Date.now();
+      meta = meta || {}; var ts = Date.now();
       var rec = { id: BASELINE_PREFIX + uid(), kind: 'baseline', version: 1, label: meta.label || ('Baseline · ' + fmtTs(ts)),
         lat: meta.lat != null ? meta.lat : null, lng: meta.lng != null ? meta.lng : null, acc: meta.acc || null,
         timestamp: ts, combo: currentCombo(), sr: sr || sampleRate, dim: stats.dim, n: stats.n,
-        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var, d2: stats.d2,
-        meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0], quality: q.verdict, warnings: q.warnings } };
+        featureNames: ANOM_FEAT_NAMES, mean: stats.mean, var: stats.var, meta: { selfSigma: stats.selfSigma, rmsMean: stats.mean[0] } };
       if (meta.pin || rec.lat == null) { acfg.pinnedBaselineId = rec.id; saveCfg(); }
-      return saveBaseline(rec).then(function () { return { id: rec.id, n: rec.n, selfSigma: stats.selfSigma, d2: stats.d2, quality: q, mean: stats.mean, var: stats.var }; });
+      return saveBaseline(rec).then(function () { return { id: rec.id, n: rec.n, selfSigma: stats.selfSigma, mean: stats.mean, var: stats.var }; });
     }); },
-    // Assess calibration quality WITHOUT saving (test the reject/warn ladder headlessly).
-    _calQuality: function (samples, sr) { return ensureMeydaMain().then(function (M) { var s = buildBaselineFromSamples(M, samples, sr || sampleRate); return s ? s.quality : null; }); },
     // Score a raw clip against a baseline (build a window vec per ~250ms slice, take the MAX σ — the
     // gate fires on the strongest window in the clip). Returns {maxSigma, meanSigma, pass}.
     _gateClip: function (samples, sr, baselineId, threshold) {
@@ -6214,16 +6083,8 @@ var powerLayers = (function () {
     _setActiveBaseline: function (id) { acfg.pinnedBaselineId = id || ''; saveCfg(); refreshAnomUI(); return acfg.pinnedBaselineId; },
     _deleteBaseline: function (id) { return deleteBaseline(id); },
     _liveSigma: function () { return anomLiveSigma; },
-    _setGate: function (on) { acfg.anomalyGate = !!on; saveCfg(); if (on) armAnomLoop(); refreshAnomUI(); return acfg.anomalyGate; },
+    _setGate: function (on) { acfg.anomalyGate = !!on; saveCfg(); refreshAnomUI(); return acfg.anomalyGate; },
     _setSigma: function (s) { acfg.anomalySigma = s; saveCfg(); setSigmaLabel(); return acfg.anomalySigma; },
-    // ---- v42 A/B + logging + drift hooks ----
-    _gateAB: function () { return { fired: gateAB.fired, shadowAmp: gateAB.shadowAmp }; },
-    _resetGateAB: resetGateAB,
-    _eventGateLogs: function () { return events.filter(function (e) { return e.gateLog; }).map(function (e) { return { id: e.id, type: e.type, gateLog: e.gateLog }; }); },
-    _lastEventGateLog: function () { var e = events[events.length - 1]; return e ? e.gateLog : null; },
-    _driftState: function () { return { n: driftBuf.length, bannerFor: driftBannerFor, baseId: driftBaseId }; },
-    _feedDriftSigma: function (sigma) { var b = activeBaseline(); if (b) trackDrift(sigma, b); return { n: driftBuf.length, bannerFor: driftBannerFor }; },
-    _loopParked: function () { return anomLoopTimer == null; },
     // ---- v31 smoke-test pack hooks ----
     _loadSmokeTest: loadSmokeTest, _clearSmokeTest: clearSmokeTest, _smokeCount: smokeCount,
     // Seed N synthetic labelled events per class with SEPARABLE feature vectors (no audio) —
